@@ -1,0 +1,142 @@
+{
+    // vscode meta
+    "editor.accessibilitySupport": "off",
+    "workbench.startupEditor": "none",
+    "workbench.colorTheme": "Nord Wave",
+    "workbench.activityBar.location": "top",
+    "workbench.statusBar.visible": false,
+    "workbench.editor.showTabs": "none",
+    "security.allowedUNCHosts": ["wsl.localhost"],
+    "security.workspace.trust.untrustedFiles": "open",
+    "security.promptForLocalFileProtocolHandling": false,
+    "go.toolsManagement.autoUpdate": true,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "scminput": false
+    },
+
+    // text editor
+    "files.autoSave": "onFocusChange",
+    "editor.formatOnSave": true,
+    "editor.linkedEditing": true,
+    "editor.inlineSuggest.enabled": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "prettier.bracketSameLine": true,
+    "prettier.jsxSingleQuote": true,
+    "prettier.printWidth": 80,
+    "prettier.singleQuote": true,
+    "prettier.tabWidth": 4,
+    "[blade]": {
+        "editor.defaultFormatter": "shufo.vscode-blade-formatter"
+    },
+    "[go]": {
+        "editor.defaultFormatter": "golang.go"
+    },
+    "[php]": {
+        "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
+    },
+    "bladeFormatter.format.sortTailwindcssClasses": true,
+    "bladeFormatter.format.wrapLineLength": 80,
+    "emmet.includeLanguages": {
+        "javascript": "javascriptreact"
+    },
+    "tailwindCSS.experimental.classRegex": [
+        ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+    ],
+    "files.associations": {
+        "*.css": "tailwindcss"
+    },
+    "editor.inlayHints.enabled": "on",
+    "editor.inlayHints.padding": true,
+    "javascript.inlayHints.parameterNames.enabled": "all",
+    "typescript.inlayHints.parameterNames.enabled": "all",
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "go.inlayHints.parameterNames": true,
+    "diffEditor.ignoreTrimWhitespace": false,
+    // vim
+    "vim.camelCaseMotion.enable": true,
+    "vim.easymotion": true,
+    "vim.enableNeovim": true,
+
+    // ui settings
+    //  window
+    "window.title": "${dirty}${activeEditorShort}${separator}${rootName}${separator}${profileName}",
+
+    //  cursor
+    "editor.cursorBlinking": "smooth",
+    "editor.cursorSmoothCaretAnimation": "on",
+
+    //  font
+    "editor.fontFamily": "'Dank Mono', Consolas, 'Courier New', monospace",
+    "editor.fontSize": 14,
+    "editor.lineHeight": 2.5,
+    "editor.fontLigatures": true,
+    "breadcrumbs.enabled": false,
+    "window.commandCenter": false,
+    "workbench.layoutControl.enabled": false,
+    "window.menuBarVisibility": "compact",
+
+    //  minimap
+    "editor.minimap.enabled": false,
+
+    //  sidebar
+    "workbench.sideBar.location": "right",
+
+    //  editor
+    "editor.stickyScroll.enabled": true,
+    "editor.guides.indentation": false,
+    "editor.renderLineHighlight": "none",
+    "workbench.iconTheme": "chalice-icon-theme",
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            // italic and bold
+            {
+                "scope": [
+                    "comment",
+                    "keyword.control",
+                    "storage.type",
+                    "storage.modifier",
+                    "variable.parameter",
+                    "entity.other.attribute-name",
+                    "support.type",
+                    "support.class",
+                    "markup.quote.markdown",
+                    "markup.italic.markdown",
+                    "variable.language"
+                ],
+                "settings": {
+                    "fontStyle": "italic"
+                }
+            },
+            {
+                "scope": ["markup.heading.markdown", "markup.bold.markdown"],
+                "settings": {
+                    "fontStyle": "bold"
+                }
+            }
+        ]
+    },
+
+    // terminal
+    "terminal.integrated.cursorStyle": "underline",
+    "terminal.integrated.fontFamily": "'CaskaydiaCove Nerd Font Mono', 'Cascadia Mono'",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+    // git settings
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "gitlens.hovers.currentLine.over": "annotation",
+    "git.ignoreRebaseWarning": true,
+
+    // works
+    "sonarlint.connectedMode.connections.sonarqube": [
+        {
+            "connectionId": "https-sonar-javan-co-id",
+            "serverUrl": "https://sonar.javan.co.id"
+        }
+    ],
+    "sonarlint.ls.javaHome": "C:\\Program Files\\Java\\jdk-21"
+}
