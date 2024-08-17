@@ -1,34 +1,22 @@
 {
     // vscode meta
     "editor.accessibilitySupport": "off",
-    "workbench.startupEditor": "none",
-    "workbench.colorTheme": "Nord Wave",
-    "workbench.activityBar.location": "top",
-    "workbench.statusBar.visible": false,
-    "workbench.editor.showTabs": "none",
-    "security.allowedUNCHosts": ["wsl.localhost"],
-    "security.workspace.trust.untrustedFiles": "open",
-    "security.promptForLocalFileProtocolHandling": false,
-    "go.toolsManagement.autoUpdate": true,
-    "typescript.updateImportsOnFileMove.enabled": "always",
+    "explorer.confirmDelete": false,
     "github.copilot.enable": {
-        "*": true,
-        "plaintext": false,
-        "markdown": true,
-        "scminput": false
+        "*": true
     },
+    "security.allowedUNCHosts": ["wsl.localhost"],
+    "security.promptForLocalFileProtocolHandling": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    "workbench.activityBar.location": "top",
+    "workbench.colorTheme": "Nord Wave",
+    "workbench.editor.showTabs": "none",
+    "workbench.iconTheme": "chalice-icon-theme",
+    "workbench.layoutControl.enabled": false,
+    "workbench.startupEditor": "none",
+    "workbench.statusBar.visible": false,
 
     // text editor
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true,
-    "editor.linkedEditing": true,
-    "editor.inlineSuggest.enabled": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "prettier.bracketSameLine": true,
-    "prettier.jsxSingleQuote": true,
-    "prettier.printWidth": 80,
-    "prettier.singleQuote": true,
-    "prettier.tabWidth": 4,
     "[blade]": {
         "editor.defaultFormatter": "shufo.vscode-blade-formatter"
     },
@@ -40,30 +28,76 @@
     },
     "bladeFormatter.format.sortTailwindcssClasses": true,
     "bladeFormatter.format.wrapLineLength": 80,
+    "breadcrumbs.enabled": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.inlayHints.enabled": "on",
+    "editor.inlayHints.padding": true,
+    "editor.inlineSuggest.enabled": true,
+    "editor.linkedEditing": true,
     "emmet.includeLanguages": {
         "javascript": "javascriptreact"
     },
-    "tailwindCSS.experimental.classRegex": [
-        ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
-    ],
     "files.associations": {
         "*.css": "tailwindcss"
     },
-    "editor.inlayHints.enabled": "on",
-    "editor.inlayHints.padding": true,
-    "javascript.inlayHints.parameterNames.enabled": "all",
-    "typescript.inlayHints.parameterNames.enabled": "all",
-    "javascript.updateImportsOnFileMove.enabled": "always",
+    "files.autoSave": "onFocusChange",
     "go.inlayHints.parameterNames": true,
-    "diffEditor.ignoreTrimWhitespace": false,
+    "go.toolsManagement.autoUpdate": true,
+    "javascript.inlayHints.parameterNames.enabled": "all",
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "prettier.bracketSameLine": true,
+    "prettier.jsxSingleQuote": true,
+    "prettier.printWidth": 80,
+    "prettier.singleQuote": true,
+    "prettier.tabWidth": 4,
+    "tailwindCSS.experimental.classRegex": [
+        ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+    ],
+    "typescript.inlayHints.parameterNames.enabled": "all",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+
     // vim
-    "vim.camelCaseMotion.enable": true,
+    "extensions.experimental.affinity": {
+        "vscodevim.vim": 1
+    },
     "vim.easymotion": true,
-    "vim.enableNeovim": true,
+    "vim.handleKeys": {
+        "<C-a>": false,
+        "<C-f>": false
+    },
+    "vim.hlsearch": true,
+    "vim.incsearch": true,
+    "vim.insertModeKeyBindings": [
+        {
+            "before": ["j", "j"],
+            "after": ["<Esc>"]
+        }
+    ],
+    "vim.leader": "<space>",
+    "vim.normalModeKeyBindingsNonRecursive": [
+        {
+            "before": ["<leader>", "d"],
+            "after": ["d", "d"]
+        },
+        {
+            "before": ["<C-n>"],
+            "commands": [":nohl"]
+        },
+        {
+            "before": ["K"],
+            "commands": ["lineBreakInsert"],
+            "silent": true
+        }
+    ],
+    "vim.useCtrlKeys": true,
+    "vim.useSystemClipboard": true,
 
     // ui settings
     //  window
-    "window.title": "${dirty}${activeEditorShort}${separator}${rootName}${separator}${profileName}",
+    "window.commandCenter": false,
+    "window.menuBarVisibility": "compact",
+    "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}${separator}${profileName}",
 
     //  cursor
     "editor.cursorBlinking": "smooth",
@@ -71,13 +105,9 @@
 
     //  font
     "editor.fontFamily": "'Dank Mono', Consolas, 'Courier New', monospace",
-    "editor.fontSize": 14,
-    "editor.lineHeight": 2.5,
     "editor.fontLigatures": true,
-    "breadcrumbs.enabled": false,
-    "window.commandCenter": false,
-    "workbench.layoutControl.enabled": false,
-    "window.menuBarVisibility": "compact",
+    "editor.fontSize": 14.5,
+    "editor.lineHeight": 3.25,
 
     //  minimap
     "editor.minimap.enabled": false,
@@ -86,13 +116,11 @@
     "workbench.sideBar.location": "right",
 
     //  editor
-    "editor.stickyScroll.enabled": true,
     "editor.guides.indentation": false,
     "editor.renderLineHighlight": "none",
-    "workbench.iconTheme": "chalice-icon-theme",
+    "editor.stickyScroll.enabled": true,
     "editor.tokenColorCustomizations": {
         "textMateRules": [
-            // italic and bold
             {
                 "scope": [
                     "comment",
@@ -122,14 +150,14 @@
 
     // terminal
     "terminal.integrated.cursorStyle": "underline",
-    "terminal.integrated.fontFamily": "'CaskaydiaCove Nerd Font Mono', 'Cascadia Mono'",
     "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.fontFamily": "'CaskaydiaCove Nerd Font Mono', 'Cascadia Mono'",
 
     // git settings
     "git.autofetch": true,
     "git.confirmSync": false,
-    "gitlens.hovers.currentLine.over": "annotation",
     "git.ignoreRebaseWarning": true,
+    "gitlens.hovers.currentLine.over": "annotation",
 
     // works
     "sonarlint.connectedMode.connections.sonarqube": [
