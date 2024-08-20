@@ -157,14 +157,5 @@
     "git.autofetch": true,
     "git.confirmSync": false,
     "git.ignoreRebaseWarning": true,
-    "gitlens.hovers.currentLine.over": "annotation",
-
-    // works
-    "sonarlint.connectedMode.connections.sonarqube": [
-        {
-            "connectionId": "https-sonar-javan-co-id",
-            "serverUrl": "https://sonar.javan.co.id"
-        }
-    ],
-    "sonarlint.ls.javaHome": "C:\\Program Files\\Java\\jdk-21"
+    "gitlens.hovers.currentLine.over": "annotation"
 }
