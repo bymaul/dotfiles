@@ -7,16 +7,13 @@
   "margin-bottom": 0,
   "margin-left": 0,
   "margin-right": 0,
-  "modules-left": ["custom/workspaces", "hyprland/window"],
-  "modules-center": ["clock", "custom/date"],
+  "modules-left": ["hyprland/workspaces", "hyprland/window"],
+  "modules-center": ["clock"],
   "modules-right": ["bluetooth", "network", "pulseaudio", "cpu", "memory", "battery", "tray", "custom/power"],
 
-  "custom/workspaces": {
-    "format": "{}",
-    "exec": "hyprctl activeworkspace | awk '/workspace ID/{print $3}'",
-    "interval": 1,
-    "on-click": "/home/maul/.local/bin/workspace-switch",
-    "tooltip": false
+  "hyprland/workspaces": {
+    "format": "{id}",
+    "sort-by": "number"
   },
 
   "hyprland/window": {
@@ -26,7 +23,7 @@
 
   "clock": {
     "interval": 60,
-    "format": "{:%H:%M}",
+    "format": "{:%H:%M  %a %d %b}",
     "tooltip": true,
     "tooltip-format": "{calendar}",
     "calendar": {
@@ -38,13 +35,6 @@
         "today": "<span color='#000000' background='#ffffff'><b>{}</b></span>"
       }
     }
-  },
-
-  "custom/date": {
-    "format": "{}",
-    "exec": "date +'%a %d %b'",
-    "interval": 60,
-    "tooltip": false
   },
 
   "bluetooth": {
@@ -87,7 +77,8 @@
     "format-wifi": " {signalStrength}%",
     "format-ethernet": " eth",
     "format-disconnected": "",
-    "tooltip-format": "{ifname}: {ipaddr}"
+    "tooltip-format": "{ifname}: {ipaddr}",
+    "on-click": "kitty --class nmtui nmtui"
   },
 
   "battery": {
@@ -96,15 +87,19 @@
       "warning": 20,
       "critical": 10
     },
-    "format": " {capacity}%",
-    "format-charging": " {capacity}%",
-    "format-full": "",
+    "format": "{icon} {capacity}%",
+    "format-charging": "{icon} {capacity}%",
+    "format-full": "{icon} {capacity}%",
+    "format-icons": {
+      "default": ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
+      "charging": "\uf0e7"
+    },
     "on-click": "xfce4-power-manager-settings"
   },
 
   "custom/power": {
     "format": "\uf011",
-    "on-click": "wlogout",
+    "on-click": "wleave",
     "tooltip": false
   },
 

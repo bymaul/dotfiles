@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+case "$1" in
+	up) brightnessctl -e4 -n2 set 5%+ ;;
+	down) brightnessctl -e4 -n2 set 5%- ;;
+	*) exit 0 ;;
+esac
+
+pct=$(brightnessctl -m | head -1 | cut -d, -f4 | tr -d '%')
+
+notify-send -a brightness -t 1500 -i display-brightness-symbolic -h int:value:"$pct" "$pct%" "Brightness"

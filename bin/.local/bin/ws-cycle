@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+# Cycle through USED (occupied) workspaces only, wrapping around.
+# Usage: ws-cycle [next|prev]
+
+dir="${1:-next}"
+
+current=$(hyprctl activeworkspace -j | jq -r '.id')
+ids=$(hyprctl workspaces -j | jq -r '[.[] | select(.windows > 0) | .id] | sort | .[]')
+
+if [ "$dir" = "prev" ]; then
+	target=$(printf "%s\n" "$ids" | awk -v cur="$current" '$1 < cur { t = $1 } END { print t }')
+	[ -z "$target" ] && target=$(printf "%s\n" "$ids" | tail -1)
+else
+	target=$(printf "%s\n" "$ids" | awk -v cur="$current" '$1 > cur { print; exit }')
+	[ -z "$target" ] && target=$(printf "%s\n" "$ids" | head -1)
+fi
+
+[ -n "$target" ] && hyprctl dispatch "hl.dsp.focus({ workspace = $target })"

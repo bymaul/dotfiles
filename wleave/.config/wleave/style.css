@@ -1,0 +1,43 @@
+window {
+    background-color: rgba(0, 0, 0, 0.85);
+    font-family: "JetBrainsMono Nerd Font Mono";
+    font-size: 14px;
+}
+
+button {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0px;
+    padding: 10px;
+    box-shadow: none;
+    transition: all 150ms ease;
+}
+
+button picture {
+    min-width: 32px;
+    min-height: 32px;
+}
+
+button label.action-name {
+    font-size: 24px;
+    font-weight: 400;
+}
+
+button label.keybind {
+    padding: 2px 6px;
+    border-radius: 0px;
+    font-size: 13px;
+    font-family: "JetBrainsMono Nerd Font Mono";
+    background-color: #888888;
+    color: #101010;
+}
+
+button:focus,
+button:hover {
+    background-color: #101010;
+}
+
+button:active {
+    background-color: rgba(255, 255, 255, 0.2);
+}

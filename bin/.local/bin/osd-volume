@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+case "$1" in
+	up) wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+ ;;
+	down) wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
+	mute) wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
+	mic) wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle ;;
+	*) exit 0 ;;
+esac
+
+if [ "$1" = "mic" ]; then
+	out=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)
+	label="Mic"
+	if printf "%s" "$out" | grep -q MUTED; then
+		icon=microphone-sensitivity-muted-symbolic
+	else
+		icon=microphone-sensitivity-high-symbolic
+	fi
+else
+	out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+	label="Volume"
+fi
+
+pct=$(printf "%s" "$out" | awk '{printf "%.0f", $2 * 100}')
+
+if [ "$1" != "mic" ]; then
+	if printf "%s" "$out" | grep -q MUTED; then
+		icon=audio-volume-muted-symbolic
+	elif [ "$pct" -le 33 ]; then
+		icon=audio-volume-low-symbolic
+	elif [ "$pct" -le 66 ]; then
+		icon=audio-volume-medium-symbolic
+	else
+		icon=audio-volume-high-symbolic
+	fi
+fi
+
+notify-send -a volume -t 1500 -i "$icon" -h int:value:"$pct" "$pct%" "$label"

@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-
-id=$(hyprctl workspaces | awk '/workspace ID/{print $3}' | sort -n | rofi -dmenu -p "workspace")
-[ -n "$id" ] && hyprctl dispatch "hl.dsp.focus({ workspace = $id })"

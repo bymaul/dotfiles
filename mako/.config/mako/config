@@ -1,12 +1,12 @@
-font=JetBrainsMono Nerd Font Mono 11
+font=JetBrainsMono Nerd Font Mono 10
 background-color=#141414
 text-color=#ffffff
 border-color=#ffffff59
 border-size=1
 border-radius=0
-width=420
-height=120
-padding=12
+width=300
+height=90
+padding=8
 margin=8
 max-visible=5
 default-timeout=5000
@@ -16,3 +16,9 @@ layer=overlay
 anchor=top-right
 group-by=app-name
 sort=-time
+
+[app-name=volume]
+progress-color=over #ffffff33
+
+[app-name=brightness]
+progress-color=over #ffffff33

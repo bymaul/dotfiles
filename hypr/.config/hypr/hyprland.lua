@@ -9,7 +9,7 @@ hl.monitor({
 	output = "",
 	mode = "preferred",
 	position = "auto",
-	scale = "1",
+	scale = "1.20",
 })
 
 ---------------------
@@ -30,6 +30,7 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("waybar")
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("mako")
+	hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
 end)
 
 -------------------------------
@@ -57,7 +58,7 @@ hl.config({
 		border_size = 2,
 
 		col = {
-			active_border = { colors = { "rgba(ffffffee)", "rgba(777777ee)" }, angle = 45 },
+			active_border = { colors = { "rgba(aaaaaacc)", "rgba(555555aa)" }, angle = 45 },
 			inactive_border = "rgba(444444aa)",
 		},
 
@@ -68,11 +69,11 @@ hl.config({
 	},
 
 	decoration = {
-		rounding = 8,
+		rounding = 0,
 		rounding_power = 1,
 
-		active_opacity = 1.0,
-		inactive_opacity = 0.97,
+		active_opacity = 0.95,
+		inactive_opacity = 0.93,
 
 		shadow = {
 			enabled = true,
@@ -223,13 +224,16 @@ end
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
+-- Cycle used workspaces (Windows-style)
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("/home/maul/.local/bin/ws-cycle next"))
+hl.bind(secondMod .. " + Tab", hl.dsp.exec_cmd("/home/maul/.local/bin/ws-cycle prev"))
+
 -- Move/resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- System actions
--- hl.bind(secondMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
-hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wlogout"))
+hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wleave"))
 
 -- Screenshots
 hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | cliphist store'))
@@ -238,26 +242,26 @@ hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("grim - | cliphist store"))
 -- Laptop multimedia keys
 hl.bind(
 	"XF86AudioRaiseVolume",
-	hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"),
+	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume up"),
 	{ locked = true, repeating = true }
 )
 hl.bind(
 	"XF86AudioLowerVolume",
-	hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
+	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume down"),
 	{ locked = true, repeating = true }
 )
 hl.bind(
 	"XF86AudioMute",
-	hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
+	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mute"),
 	{ locked = true, repeating = true }
 )
 hl.bind(
 	"XF86AudioMicMute",
-	hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
+	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mic"),
 	{ locked = true, repeating = true }
 )
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness up"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness down"), { locked = true, repeating = true })
 
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -299,12 +303,19 @@ hl.window_rule({
 })
 
 hl.window_rule({
-	name = "wlogout-float",
-	match = { class = "wlogout" },
+	name = "wleave-float",
+	match = { class = "wleave" },
 
 	float = true,
 	border_size = 0,
 	rounding = 0,
+})
+
+hl.layer_rule({
+	name = "wleave-glass",
+	match = { namespace = "wleave" },
+	blur = true,
+	ignore_alpha = 0.1,
 })
 
 hl.window_rule({
@@ -313,7 +324,7 @@ hl.window_rule({
 
 	float = true,
 	size = { 900, 600 },
-	center = true,
+	move = { "monitor_w - 914", "30" },
 })
 
 hl.window_rule({
@@ -322,7 +333,7 @@ hl.window_rule({
 
 	float = true,
 	size = { 900, 600 },
-	center = true,
+	move = { "monitor_w - 914", "30" },
 })
 
 hl.window_rule({
@@ -331,5 +342,14 @@ hl.window_rule({
 
 	float = true,
 	size = { 800, 600 },
-	center = true,
+	move = { "monitor_w - 814", "30" },
+})
+
+hl.window_rule({
+	name = "float-nmtui",
+	match = { class = "nmtui" },
+
+	float = true,
+	size = { 800, 600 },
+	move = { "monitor_w - 814", "30" },
 })
