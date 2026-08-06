@@ -7,27 +7,16 @@
   "margin-bottom": 0,
   "margin-left": 0,
   "margin-right": 0,
-  "modules-left": ["hyprland/workspaces", "hyprland/window"],
-  "modules-center": ["clock"],
-  "modules-right": ["network", "pulseaudio", "cpu", "memory", "battery", "tray"],
+  "modules-left": ["custom/workspaces", "hyprland/window"],
+  "modules-center": ["clock", "custom/date"],
+  "modules-right": ["bluetooth", "network", "pulseaudio", "cpu", "memory", "battery", "tray", "custom/power"],
 
-  "hyprland/workspaces": {
-    "format": "{id}",
-    "format-icons": {},
-    "sort-by-number": true,
-    "on-click": "activate",
-    "persistent-workspaces": {
-      "1": [],
-      "2": [],
-      "3": [],
-      "4": [],
-      "5": [],
-      "6": [],
-      "7": [],
-      "8": [],
-      "9": [],
-      "10": []
-    }
+  "custom/workspaces": {
+    "format": "{}",
+    "exec": "hyprctl activeworkspace | awk '/workspace ID/{print $3}'",
+    "interval": 1,
+    "on-click": "/home/maul/.local/bin/workspace-switch",
+    "tooltip": false
   },
 
   "hyprland/window": {
@@ -38,19 +27,50 @@
   "clock": {
     "interval": 60,
     "format": "{:%H:%M}",
-    "tooltip-format": "{:%A, %d %B %Y}"
+    "tooltip": true,
+    "tooltip-format": "{calendar}",
+    "calendar": {
+      "mode": "month",
+      "format": {
+        "months": "<span color='#ffffff'><b>{}</b></span>",
+        "weekdays": "<span color='#999999'>{}</span>",
+        "days": "<span color='#ffffff'>{}</span>",
+        "today": "<span color='#000000' background='#ffffff'><b>{}</b></span>"
+      }
+    }
+  },
+
+  "custom/date": {
+    "format": "{}",
+    "exec": "date +'%a %d %b'",
+    "interval": 60,
+    "tooltip": false
+  },
+
+  "bluetooth": {
+    "format-disabled": "",
+    "format-on": "\uf294",
+    "format-connected": "\uf294 {num_connections}",
+    "format-no-controller": "",
+    "on-click": "kitty --class bluetui bluetui",
+    "tooltip-format": "{controller_alias}  {controller_address}",
+    "tooltip-format-connected": "{controller_alias}  {controller_address}\n\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}",
+    "tooltip-format-disabled": "bluetooth disabled"
   },
 
   "cpu": {
     "interval": 2,
     "format": " {usage}%",
-    "max-length": 8
+    "max-length": 8,
+    "on-click": "kitty --class htop htop"
   },
 
   "memory": {
     "interval": 5,
     "format": " {used:0.1f}G",
-    "max-length": 8
+    "max-length": 8,
+    "on-click": "kitty --class btop btop"
   },
 
   "pulseaudio": {
@@ -80,6 +100,12 @@
     "format-charging": " {capacity}%",
     "format-full": "",
     "on-click": "xfce4-power-manager-settings"
+  },
+
+  "custom/power": {
+    "format": "\uf011",
+    "on-click": "wlogout",
+    "tooltip": false
   },
 
   "tray": {

@@ -46,6 +46,9 @@ alias oc=opencode
 alias ls="eza -a -l --header --icons --hyperlink --time-style relative $1"
 alias nah="git reset --hard;git clean -df"
 
+# User scripts
+export PATH="$HOME/.local/bin:$PATH"
+
 # fnm
 FNM_PATH="/home/maul/.local/share/fnm"
 if [ -d "$FNM_PATH" ]; then

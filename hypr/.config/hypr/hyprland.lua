@@ -186,7 +186,6 @@ local mainMod = "SUPER"
 local secondMod = "SUPER + SHIFT"
 
 -- Launch
-hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu))
@@ -195,7 +194,7 @@ hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
-hl.bind(secondMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(
 	mainMod .. " + V",
 	hl.dsp.exec_cmd("cliphist list | rofi -dmenu -display-columns 2 -no-sort | cliphist decode | wl-copy")
@@ -211,6 +210,7 @@ hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
 hl.bind(secondMod .. " + H", hl.dsp.window.move({ direction = "left" }))
 hl.bind(secondMod .. " + J", hl.dsp.window.move({ direction = "down" }))
 hl.bind(secondMod .. " + K", hl.dsp.window.move({ direction = "up" }))
+hl.bind(secondMod .. " + L", hl.dsp.window.move({ direction = "right" }))
 
 -- Workspaces
 for i = 1, 10 do
@@ -228,8 +228,8 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- System actions
-hl.bind(secondMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
-hl.bind(secondMod .. " + M", hl.dsp.exec_cmd("wlogout"))
+-- hl.bind(secondMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
+hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wlogout"))
 
 -- Screenshots
 hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | cliphist store'))
@@ -305,4 +305,31 @@ hl.window_rule({
 	float = true,
 	border_size = 0,
 	rounding = 0,
+})
+
+hl.window_rule({
+	name = "float-htop",
+	match = { class = "htop" },
+
+	float = true,
+	size = { 900, 600 },
+	center = true,
+})
+
+hl.window_rule({
+	name = "float-btop",
+	match = { class = "btop" },
+
+	float = true,
+	size = { 900, 600 },
+	center = true,
+})
+
+hl.window_rule({
+	name = "float-bluetui",
+	match = { class = "bluetui" },
+
+	float = true,
+	size = { 800, 600 },
+	center = true,
 })

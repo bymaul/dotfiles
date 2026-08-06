@@ -18,7 +18,7 @@ window {
     border-color: rgba(255, 255, 255, 0.15);
     border-radius: 0px;
     padding: 12px;
-    width: 100%;
+    width: 40%;
     y-offset: 12%;
 }
 
