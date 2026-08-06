@@ -20,12 +20,13 @@ local terminal = "kitty"
 local fileManager = "nemo"
 local menu = "rofi -show drun"
 local browser = "firefox"
+local music = "spotify"
 
 -------------------
 ---- AUTOSTART ----
 -------------------
 
-hl.on("hyprland.start", function ()
+hl.on("hyprland.start", function()
 	hl.exec_cmd("waybar")
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("mako")
@@ -43,9 +44,9 @@ hl.env("HYPRCURSOR_SIZE", "24")
 -----------------------
 
 -- Monochrome palette
-local bg     = "0x000000"
-local fg     = "0xffffff"
-local fgDim  = "0x999999"
+local bg = "0x000000"
+local fg = "0xffffff"
+local fgDim = "0x999999"
 local border = "0x444444"
 
 hl.config({
@@ -188,27 +189,28 @@ local secondMod = "SUPER + SHIFT"
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+hl.bind(secondMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(
+	mainMod .. " + V",
+	hl.dsp.exec_cmd("cliphist list | rofi -dmenu -display-columns 2 -no-sort | cliphist decode | wl-copy")
+)
 
--- Move focus
+-- Move focus (vim)
 hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
+hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
+hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "down" }))
 
--- Move windows
+-- Move windows (vim)
 hl.bind(secondMod .. " + H", hl.dsp.window.move({ direction = "left" }))
-hl.bind(secondMod .. " + L", hl.dsp.window.move({ direction = "right" }))
-hl.bind(secondMod .. " + J", hl.dsp.window.move({ direction = "up" }))
-hl.bind(secondMod .. " + K", hl.dsp.window.move({ direction = "down" }))
+hl.bind(secondMod .. " + J", hl.dsp.window.move({ direction = "down" }))
+hl.bind(secondMod .. " + K", hl.dsp.window.move({ direction = "up" }))
 
 -- Workspaces
 for i = 1, 10 do
@@ -216,10 +218,6 @@ for i = 1, 10 do
 	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
 	hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
-
--- Scratchpad
-hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
 
 -- Scroll through workspaces
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
@@ -230,12 +228,11 @@ hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- System actions
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
-hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("wlogout"))
-hl.bind(mainMod .. " + SHIFT + H", hl.dsp.exec_cmd("cliphist list | rofi -dmenu -display-columns 2 -no-sort | cliphist decode | wl-copy"))
+hl.bind(secondMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
+hl.bind(secondMod .. " + M", hl.dsp.exec_cmd("wlogout"))
 
 -- Screenshots
-hl.bind("Print", hl.dsp.exec_cmd("grim -g \"$(slurp -d)\" - | cliphist store"))
+hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | cliphist store'))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("grim - | cliphist store"))
 
 -- Laptop multimedia keys

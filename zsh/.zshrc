@@ -42,6 +42,7 @@ zstyle 'completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 alias cat=bat
 alias vim=nvim
 alias lg=lazygit
+alias oc=opencode
 alias ls="eza -a -l --header --icons --hyperlink --time-style relative $1"
 alias nah="git reset --hard;git clean -df"
 

@@ -1,5 +1,5 @@
 configuration {
-    modi: "drun,run,window";
+    modes: "drun,run,window";
     display-drun: "apps";
     display-run: "run";
     display-window: "windows";
@@ -7,8 +7,6 @@ configuration {
     disable-history: false;
     location: 0;
     width: 35%;
-    x-offset: 0;
-    y-offset: 12%;
     fixed-num-lines: true;
     padding: 0;
     separator-style: none;
