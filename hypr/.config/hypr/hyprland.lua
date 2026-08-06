@@ -30,6 +30,7 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("waybar")
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("mako")
+	hl.exec_cmd("awww-daemon") -- restores last wallpaper from cache
 	hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
 end)
 
@@ -163,12 +164,17 @@ hl.config({
 		kb_options = "caps:escape",
 		kb_rules = "",
 
+		repeat_rate = 50,
+		repeat_delay = 300,
+
 		follow_mouse = 1,
 
 		sensitivity = 0,
 
 		touchpad = {
 			natural_scroll = true,
+			disable_while_typing = true,
+			scroll_factor = 1.0,
 		},
 	},
 })
@@ -191,6 +197,7 @@ hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("/home/maul/.local/bin/wallpaper next"))
 
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())

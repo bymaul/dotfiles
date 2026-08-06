@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+# Wallpaper manager for awww (swww successor).
+# Usage: wallpaper [next|random|set <path>|clear]
+
+dir="$HOME/Pictures/Wallpapers"
+cache="$HOME/.cache/wallpaper.current"
+
+ensure_daemon() {
+	pgrep -x awww-daemon >/dev/null || awww-daemon &
+	sleep 0.2
+}
+
+set_wall() {
+	[ -f "$1" ] || { echo "not an image: $1" >&2; exit 1; }
+	ensure_daemon
+	awww img --transition-type wipe --transition-step 45 --transition-fps 60 "$1"
+	printf "%s\n" "$1" > "$cache"
+}
+
+next_wall() {
+	[ -d "$dir" ] || { echo "no wallpaper dir: $dir" >&2; exit 1; }
+	# sorted list, excluding hidden
+	ls "$dir" 2>/dev/null | grep -viE '^\.' | sort >/tmp/wallpaper.list || true
+	[ -s /tmp/wallpaper.list ] || { echo "no wallpapers in $dir" >&2; exit 1; }
+
+	local cur base
+	cur=$(cat "$cache" 2>/dev/null)
+	base=$(basename "$cur")
+
+	local next
+	next=$(awk -v b="$base" 'BEGIN{found=0} { if (found) { print; exit } if ($0 == b) found=1 } END{}' /tmp/wallpaper.list)
+	[ -z "$next" ] && next=$(head -1 /tmp/wallpaper.list)
+
+	set_wall "$dir/$next"
+}
+
+case "${1:-next}" in
+	next) next_wall ;;
+	random)
+		[ -d "$dir" ] || { echo "no wallpaper dir: $dir" >&2; exit 1; }
+		pick=$(ls "$dir" 2>/dev/null | grep -viE '^\.' | sort -R | head -1)
+		[ -n "$pick" ] && set_wall "$dir/$pick" || { echo "no wallpapers in $dir" >&2; exit 1; }
+		;;
+	set) set_wall "$2" ;;
+	clear)
+		awww kill
+		rm -f "$cache"
+		;;
+	*) echo "usage: wallpaper [next|random|set <path>|clear]" >&2; exit 1 ;;
+esac
