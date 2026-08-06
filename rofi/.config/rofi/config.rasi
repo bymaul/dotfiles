@@ -1,0 +1,23 @@
+configuration {
+    modi: "drun,run,window";
+    display-drun: "apps";
+    display-run: "run";
+    display-window: "windows";
+    drun-display-format: "{name}";
+    disable-history: false;
+    location: 0;
+    width: 35%;
+    x-offset: 0;
+    y-offset: 12%;
+    fixed-num-lines: true;
+    padding: 0;
+    separator-style: none;
+    hide-scrollbar: true;
+    show-icons: true;
+    icon-theme: "Adwaita";
+    font: "JetBrainsMono Nerd Font Mono 12";
+    scroll-method: 0;
+    case-sensitive: false;
+}
+
+@theme "monochrome"

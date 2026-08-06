@@ -1,0 +1,25 @@
+window {
+    background-color: rgba(0, 0, 0, 0.85);
+    font-family: "JetBrainsMono Nerd Font Mono";
+    font-size: 14px;
+}
+
+button {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 28px;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0px;
+    font-size: 22px;
+    margin: 8px;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+button:hover {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+}

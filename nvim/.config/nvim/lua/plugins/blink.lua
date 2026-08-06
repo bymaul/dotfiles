@@ -1,0 +1,31 @@
+vim.cmd.packadd "blink.cmp"
+vim.cmd.packadd "friendly-snippets"
+require("blink.cmp").setup {
+  keymap = { preset = "default" },
+  appearance = {
+    use_nvim_cmp_as_default = true,
+    nerd_font_variant = "mono",
+  },
+  signature = { enabled = true },
+  completion = {
+    menu = {
+      auto_show = true,
+      draw = {
+        columns = { { "kind_icon" }, { "label", "label_description", gap = 1 } },
+      },
+    },
+    documentation = {
+      auto_show = true,
+      auto_show_delay_ms = 200,
+    },
+    list = {
+      selection = {
+        preselect = true,
+        auto_insert = false,
+      },
+    },
+  },
+  sources = {
+    default = { "lsp", "path", "snippets", "buffer" },
+  },
+}

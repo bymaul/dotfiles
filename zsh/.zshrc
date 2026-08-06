@@ -52,13 +52,6 @@ if [ -d "$FNM_PATH" ]; then
   eval "`fnm env`"
 fi
 
-# bun completions
-[ -s "/home/maul/.bun/_bun" ] && source "/home/maul/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
 # Shell Integrations
 eval "$(fnm env --use-on-cd --shell zsh)"
 eval "$(zoxide init zsh)"
