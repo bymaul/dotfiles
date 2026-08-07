@@ -76,7 +76,7 @@
   "network": {
     "format-wifi": "\uf1eb {signalStrength}%",
     "format-ethernet": "\uf796",
-    "format-disconnected": "\ufaa9",
+    "format-disconnected": "\uead0",
     "tooltip-format-wifi": "{essid}: {ipaddr}",
     "tooltip-format-ethernet": "{ifname}: {ipaddr}",
     "tooltip-format-disconnected": "no connection",
