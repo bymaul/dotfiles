@@ -74,10 +74,12 @@
   },
 
   "network": {
-    "format-wifi": " {signalStrength}%",
-    "format-ethernet": " eth",
-    "format-disconnected": "",
-    "tooltip-format": "{ifname}: {ipaddr}",
+    "format-wifi": "\uf1eb {signalStrength}%",
+    "format-ethernet": "\uf796",
+    "format-disconnected": "\ufaa9",
+    "tooltip-format-wifi": "{essid}: {ipaddr}",
+    "tooltip-format-ethernet": "{ifname}: {ipaddr}",
+    "tooltip-format-disconnected": "no connection",
     "on-click": "kitty --class nmtui nmtui"
   },
 

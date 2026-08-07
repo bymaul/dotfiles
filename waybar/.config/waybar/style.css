@@ -58,6 +58,10 @@ window#waybar {
   color: rgba(205, 205, 205, 0.85);
 }
 
+#network.disconnected {
+  color: rgba(205, 205, 205, 0.35);
+}
+
 #pulseaudio.muted {
   color: rgba(205, 205, 205, 0.35);
 }
