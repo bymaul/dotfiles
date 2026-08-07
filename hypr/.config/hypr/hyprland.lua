@@ -1,4 +1,4 @@
--- Monochrome minimal Hyprland config
+-- Vague minimal Hyprland config
 -- Requires Hyprland 0.56+ (Lua config)
 
 ------------------
@@ -18,9 +18,8 @@ hl.monitor({
 
 local terminal = "kitty"
 local fileManager = "nemo"
-local menu = "rofi -show drun"
+local menu = "rofi"
 local browser = "firefox"
-local music = "spotify"
 
 -------------------
 ---- AUTOSTART ----
@@ -30,8 +29,11 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("waybar")
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("mako")
-	hl.exec_cmd("awww-daemon") -- restores last wallpaper from cache
-	hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
+	-- awww-daemon delayed: its cache-restore commit can be dropped by the
+	-- startup page-flip race ("drm: Cannot commit when a page-flip is awaiting"),
+	-- leaving the wallpaper black until a runtime re-commit.
+	hl.exec_cmd("sh -c 'sleep 3 && awww-daemon'")
+	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
 -------------------------------
@@ -40,27 +42,28 @@ end)
 
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 
 -----------------------
 ---- LOOK AND FEEL ----
 -----------------------
 
--- Monochrome palette
-local bg = "0x000000"
-local fg = "0xffffff"
-local fgDim = "0x999999"
-local border = "0x444444"
+-- Vague palette
+local bg = "0x141415"
+local fg = "0xcdcdcd"
+local fgDim = "0x606079"
+local border = "0x333738"
 
 hl.config({
 	general = {
-		gaps_in = 8,
-		gaps_out = 14,
+		gaps_in = 5,
+		gaps_out = 10,
 
 		border_size = 2,
 
 		col = {
-			active_border = { colors = { "rgba(aaaaaacc)", "rgba(555555aa)" }, angle = 45 },
-			inactive_border = "rgba(444444aa)",
+			active_border = { colors = { "rgba(878787cc)", "rgba(252530aa)" }, angle = 45 },
+			inactive_border = "rgba(252530aa)",
 		},
 
 		resize_on_border = false,
@@ -73,8 +76,8 @@ hl.config({
 		rounding = 0,
 		rounding_power = 1,
 
-		active_opacity = 0.95,
-		inactive_opacity = 0.93,
+		active_opacity = 0.93,
+		inactive_opacity = 0.9,
 
 		shadow = {
 			enabled = true,
@@ -85,8 +88,8 @@ hl.config({
 
 		blur = {
 			enabled = true,
-			size = 3,
-			passes = 1,
+			size = 6,
+			passes = 3,
 			vibrancy = 0.0,
 		},
 	},
@@ -147,7 +150,7 @@ hl.config({
 
 hl.config({
 	misc = {
-		force_default_wallpaper = 1,
+		force_default_wallpaper = 0,
 		disable_hyprland_logo = true,
 	},
 })
@@ -164,7 +167,7 @@ hl.config({
 		kb_options = "caps:escape",
 		kb_rules = "",
 
-		repeat_rate = 50,
+		repeat_rate = 25,
 		repeat_delay = 300,
 
 		follow_mouse = 1,
@@ -174,7 +177,7 @@ hl.config({
 		touchpad = {
 			natural_scroll = true,
 			disable_while_typing = true,
-			scroll_factor = 1.0,
+			scroll_factor = 0.8,
 		},
 	},
 })
@@ -195,14 +198,16 @@ local secondMod = "SUPER + SHIFT"
 -- Launch
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show drun"))
+hl.bind(secondMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show run"))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("/home/maul/.local/bin/wallpaper next"))
 
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
-hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized" }))
+hl.bind(secondMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
+hl.bind(secondMod .. " + T", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(
 	mainMod .. " + V",
 	hl.dsp.exec_cmd("cliphist list | rofi -dmenu -display-columns 2 -no-sort | cliphist decode | wl-copy")
@@ -257,18 +262,22 @@ hl.bind(
 	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume down"),
 	{ locked = true, repeating = true }
 )
-hl.bind(
-	"XF86AudioMute",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mute"),
-	{ locked = true, repeating = true }
-)
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mute"), { locked = true, repeating = true })
 hl.bind(
 	"XF86AudioMicMute",
 	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mic"),
 	{ locked = true, repeating = true }
 )
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness up"), { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness down"), { locked = true, repeating = true })
+hl.bind(
+	"XF86MonBrightnessUp",
+	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness up"),
+	{ locked = true, repeating = true }
+)
+hl.bind(
+	"XF86MonBrightnessDown",
+	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness down"),
+	{ locked = true, repeating = true }
+)
 
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -325,13 +334,18 @@ hl.layer_rule({
 	ignore_alpha = 0.1,
 })
 
-hl.window_rule({
-	name = "float-htop",
-	match = { class = "htop" },
+hl.layer_rule({
+	name = "waybar-glass",
+	match = { namespace = "waybar" },
+	blur = true,
+	ignore_alpha = 0.1,
+})
 
-	float = true,
-	size = { 900, 600 },
-	move = { "monitor_w - 914", "30" },
+hl.layer_rule({
+	name = "mako-glass",
+	match = { namespace = "notifications" },
+	blur = true,
+	ignore_alpha = 0.1,
 })
 
 hl.window_rule({
@@ -340,7 +354,7 @@ hl.window_rule({
 
 	float = true,
 	size = { 900, 600 },
-	move = { "monitor_w - 914", "30" },
+	move = { "monitor_w - 914", "40" },
 })
 
 hl.window_rule({
@@ -349,7 +363,7 @@ hl.window_rule({
 
 	float = true,
 	size = { 800, 600 },
-	move = { "monitor_w - 814", "30" },
+	move = { "monitor_w - 814", "40" },
 })
 
 hl.window_rule({
@@ -358,5 +372,5 @@ hl.window_rule({
 
 	float = true,
 	size = { 800, 600 },
-	move = { "monitor_w - 814", "30" },
+	move = { "monitor_w - 814", "40" },
 })

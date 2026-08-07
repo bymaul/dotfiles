@@ -1,9 +1,9 @@
 * {
-    black:      #000000;
-    charcoal:   #101010;
-    gray:       #888888;
-    white:      #ffffff;
-    transparent: rgba(0, 0, 0, 0.85);
+    black:      #141415;
+    charcoal:   #252530;
+    gray:       #878787;
+    white:      #cdcdcd;
+    transparent: rgba(20, 20, 21, 0.8);
 
     background-color: transparent;
     text-color: @white;
@@ -15,7 +15,7 @@
 window {
     background-color: @transparent;
     border: 1px;
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(205, 205, 205, 0.15);
     border-radius: 0px;
     padding: 12px;
     width: 40%;

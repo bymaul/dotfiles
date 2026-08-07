@@ -18,4 +18,4 @@ configuration {
     case-sensitive: false;
 }
 
-@theme "monochrome"
+@theme "vague"

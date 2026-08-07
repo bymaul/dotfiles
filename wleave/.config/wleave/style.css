@@ -1,13 +1,13 @@
 window {
-    background-color: rgba(0, 0, 0, 0.85);
+    background-color: rgba(20, 20, 21, 0.7);
     font-family: "JetBrainsMono Nerd Font Mono";
     font-size: 14px;
 }
 
 button {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cdcdcd;
+    background-color: rgba(205, 205, 205, 0.12);
+    border: 1px solid rgba(205, 205, 205, 0.15);
     border-radius: 0px;
     padding: 10px;
     box-shadow: none;
@@ -29,15 +29,15 @@ button label.keybind {
     border-radius: 0px;
     font-size: 13px;
     font-family: "JetBrainsMono Nerd Font Mono";
-    background-color: #888888;
-    color: #101010;
+    background-color: #606079;
+    color: #141415;
 }
 
 button:focus,
 button:hover {
-    background-color: #101010;
+    background-color: #252530;
 }
 
 button:active {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(205, 205, 205, 0.2);
 }

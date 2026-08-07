@@ -1,3 +1,5 @@
-vim.cmd.packadd "oxocarbon.nvim"
-vim.opt.background = "dark"
-vim.cmd "colorscheme oxocarbon"
+vim.cmd.packadd "vague.nvim"
+
+require("vague").setup {}
+
+vim.cmd.colorscheme "vague"

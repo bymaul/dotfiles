@@ -7,6 +7,7 @@
     "close-on-lost-focus": true,
     "delay-command-ms": 100,
     "no-version-info": true,
+    "css": "$HOME/.config/wleave/style.css",
     "button-defaults": {
         "keybind-label": "%S"
     },

@@ -1,21 +1,21 @@
-# Minimal oxocarbon prompt
+# Minimal vague prompt
 format = "$directory$git_branch$git_status$character"
 
 [directory]
-style = "bold #f2f2f2"
+style = "bold #6e94b2"
 truncation_length = 3
 truncate_to_repo = true
 
 [git_branch]
 symbol = ""
-style = "#78a9ff"
+style = "#7fa563"
 format = "on [$symbol$branch]($style) "
 
 [git_status]
-style = "#525252"
+style = "#606079"
 format = "[$all_status$ahead_behind]($style) "
 
 [character]
-success_symbol = "[❯](bold #78a9ff)"
-error_symbol = "[❯](#ee5396)"
-vimcmd_symbol = "[❮](#78a9ff)"
+success_symbol = "[❯](bold #cdcdcd)"
+error_symbol = "[❯](#d8647e)"
+vimcmd_symbol = "[❮](#cdcdcd)"

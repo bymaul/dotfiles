@@ -18,7 +18,7 @@
 
   "hyprland/window": {
     "format": "{title}",
-    "max-length": 60
+    "max-length": 30
   },
 
   "clock": {
@@ -29,10 +29,10 @@
     "calendar": {
       "mode": "month",
       "format": {
-        "months": "<span color='#ffffff'><b>{}</b></span>",
-        "weekdays": "<span color='#999999'>{}</span>",
-        "days": "<span color='#ffffff'>{}</span>",
-        "today": "<span color='#000000' background='#ffffff'><b>{}</b></span>"
+        "months": "<span color='#cdcdcd'><b>{}</b></span>",
+        "weekdays": "<span color='#606079'>{}</span>",
+        "days": "<span color='#cdcdcd'>{}</span>",
+        "today": "<span color='#141415' background='#aeaed1'><b>{}</b></span>"
       }
     }
   },
@@ -53,7 +53,7 @@
     "interval": 2,
     "format": " {usage}%",
     "max-length": 8,
-    "on-click": "kitty --class htop htop"
+    "on-click": "kitty --class btop btop"
   },
 
   "memory": {

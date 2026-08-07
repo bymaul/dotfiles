@@ -24,7 +24,7 @@ local gh = function(x)
 end
 
 vim.pack.add {
-  gh "nyoom-engineering/oxocarbon.nvim",
+  gh "vague-theme/vague.nvim",
   { src = gh "saghen/blink.cmp", version = "v1" },
   gh "rafamadriz/friendly-snippets",
   gh "stevearc/conform.nvim",
