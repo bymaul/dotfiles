@@ -11,7 +11,7 @@ git clone https://github.com/bymaul/dotfiles ~/dotfiles
 cd ~/dotfiles
 # install requirements (below)
 stow -d ~/dotfiles -t ~ bat bin gtk hypr kitty lazygit mako nvim opencode rofi starship tmux waybar wleave zsh
-mkdir -p ~/Pictures/Wallpapers && cp -n ~/dotfiles/wallpapers/*.png ~/Pictures/Wallpapers/
+mkdir -p ~/Pictures/Wallpapers
 hyprctl reload
 source ~/.zshrc
 ```
@@ -28,6 +28,6 @@ source ~/.zshrc
 
 - `bin` installs to `~/.local/bin` and provides `osd-volume`, `osd-brightness`, `ws-cycle`, `wallpaper`.
 - `bat` ships a vendored `vague.tmTheme`; run `bat cache --build` after stowing to register the `vague` theme.
-- `awww-daemon` autostarts on login and restores the last wallpaper. `SUPER+W` cycles `~/Pictures/Wallpapers`. Vendored vague gradients (`wallpapers/`) are copied into it on setup; drop your own images there too.
+- `awww-daemon` autostarts on login (3s delay to dodge a startup page-flip race) and restores the last wallpaper. `SUPER+W` cycles `~/Pictures/Wallpapers` — drop your own images there.
 - `SUPER+Tab` cycles only used workspaces (via `ws-cycle`).
 - `hyprctl dispatch` uses Lua expressions (`hl.dsp.*`) — the legacy `dispatch workspace N` syntax is gone.
