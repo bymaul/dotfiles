@@ -29,6 +29,10 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("waybar")
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("mako")
+	-- clipboard manager: watch text + image clipboard, persist into cliphist
+	-- (text-only watchers die with the source app; this keeps the clipboard alive)
+	hl.exec_cmd("wl-paste --watch cliphist store")
+	hl.exec_cmd("wl-paste --type image --watch cliphist store")
 	-- awww-daemon delayed: its cache-restore commit can be dropped by the
 	-- startup page-flip race ("drm: Cannot commit when a page-flip is awaiting"),
 	-- leaving the wallpaper black until a runtime re-commit.
