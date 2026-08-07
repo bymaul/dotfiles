@@ -10,7 +10,7 @@ Vague, everywhere.
 git clone https://github.com/bymaul/dotfiles ~/dotfiles
 cd ~/dotfiles
 # install requirements (below)
-stow -d ~/dotfiles -t ~ bat bin gtk hypr kitty lazygit mako nvim opencode rofi starship tmux waybar wleave zsh
+stow -d ~/dotfiles -t ~ bat bin btop gtk hypr kitty lazygit mako nvim opencode rofi starship tmux waybar wleave zsh
 mkdir -p ~/Pictures/Wallpapers
 hyprctl reload
 source ~/.zshrc
@@ -20,7 +20,7 @@ source ~/.zshrc
 
 - **Hyprland** >= 0.56 (Lua config), **waybar**, **mako**, **rofi**, **kitty**, **nemo**
 - **wleave** (build from source), **awww** (wallpaper daemon, `pacman -S awww`)
-- **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **eza**, **bat**, **fd**
+- **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **eza**, **bat**, **fd**, **btop**
 - **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **playerctl**, **jq**, **polkit-kde-agent**
 - **JetBrainsMono Nerd Font**
 

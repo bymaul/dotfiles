@@ -1,58 +1,59 @@
 {
-    "button-layout": "grid",
-    "buttons-per-row": "3",
-    "button-aspect-ratio": "1/1",
-    "margin": "22%",
-    "show-keybinds": true,
-    "close-on-lost-focus": true,
-    "delay-command-ms": 100,
-    "no-version-info": true,
-    "css": "$HOME/.config/wleave/style.css",
-    "button-defaults": {
-        "keybind-label": "%S"
+  "button-layout": "grid",
+  "buttons-per-row": "3",
+  "button-aspect-ratio": "1/1",
+  "column-spacing": "16px",
+  "row-spacing": "16px",
+  "margin": "22%",
+  "show-keybinds": true,
+  "close-on-lost-focus": true,
+  "delay-command-ms": 100,
+  "no-version-info": true,
+  "button-defaults": {
+    "keybind-label": "%S"
+  },
+  "buttons": [
+    {
+      "label": "lock",
+      "action": "hyprlock",
+      "text": "Lock",
+      "keybind": "l",
+      "icon": "/usr/share/wleave/icons/lock.svg"
     },
-    "buttons": [
-        {
-            "label": "lock",
-            "action": "hyprlock",
-            "text": "Lock",
-            "keybind": "l",
-            "icon": "/usr/share/wleave/icons/lock.svg"
-        },
-        {
-            "label": "logout",
-            "action": "hyprctl dispatch 'hl.dsp.exit()'",
-            "text": "Logout",
-            "keybind": "e",
-            "icon": "/usr/share/wleave/icons/logout.svg"
-        },
-        {
-            "label": "suspend",
-            "action": "systemctl suspend",
-            "text": "Suspend",
-            "keybind": "u",
-            "icon": "/usr/share/wleave/icons/suspend.svg"
-        },
-        {
-            "label": "hibernate",
-            "action": "systemctl hibernate",
-            "text": "Hibernate",
-            "keybind": "h",
-            "icon": "/usr/share/wleave/icons/hibernate.svg"
-        },
-        {
-            "label": "reboot",
-            "action": "systemctl reboot",
-            "text": "Reboot",
-            "keybind": "r",
-            "icon": "/usr/share/wleave/icons/reboot.svg"
-        },
-        {
-            "label": "shutdown",
-            "action": "systemctl poweroff",
-            "text": "Shutdown",
-            "keybind": "s",
-            "icon": "/usr/share/wleave/icons/shutdown.svg"
-        }
-    ]
+    {
+      "label": "logout",
+      "action": "hyprctl dispatch 'hl.dsp.exit()'",
+      "text": "Logout",
+      "keybind": "e",
+      "icon": "/usr/share/wleave/icons/logout.svg"
+    },
+    {
+      "label": "suspend",
+      "action": "systemctl suspend",
+      "text": "Suspend",
+      "keybind": "u",
+      "icon": "/usr/share/wleave/icons/suspend.svg"
+    },
+    {
+      "label": "hibernate",
+      "action": "systemctl hibernate",
+      "text": "Hibernate",
+      "keybind": "h",
+      "icon": "/usr/share/wleave/icons/hibernate.svg"
+    },
+    {
+      "label": "reboot",
+      "action": "systemctl reboot",
+      "text": "Reboot",
+      "keybind": "r",
+      "icon": "/usr/share/wleave/icons/reboot.svg"
+    },
+    {
+      "label": "shutdown",
+      "action": "systemctl poweroff",
+      "text": "Shutdown",
+      "keybind": "s",
+      "icon": "/usr/share/wleave/icons/shutdown.svg"
+    }
+  ]
 }

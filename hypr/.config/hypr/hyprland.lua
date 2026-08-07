@@ -205,9 +205,8 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("/home/maul/.local/bin/wallpaper next
 
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized" }))
-hl.bind(secondMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
-hl.bind(secondMod .. " + T", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
+hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(
 	mainMod .. " + V",
 	hl.dsp.exec_cmd("cliphist list | rofi -dmenu -display-columns 2 -no-sort | cliphist decode | wl-copy")
