@@ -213,7 +213,7 @@ hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(
 	mainMod .. " + V",
-	hl.dsp.exec_cmd("cliphist list | rofi -dmenu -display-columns 2 -no-sort | cliphist decode | wl-copy")
+	hl.dsp.exec_cmd("cliphist list | rofi -dmenu -display-columns 2 -no-sort -sync | cliphist decode | wl-copy")
 )
 
 -- Move focus (vim)
@@ -251,8 +251,9 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wleave"))
 
 -- Screenshots
-hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | cliphist store'))
-hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("grim - | cliphist store"))
+-- wl-copy puts the shot on the live clipboard; the image watcher stores history.
+hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | wl-copy -t image/png'))
+hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("grim - | wl-copy -t image/png"))
 
 -- Laptop multimedia keys
 hl.bind(
