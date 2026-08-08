@@ -10,11 +10,14 @@ Vague, everywhere.
 git clone https://github.com/bymaul/dotfiles ~/dotfiles
 cd ~/dotfiles
 # install requirements (below)
-stow -d ~/dotfiles -t ~ bat bin btop gtk hypr kitty lazygit mako nvim opencode rofi starship tmux waybar wleave yazi zsh
+stow -t ~ .tmux.conf .zshrc .local
+stow -t ~ .config/*
 mkdir -p ~/Pictures/Wallpapers
 hyprctl reload
 source ~/.zshrc
 ```
+
+The repo mirrors `$HOME` directly: `.config/…`, `.local/…`, `.tmux.conf`, `.zshrc`. Stow symlinks each app dir into place without touching anything else (unmanaged dirs like `dconf`/`mozilla` stay as-is).
 
 ## Requirements
 
@@ -26,7 +29,8 @@ source ~/.zshrc
 
 ## Notes
 
-- `bin` installs to `~/.local/bin` and provides `osd-volume`, `osd-brightness`, `ws-cycle`, `wallpaper`.
+- `.local/bin` installs to `~/.local/bin` and provides `osd-volume`, `osd-brightness`, `ws-cycle`, `wallpaper`, `clipboard-pick`.
+- `SUPER+V` opens the cliphist/rofi picker and pastes the selection into the previously focused window; `SUPER+SHIFT+V` deletes an entry, `SUPER+SHIFT+BackSpace` clears the history.
 - `bat` ships a vendored `vague.tmTheme`; run `bat cache --build` after stowing to register the `vague` theme.
 - `yazi` ships a vendored `vague.yazi` flavor; `theme.toml` sets `[flavor] dark = "vague"`.
 - `awww-daemon` autostarts on login (3s delay to dodge a startup page-flip race) and restores the last wallpaper. `SUPER+W` cycles `~/Pictures/Wallpapers` — drop your own images there.
