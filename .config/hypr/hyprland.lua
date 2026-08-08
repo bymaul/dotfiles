@@ -79,8 +79,8 @@ hl.config({
 		rounding = 0,
 		rounding_power = 1,
 
-		active_opacity = 0.93,
-		inactive_opacity = 0.9,
+		active_opacity = 0.9,
+		inactive_opacity = 0.87,
 
 		shadow = {
 			enabled = true,
@@ -309,6 +309,13 @@ hl.window_rule({
 	},
 
 	no_focus = true,
+})
+
+hl.window_rule({
+	name = "float-opaque",
+	match = { float = true },
+
+	opaque = true,
 })
 
 hl.window_rule({
