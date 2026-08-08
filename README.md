@@ -4,6 +4,8 @@ Minimal Hyprland desktop config, managed with GNU Stow.
 
 Vague, everywhere.
 
+![screenshot](screenshot.png)
+
 ## Setup
 
 ```sh

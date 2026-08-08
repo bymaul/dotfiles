@@ -9,7 +9,7 @@ hl.monitor({
 	output = "",
 	mode = "preferred",
 	position = "auto",
-	scale = "1.20",
+	scale = "1.2",
 })
 
 ---------------------
@@ -56,7 +56,6 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 local bg = "0x141415"
 local fg = "0xcdcdcd"
 local fgDim = "0x606079"
-local border = "0x333738"
 
 hl.config({
 	general = {
@@ -66,7 +65,7 @@ hl.config({
 		border_size = 2,
 
 		col = {
-			active_border = { colors = { "rgba(878787cc)", "rgba(252530aa)" }, angle = 45 },
+			active_border = { colors = { "rgba(cdcdcdcc)", "rgba(606079cc)" }, angle = 45 },
 			inactive_border = "rgba(252530aa)",
 		},
 
