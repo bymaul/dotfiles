@@ -20,7 +20,6 @@ Or without the script (same thing, manual):
 cd ~/dotfiles
 stow -t ~ .tmux.conf .zshrc .local
 stow -t ~ .config/*
-mkdir -p ~/Pictures/Wallpapers
 hyprctl reload
 source ~/.zshrc
 ```
@@ -30,17 +29,17 @@ The repo mirrors `$HOME` directly: `.config/…`, `.local/…`, `.tmux.conf`, `.
 ## Requirements
 
 - **Hyprland** >= 0.56 (Lua config), **waybar**, **mako**, **rofi**, **kitty**, **nemo**
-- **wleave** (build from source), **awww** (wallpaper daemon, `pacman -S awww`)
+- **wleave** (build from source), **swaybg** (wallpaper, `pacman -S swaybg`)
 - **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **yazi**, **eza**, **bat**, **fd**, **btop**
 - **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **playerctl**, **jq**, **polkit-kde-agent**
 - **JetBrainsMono Nerd Font**
 
 ## Notes
 
-- `.local/bin` installs to `~/.local/bin` and provides `osd-volume`, `osd-brightness`, `ws-cycle`, `wallpaper`, `clipboard-pick`.
+- `.local/bin` installs to `~/.local/bin` and provides `osd-volume`, `osd-brightness`, `ws-cycle`, `caffeine-toggle`, `clipboard-pick`.
 - `SUPER+V` opens the cliphist/rofi picker and pastes the selection into the previously focused window; `SUPER+SHIFT+V` deletes an entry, `SUPER+SHIFT+BackSpace` clears the history.
 - `bat` ships a vendored `vague.tmTheme`; run `bat cache --build` after stowing to register the `vague` theme.
 - `yazi` ships a vendored `vague.yazi` flavor; `theme.toml` sets `[flavor] dark = "vague"`.
-- `awww-daemon` autostarts on login (3s delay to dodge a startup page-flip race) and restores the last wallpaper. `SUPER+W` cycles `~/Pictures/Wallpapers` — drop your own images there.
+- `swaybg` sets the wallpaper from `wallpaper.jpg` at the repo root on login — swap that file to change it. `SUPER+SHIFT+C` toggles caffeine mode, which blocks idle blanking/suspend via `systemd-inhibit`.
 - `SUPER+Tab` cycles only used workspaces (via `ws-cycle`).
 - `hyprctl dispatch` uses Lua expressions (`hl.dsp.*`) — the legacy `dispatch workspace N` syntax is gone.

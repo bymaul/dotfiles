@@ -33,10 +33,8 @@ hl.on("hyprland.start", function()
 	-- (text-only watchers die with the source app; this keeps the clipboard alive)
 	hl.exec_cmd("wl-paste --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
-	-- awww-daemon delayed: its cache-restore commit can be dropped by the
-	-- startup page-flip race ("drm: Cannot commit when a page-flip is awaiting"),
-	-- leaving the wallpaper black until a runtime re-commit.
-	hl.exec_cmd("sh -c 'sleep 3 && awww-daemon'")
+	-- wallpaper lives next to this repo; resolve via $HOME so it works on any machine
+	hl.exec_cmd("swaybg -i " .. os.getenv("HOME") .. "/dotfiles/wallpaper.jpg -m fill")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
@@ -204,7 +202,6 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show drun"))
 hl.bind(secondMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show run"))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("/home/maul/.local/bin/wallpaper next"))
 
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
@@ -247,6 +244,7 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- System actions
 hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wleave"))
+hl.bind(secondMod .. " + C", hl.dsp.exec_cmd("/home/maul/.local/bin/caffeine-toggle"))
 
 -- Screenshots
 -- wl-copy puts the shot on the live clipboard; the image watcher stores history.

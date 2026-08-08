@@ -45,9 +45,6 @@ link ".local/share/themes"
 link ".tmux.conf"
 link ".zshrc"
 
-mkdir -p "$HOME/Pictures/Wallpapers"
-log "prepared ~/Pictures/Wallpapers"
-
 # register vendored bat theme (vague)
 if command -v bat >/dev/null 2>&1; then
     bat cache --build >/dev/null 2>&1 && log "rebuilt bat cache (vague theme)"
@@ -63,7 +60,7 @@ log "checking requirements"
 missing=0
 for bin in hyprctl waybar mako rofi kitty nvim tmux zsh starship lazygit \
            yazi eza bat fd btop wl-copy wl-paste grim slurp cliphist jq \
-           playerctl brightnessctl notify-send pipewire awww; do
+           playerctl brightnessctl notify-send pipewire swaybg; do
     if ! command -v "$bin" >/dev/null 2>&1; then
         printf '  \033[1;31m%s\033[0m missing\n' "$bin"
         missing=1
