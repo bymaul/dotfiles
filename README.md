@@ -8,8 +8,14 @@ Vague, everywhere.
 
 ```sh
 git clone https://github.com/bymaul/dotfiles ~/dotfiles
+# install requirements (below), then:
+~/dotfiles/install.sh
+```
+
+Or without the script (same thing, manual):
+
+```sh
 cd ~/dotfiles
-# install requirements (below)
 stow -t ~ .tmux.conf .zshrc .local
 stow -t ~ .config/*
 mkdir -p ~/Pictures/Wallpapers
