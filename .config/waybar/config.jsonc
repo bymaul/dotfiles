@@ -80,7 +80,7 @@
     "tooltip-format-wifi": "{essid}: {ipaddr}",
     "tooltip-format-ethernet": "{ifname}: {ipaddr}",
     "tooltip-format-disconnected": "no connection",
-    "on-click": "kitty --class nmtui nmtui"
+    "on-click": "kitty --class wifitui wifitui"
   },
 
   "battery": {

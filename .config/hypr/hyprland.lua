@@ -376,8 +376,8 @@ hl.window_rule({
 })
 
 hl.window_rule({
-	name = "float-nmtui",
-	match = { class = "nmtui" },
+	name = "float-wifitui",
+	match = { class = "wifitui" },
 
 	float = true,
 	size = { 800, 600 },
