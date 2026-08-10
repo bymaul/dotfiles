@@ -1,3 +1,5 @@
+local servers = { "lua_ls", "vtsls", "tailwindcss", "gopls", "intelephense", "emmet_ls" }
+
 vim.lsp.config("*", {
   capabilities = vim.tbl_deep_extend(
     "force",
@@ -22,8 +24,8 @@ vim.lsp.config("lua_ls", {
   },
 })
 
-vim.lsp.config("ts_ls", {
-  cmd = { "typescript-language-server", "--stdio" },
+vim.lsp.config("vtsls", {
+  cmd = { "vtsls" },
   filetypes = { "javascript", "typescript", "javascriptreact", "typescriptreact" },
   root_markers = { "package.json", "tsconfig.json", "jsconfig.json" },
   settings = {
@@ -35,7 +37,7 @@ vim.lsp.config("ts_ls", {
 vim.lsp.config("tailwindcss", {
   cmd = { "tailwindcss-language-server", "--stdio" },
   filetypes = { "html", "css", "javascript", "typescript", "javascriptreact", "typescriptreact" },
-  root_markers = { "tailwind.config.js", "tailwind.config.ts", "postcss.config.js" },
+  root_markers = { "tailwind.config.js", "tailwind.config.ts", "postcss.config.js", "postcss.config.mjs" },
 })
 
 vim.lsp.config("gopls", {
@@ -58,19 +60,14 @@ vim.lsp.config("gopls", {
 vim.lsp.config("intelephense", {
   cmd = { "intelephense", "--stdio" },
   filetypes = { "php" },
-  root_markers = { "composer.json", ".git" },
+  root_markers = { "composer.json" },
 })
 
 vim.lsp.config("emmet_ls", {
   cmd = { "emmet-ls", "--stdio" },
-  filetypes = { "html", "typescriptreact", "javascriptreact", "blade", "css", "sass", "scss", "less" },
+  filetypes = { "html", "typescriptreact", "javascriptreact", "css", "sass", "scss", "less" },
 })
 
-vim.lsp.enable {
-  "lua_ls",
-  "ts_ls",
-  "tailwindcss",
-  "gopls",
-  "intelephense",
-  "emmet_ls",
-}
+vim.lsp.enable(servers)
+
+return servers

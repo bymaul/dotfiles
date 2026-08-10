@@ -1,19 +1,30 @@
+require("vim._core.ui2").enable {}
 local o = vim.opt
 
--- Line numbers & scrolling
+-- Line numbers
 o.number = true
 o.relativenumber = true
-o.scrolloff = 10
 
--- UI settings
+-- Indentation
+o.expandtab = true
+o.shiftwidth = 2
+o.smartindent = true
+o.softtabstop = 2
+o.tabstop = 2
+o.autoindent = true
+
+-- Scrolling & cursor
+o.scrolloff = 10
 o.cursorline = true
 o.cursorlineopt = "number"
-o.wrap = false
-o.showmode = false
+o.updatetime = 250
+
+-- UI
 o.mouse = "a"
+o.showmode = false
 o.signcolumn = "yes"
 o.timeoutlen = 300
-o.updatetime = 250
+o.wrap = false
 
 -- Folding (treesitter)
 o.foldmethod = "expr"
@@ -29,13 +40,13 @@ o.smartcase = true
 o.inccommand = "split"
 
 -- Splits
-o.splitright = true
 o.splitbelow = true
+o.splitright = true
 
--- Persistent undo
+-- Editing
 o.undofile = true
 
--- List characters
+-- Invisible characters
 o.list = true
 o.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 
@@ -43,6 +54,15 @@ o.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 vim.schedule(function()
   o.clipboard = "unnamedplus"
 end)
+
+-- Confirm on :q with unsaved changes instead of failing
+o.confirm = true
+
+-- Auto reload files changed outside of nvim
+o.autoread = true
+
+-- Rounded borders for floating windows
+o.winborder = "rounded"
 
 -- Shell selection
 o.shell = vim.uv.os_uname().sysname:find "Windows" and "pwsh" or "zsh"

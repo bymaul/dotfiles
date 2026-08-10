@@ -4,17 +4,13 @@ if not vim.tbl_contains(vim.opt.packpath:get(), data_site) then
 end
 
 vim.api.nvim_create_autocmd("PackChanged", {
-  group = vim.api.nvim_create_augroup("pack-build", { clear = true }),
   callback = function(ev)
     local name, kind = ev.data.spec.name, ev.data.kind
-    if kind == "install" or kind == "update" then
-      if name == "telescope-fzf-native.nvim" then
-        vim.system({ "make" }, { cwd = ev.data.path })
-      elseif name == "nvim-treesitter" then
-        if ev.data.active then
-          vim.cmd.TSUpdate()
-        end
+    if name == "fff" and (kind == "install" or kind == "update") then
+      if not ev.data.active then
+        vim.cmd.packadd "fff"
       end
+      require("fff.download").download_or_build_binary()
     end
   end,
 })
@@ -29,20 +25,16 @@ vim.pack.add {
   gh "rafamadriz/friendly-snippets",
   gh "stevearc/conform.nvim",
   gh "lewis6991/gitsigns.nvim",
-  gh "mfussenegger/nvim-lint",
   gh "nvim-treesitter/nvim-treesitter",
   gh "windwp/nvim-ts-autotag",
-  gh "nvim-telescope/telescope.nvim",
-  gh "nvim-lua/plenary.nvim",
-  gh "nvim-telescope/telescope-fzf-native.nvim",
-  gh "nvim-telescope/telescope-ui-select.nvim",
   gh "stevearc/oil.nvim",
   gh "echasnovski/mini.nvim",
   gh "folke/which-key.nvim",
   gh "williamboman/mason.nvim",
   gh "williamboman/mason-lspconfig.nvim",
   gh "WhoIsSethDaniel/mason-tool-installer.nvim",
-  gh "neovim/nvim-lspconfig",
+  gh "NMAC427/guess-indent.nvim",
+  gh "dmtrKovalenko/fff",
 }
 
 -- UI / appearance
@@ -53,16 +45,15 @@ require "plugins.which-key"
 require "plugins.mini"
 require "plugins.blink"
 require "plugins.conform"
+require "plugins.guess-indent"
 require "plugins.treesitter"
-require "plugins.ts-autotag"
 
 -- Navigation
 require "plugins.oil"
-require "plugins.telescope"
+require "plugins.fff"
 
 -- Git
 require "plugins.gitsigns"
 
--- LSP & linting
+-- LSP
 require "plugins.lsp"
-require "plugins.lint"

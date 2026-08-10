@@ -1,4 +1,6 @@
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+vim.loader.enable()
 
-require 'core'
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
+
+require "core"
