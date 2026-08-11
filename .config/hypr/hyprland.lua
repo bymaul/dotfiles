@@ -311,11 +311,12 @@ hl.window_rule({
 	no_focus = true,
 })
 
+-- floating windows: visibly transparent (absolute, independent of the global
+-- active/inactive_opacity which stays at 0.9/0.87 for tiled windows)
 hl.window_rule({
-	name = "float-opaque",
+	name = "float-transparency",
 	match = { float = true },
-
-	opaque = true,
+	opacity = "0.8 override 0.8 override",
 })
 
 hl.window_rule({
