@@ -25,7 +25,7 @@ vim.lsp.config("lua_ls", {
 })
 
 vim.lsp.config("vtsls", {
-  cmd = { "vtsls" },
+  cmd = { "vtsls", "--stdio" },
   filetypes = { "javascript", "typescript", "javascriptreact", "typescriptreact" },
   root_markers = { "package.json", "tsconfig.json", "jsconfig.json" },
   settings = {
