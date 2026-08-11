@@ -7,4 +7,5 @@ esac
 
 pct=$(brightnessctl -m | head -1 | cut -d, -f4 | tr -d '%')
 
-notify-send -a brightness -t 1500 -i display-brightness-symbolic -h int:value:"$pct" "$pct%" "Brightness"
+notify-send -a brightness -t 1500 -i display-brightness-symbolic -h int:value:"$pct" \
+  -h string:x-canonical-private-synchronous:brightness "$pct%" "Brightness"

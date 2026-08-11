@@ -1,0 +1,13 @@
+#!/bin/bash
+# Toggle mako do-not-disturb mode (see [mode=dnd] in mako/config).
+
+if makoctl mode | grep -qx "dnd"; then
+    makoctl mode -r dnd >/dev/null
+    notify-send -a dnd -h string:x-canonical-private-synchronous:dnd -t 1500 "Do Not Disturb" "Off"
+else
+    makoctl mode -a dnd >/dev/null
+    notify-send -a dnd -h string:x-canonical-private-synchronous:dnd -t 1500 "Do Not Disturb" "On"
+fi
+
+# refresh the waybar indicator immediately (custom/dnd, signal 9)
+pkill -RTMIN+9 waybar

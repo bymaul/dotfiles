@@ -7,31 +7,38 @@ case "$1" in
 	*) exit 0 ;;
 esac
 
-if [ "$1" = "mic" ]; then
-	out=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)
-	label="Mic"
+if [ "$1" = "mic" ]; then out=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@)
 	if printf "%s" "$out" | grep -q MUTED; then
 		icon=microphone-sensitivity-muted-symbolic
+		summary="Mic Muted"
 	else
 		icon=microphone-sensitivity-high-symbolic
+		summary="Mic"
 	fi
-else
-	out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
-	label="Volume"
+	notify-send -a volume -t 1500 -i "$icon" \
+	  -h string:x-canonical-private-synchronous:volume "$summary"
+	exit 0
 fi
 
+out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+label="Volume"
 pct=$(printf "%s" "$out" | awk '{printf "%.0f", $2 * 100}')
 
-if [ "$1" != "mic" ]; then
-	if printf "%s" "$out" | grep -q MUTED; then
-		icon=audio-volume-muted-symbolic
-	elif [ "$pct" -le 33 ]; then
+if printf "%s" "$out" | grep -q MUTED; then
+	icon=audio-volume-muted-symbolic
+	summary="Muted"
+	body="$label $pct%"
+else
+	if [ "$pct" -le 33 ]; then
 		icon=audio-volume-low-symbolic
 	elif [ "$pct" -le 66 ]; then
 		icon=audio-volume-medium-symbolic
 	else
 		icon=audio-volume-high-symbolic
 	fi
+	summary="$pct%"
+	body="$label"
 fi
 
-notify-send -a volume -t 1500 -i "$icon" -h int:value:"$pct" "$pct%" "$label"
+notify-send -a volume -t 1500 -i "$icon" -h int:value:"$pct" \
+  -h string:x-canonical-private-synchronous:volume "$summary" "$body"

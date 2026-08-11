@@ -6,8 +6,11 @@ if pgrep -f -- "--who=Caffeine" > /dev/null; then
     # release the inhibit lock and reap the orphaned `sleep infinity` from last run
     pkill -f -- "--who=Caffeine"
     pkill -f -- "^sleep infinity$" 2>/dev/null
-    notify-send "Caffeine Mode" "Disabled"
+    notify-send -h string:x-canonical-private-synchronous:caffeine "Caffeine Mode" "Disabled"
 else
     systemd-inhibit --what=idle --who=Caffeine --why="User requested" sleep infinity &
-    notify-send "Caffeine Mode" "Enabled"
+    notify-send -h string:x-canonical-private-synchronous:caffeine "Caffeine Mode" "Enabled"
 fi
+
+# refresh the waybar indicator immediately (custom/caffeine, signal 8)
+pkill -RTMIN+8 waybar

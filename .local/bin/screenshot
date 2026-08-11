@@ -1,0 +1,33 @@
+#!/bin/bash
+# Screenshot: saves a timestamped PNG to ~/Pictures/Screenshots and copies
+# it to the clipboard, then notifies. Usage: screenshot [area|full]
+# Cancelling the selection produces no file and no notification.
+
+mode="${1:-area}"
+dir="$HOME/Pictures/Screenshots"
+mkdir -p "$dir"
+file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+
+case "$mode" in
+    full)
+        grim - | tee "$file" | wl-copy -t image/png
+        ;;
+    *) # area
+        grim -g "$(slurp -d)" - | tee "$file" | wl-copy -t image/png
+        ;;
+esac
+
+if [ -s "$file" ]; then
+    # -A implies --wait: blocks until the popup is acted on or times out,
+    # then echoes the chosen action name. Left-click = default action (open);
+    # middle-click opens the rofi action menu. The action key must be "default"
+    # for mako's invoke-default-action (left-click) to fire it.
+    action=$(notify-send -a screenshot -h string:x-canonical-private-synchronous:screenshot -t 10000 -i "$file" \
+        -A "default=Open" -A "path=Copy path" "Screenshot" "$(basename "$file")")
+    case "$action" in
+        default|open) xdg-open "$file" ;;
+        path) wl-copy "$file" ;;
+    esac
+else
+    rm -f "$file"
+fi

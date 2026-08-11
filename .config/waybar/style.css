@@ -49,6 +49,23 @@ window#waybar {
   color: #cdcdcd;
 }
 
+#group-modes {
+  padding: 0 6px;
+}
+
+#custom-caffeine,
+#custom-dnd {
+  padding: 0 3px;
+}
+
+#custom-caffeine.active {
+  color: #aeaed1;
+}
+
+#custom-dnd.active {
+  color: #f3be7c;
+}
+
 #cpu,
 #memory,
 #network,

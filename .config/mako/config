@@ -17,8 +17,24 @@ anchor=top-right
 group-by=app-name
 sort=-time
 
+on-button-left=dismiss
+on-button-middle=exec makoctl menu -n "$id" -- rofi -dmenu -p "Action:"
+
 [app-name=volume]
 progress-color=over #cdcdcd33
 
+[app-name=volume summary~="Muted"]
+border-color=#d8647e
+
 [app-name=brightness]
 progress-color=over #cdcdcd33
+
+[actionable]
+on-button-left=invoke-default-action
+border-color=#7e98e8
+
+[mode=dnd]
+invisible=1
+
+[mode=dnd app-name=dnd]
+invisible=0

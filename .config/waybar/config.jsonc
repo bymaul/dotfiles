@@ -9,7 +9,7 @@
   "margin-right": 0,
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": ["clock"],
-  "modules-right": ["bluetooth", "network", "pulseaudio", "cpu", "memory", "battery", "tray", "custom/power"],
+  "modules-right": ["bluetooth", "network", "pulseaudio", "cpu", "memory", "battery", "tray", "group/modes", "custom/power"],
 
   "hyprland/workspaces": {
     "format": "{id}",
@@ -51,14 +51,14 @@
 
   "cpu": {
     "interval": 2,
-    "format": " {usage}%",
+    "format": "{usage}%",
     "max-length": 8,
     "on-click": "kitty --class btop btop"
   },
 
   "memory": {
     "interval": 5,
-    "format": " {used:0.1f}G",
+    "format": "{used:0.1f}G",
     "max-length": 8,
     "on-click": "kitty --class btop btop"
   },
@@ -68,14 +68,17 @@
     "format": "{icon} {volume}%",
     "format-muted": "{icon} MUT",
     "format-icons": {
-      "default": ["", "", ""]
+      "default": ["\uf027", "\uf028", "\uf028"],
+      "muted": "\uf05e"
     },
-    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+    "on-click": "/home/maul/.local/bin/osd-volume mute",
+    "on-scroll-up": "/home/maul/.local/bin/osd-volume up",
+    "on-scroll-down": "/home/maul/.local/bin/osd-volume down"
   },
 
   "network": {
     "format-wifi": "\uf1eb {signalStrength}%",
-    "format-ethernet": "\uf796",
+    "format-ethernet": "\uf1e0",
     "format-disconnected": "\uead0",
     "tooltip-format-wifi": "{essid}: {ipaddr}",
     "tooltip-format-ethernet": "{ifname}: {ipaddr}",
@@ -97,6 +100,29 @@
       "charging": "\uf0e7"
     },
     "on-click": "xfce4-power-manager-settings"
+  },
+
+  "group/modes": {
+    "orientation": "horizontal",
+    "modules": ["custom/caffeine", "custom/dnd"]
+  },
+
+  "custom/caffeine": {
+    "format": "{}",
+    "interval": 2,
+    "exec": "/home/maul/.local/bin/caffeine-status",
+    "on-click": "/home/maul/.local/bin/caffeine-toggle",
+    "signal": 8,
+    "tooltip": false
+  },
+
+  "custom/dnd": {
+    "format": "{}",
+    "interval": 2,
+    "exec": "/home/maul/.local/bin/dnd-status",
+    "on-click": "/home/maul/.local/bin/dnd-toggle",
+    "signal": 9,
+    "tooltip": false
   },
 
   "custom/power": {

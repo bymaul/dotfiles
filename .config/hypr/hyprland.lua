@@ -245,11 +245,13 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 -- System actions
 hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wleave"))
 hl.bind(secondMod .. " + C", hl.dsp.exec_cmd("/home/maul/.local/bin/caffeine-toggle"))
+hl.bind(secondMod .. " + D", hl.dsp.exec_cmd("/home/maul/.local/bin/dnd-toggle"))
 
 -- Screenshots
--- wl-copy puts the shot on the live clipboard; the image watcher stores history.
-hl.bind("Print", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | wl-copy -t image/png'))
-hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("grim - | wl-copy -t image/png"))
+-- saves to ~/Pictures/Screenshots, copies to the live clipboard, notifies.
+-- the image watcher stores clipboard history.
+hl.bind("Print", hl.dsp.exec_cmd("/home/maul/.local/bin/screenshot area"))
+hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("/home/maul/.local/bin/screenshot full"))
 
 -- Laptop multimedia keys
 hl.bind(
