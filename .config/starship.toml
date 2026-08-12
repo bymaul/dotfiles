@@ -1,21 +1,23 @@
-# Minimal vague prompt
 format = "$directory$git_branch$git_status$character"
 
+[line_break]
+disabled = true
+
 [directory]
-style = "bold #6e94b2"
+style = "bold blue"
 truncation_length = 3
 truncate_to_repo = true
 
 [git_branch]
 symbol = ""
-style = "#7fa563"
+style = "green"
 format = "on [$symbol$branch]($style) "
 
 [git_status]
-style = "#606079"
+style = "bright-black"
 format = "[$all_status$ahead_behind]($style) "
 
 [character]
-success_symbol = "[❯](bold #cdcdcd)"
-error_symbol = "[❯](#d8647e)"
-vimcmd_symbol = "[❮](#cdcdcd)"
+success_symbol = "[❯](bold white)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](white)"
