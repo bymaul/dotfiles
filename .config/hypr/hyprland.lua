@@ -19,7 +19,7 @@ hl.monitor({
 local terminal = "kitty"
 local fileManager = "nemo"
 local menu = "rofi"
-local browser = "firefox"
+local browser = "helium-browser"
 
 -------------------
 ---- AUTOSTART ----
