@@ -34,7 +34,7 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("wl-paste --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
 	-- wallpaper lives next to this repo; resolve via $HOME so it works on any machine
-	hl.exec_cmd("swaybg -i " .. os.getenv("HOME") .. "/dotfiles/wallpaper.jpg -m fill")
+	hl.exec_cmd("swaybg -i " .. os.getenv("HOME") .. "/dotfiles/wallpapers/wallpaper.jpg -m fill")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
