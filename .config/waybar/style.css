@@ -1,5 +1,5 @@
 * {
-  font-family: "JetBrainsMono Nerd Font Mono";
+  font-family: "JetBrainsMono Nerd Font Mono Propo";
   font-size: 13px;
   min-height: 0;
   border: none;
@@ -50,12 +50,12 @@ window#waybar {
 }
 
 #group-modes {
-  padding: 0 6px;
+  padding: 0 4px;
 }
 
 #custom-caffeine,
 #custom-dnd {
-  padding: 0 3px;
+  padding: 0 8px;
 }
 
 #custom-caffeine.active {

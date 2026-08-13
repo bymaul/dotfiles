@@ -39,8 +39,8 @@
 
   "bluetooth": {
     "format-disabled": "",
-    "format-on": "\uf294",
-    "format-connected": "\uf294 {num_connections}",
+    "format-on": "󰂯",
+    "format-connected": "󰂱 {num_connections}",
     "format-no-controller": "",
     "on-click": "kitty --class bluetui bluetui",
     "tooltip-format": "{controller_alias}  {controller_address}",
@@ -66,10 +66,9 @@
   "pulseaudio": {
     "scroll-step": 5,
     "format": "{icon} {volume}%",
-    "format-muted": "{icon} MUT",
+    "format-muted": "󰝟 MUT",
     "format-icons": {
-      "default": ["\uf027", "\uf028", "\uf028"],
-      "muted": "\uf05e"
+      "default": ["󰕿", "󰖀", "󰕾"]
     },
     "on-click": "/home/maul/.local/bin/osd-volume mute",
     "on-scroll-up": "/home/maul/.local/bin/osd-volume up",
@@ -77,9 +76,9 @@
   },
 
   "network": {
-    "format-wifi": "\uf1eb {signalStrength}%",
-    "format-ethernet": "\uf1e0",
-    "format-disconnected": "\uead0",
+    "format-wifi": "󰖩 {signalStrength}%",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "",
     "tooltip-format-wifi": "{essid}: {ipaddr}",
     "tooltip-format-ethernet": "{ifname}: {ipaddr}",
     "tooltip-format-disconnected": "no connection",
@@ -96,8 +95,8 @@
     "format-charging": "{icon} {capacity}%",
     "format-full": "{icon} {capacity}%",
     "format-icons": {
-      "default": ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
-      "charging": "\uf0e7"
+      "default": ["", "", "", "", ""],
+      "charging": ""
     },
     "on-click": "xfce4-power-manager-settings"
   },
@@ -126,7 +125,7 @@
   },
 
   "custom/power": {
-    "format": "\uf011",
+    "format": "",
     "on-click": "wleave",
     "tooltip": false
   },

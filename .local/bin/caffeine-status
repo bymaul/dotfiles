@@ -3,6 +3,5 @@
 # with class "active" so the bar can tint it (see style.css #custom-caffeine).
 
 if pgrep -f -- "--who=Caffeine" > /dev/null; then
-    printf '\uf0f4\n'
-    printf '\0class:active'
+    printf '\n\nactive\n'
 fi

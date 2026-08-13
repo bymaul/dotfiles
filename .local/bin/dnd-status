@@ -3,6 +3,5 @@
 # active, with class "active" so the bar can tint it (style.css #custom-dnd).
 
 if makoctl mode | grep -qx "dnd"; then
-    printf '\uf1f6\n'
-    printf '\0class:active'
+    printf '\n\nactive\n'
 fi
