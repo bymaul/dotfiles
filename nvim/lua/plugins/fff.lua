@@ -3,6 +3,7 @@ vim.cmd.packadd "fff"
 local fff = require "fff"
 fff.setup {
   lazy_sync = true,
+  prompt = "❯ ",
 }
 
 vim.keymap.set("n", "<leader>sf", fff.find_files, { desc = "[S]earch Files" })
