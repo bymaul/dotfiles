@@ -40,3 +40,11 @@ like `dconf`/`mozilla` stay as-is). Uninstall a package with
 - **pay-respects** (fixes typos: press F or type `f`; AUR `pay-respects`)
 - **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **playerctl**, **jq**, **polkit-kde-agent**
 - **Nerd Font**
+
+## Two-repo sync
+
+Shared configs (`nvim`, `starship`, `bat`, `lazygit`, `opencode`, `zsh`, `tmux`)
+are mirrored into [`bymaul/winfiles`](https://github.com/bymaul/winfiles)
+(Windows + WSL) via `.github/workflows/sync.yml`. A push touching a shared
+package opens a sync PR in the other repo (auto-merged if clean, manual if
+conflicted). Set a PAT (`repo` scope) as the `GH_TOKEN` secret in both repos.

@@ -1,0 +1,79 @@
+name: sync
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "nvim/**"
+      - "starship/**"
+      - "bat/**"
+      - "lazygit/**"
+      - "opencode/**"
+      - "zsh/**"
+      - "tmux/**"
+
+concurrency:
+  group: sync-shared
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      OTHER_REPO: bymaul/winfiles
+      SYNC_BRANCH: sync/from-dotfiles
+    steps:
+      - name: Skip if target repo unreachable
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "GH_TOKEN secret not set yet - skipping sync"
+            exit 0
+          fi
+          if ! git ls-remote "https://github.com/$OTHER_REPO.git" >/dev/null 2>&1; then
+            echo "Target repo $OTHER_REPO not reachable yet - skipping sync"
+            exit 0
+          fi
+
+      - name: Checkout dotfiles
+        uses: actions/checkout@v4
+
+      - name: Checkout other repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OTHER_REPO }}
+          token: ${{ secrets.GH_TOKEN }}
+          path: other
+
+      - name: Copy shared packages into other repo
+        run: |
+          for dir in nvim starship bat lazygit opencode zsh tmux; do
+            if [ -d "$dir" ]; then
+              rsync -a --delete "$dir/" "other/$dir/"
+            fi
+          done
+
+      - name: Open or update sync PR
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          cd other
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to sync - nothing to do"
+            exit 0
+          fi
+          git config user.name "sync[bot]"
+          git config user.email "sync[bot]@users.noreply.github.com"
+          git checkout -b "$SYNC_BRANCH"
+          git add -A
+          git commit -m "chore: sync shared configs from bymaul/dotfiles"
+          git push --force origin "$SYNC_BRANCH"
+          PR=$(gh pr list --repo "$OTHER_REPO" --head "$SYNC_BRANCH" --state open --json number -q '.[0].number')
+          if [ -z "$PR" ]; then
+            PR=$(gh pr create --repo "$OTHER_REPO" --base master --head "$SYNC_BRANCH" \
+              --title "chore: sync shared configs from bymaul/dotfiles" \
+              --body "Auto-synced from bymaul/dotfiles. Merge to apply; resolve conflicts in this PR." \
+              --json number -q .number)
+          fi
+          gh pr merge "$PR" --repo "$OTHER_REPO" --squash --auto || true
