@@ -66,7 +66,7 @@ jobs:
           copy_dir starship starship
           copy_dir bat bat
           copy_dir lazygit lazygit
-          copy_dir opencode opencode
+          copy_dir opencode wsl/opencode
           copy_dir zsh wsl/zsh
           copy_dir tmux wsl/tmux
 
