@@ -11,6 +11,7 @@ on:
       - "opencode/**"
       - "zsh/**"
       - "tmux/**"
+  workflow_dispatch:
 
 concurrency:
   group: sync-shared
@@ -23,23 +24,29 @@ jobs:
       OTHER_REPO: bymaul/winfiles
       SYNC_BRANCH: sync/from-dotfiles
     steps:
-      - name: Skip if target repo unreachable
+      - name: Check token and target repo
+        id: check
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "GH_TOKEN secret not set yet - skipping sync"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if ! git ls-remote "https://github.com/$OTHER_REPO.git" >/dev/null 2>&1; then
             echo "Target repo $OTHER_REPO not reachable yet - skipping sync"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Checkout dotfiles
+        if: steps.check.outputs.skip != 'true'
         uses: actions/checkout@v4
 
       - name: Checkout other repo
+        if: steps.check.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           repository: ${{ env.OTHER_REPO }}
@@ -47,14 +54,24 @@ jobs:
           path: other
 
       - name: Copy shared packages into other repo
+        if: steps.check.outputs.skip != 'true'
         run: |
-          for dir in nvim starship bat lazygit opencode zsh tmux; do
-            if [ -d "$dir" ]; then
-              rsync -a --delete "$dir/" "other/$dir/"
-            fi
-          done
+          copy_dir() {
+            local src="$1" dst="$2"
+            [ -d "$src" ] || return 0
+            rsync -a --delete "$src/" "other/$dst/"
+          }
+          # <local path> <path in the other repo>
+          copy_dir nvim nvim
+          copy_dir starship starship
+          copy_dir bat bat
+          copy_dir lazygit lazygit
+          copy_dir opencode opencode
+          copy_dir zsh wsl/zsh
+          copy_dir tmux wsl/tmux
 
       - name: Open or update sync PR
+        if: steps.check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
