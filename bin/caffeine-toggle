@@ -3,9 +3,8 @@
 # Tagged with --who=Caffeine so the check only matches our own inhibit.
 
 if pgrep -f -- "--who=Caffeine" > /dev/null; then
-    # release the inhibit lock and reap the orphaned `sleep infinity` from last run
+    # release the inhibit lock; killing systemd-inhibit reaps the `sleep infinity` child
     pkill -f -- "--who=Caffeine"
-    pkill -f -- "^sleep infinity$" 2>/dev/null
     notify-send -h string:x-canonical-private-synchronous:caffeine "Caffeine Mode" "Disabled"
 else
     systemd-inhibit --what=idle --who=Caffeine --why="User requested" sleep infinity &

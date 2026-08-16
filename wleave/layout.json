@@ -8,7 +8,7 @@
   "margin-right": "180px",
   "margin-top": "22%",
   "margin-bottom": "22%",
-  "show-keybinds": false,
+  "show-keybinds": true,
   "close-on-lost-focus": true,
   "delay-command-ms": 100,
   "no-version-info": true,

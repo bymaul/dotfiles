@@ -1,4 +1,4 @@
--- Vague minimal Hyprland config
+-- Minimal Hyprland config
 -- Requires Hyprland 0.56+ (Lua config)
 
 ------------------
@@ -21,6 +21,8 @@ local fileManager = "nemo"
 local menu = "rofi"
 local browser = "helium-browser"
 
+local dotfiles = os.getenv("DOTFILES") or os.getenv("HOME") .. "/dotfiles"
+
 -------------------
 ---- AUTOSTART ----
 -------------------
@@ -29,12 +31,10 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("waybar")
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("mako")
-	-- clipboard manager: watch text + image clipboard, persist into cliphist
-	-- (text-only watchers die with the source app; this keeps the clipboard alive)
 	hl.exec_cmd("wl-paste --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
-	-- wallpaper lives next to this repo; resolve via $HOME so it works on any machine
-	hl.exec_cmd("swaybg -i " .. os.getenv("HOME") .. "/dotfiles/wallpapers/wallpaper.jpg -m fill")
+	-- wallpaper lives next to this repo; resolve via $DOTFILES (falls back to ~/dotfiles)
+	hl.exec_cmd("swaybg -i " .. dotfiles .. "/wallpapers/wallpaper.jpg -m fill")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
@@ -50,7 +50,7 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 ---- LOOK AND FEEL ----
 -----------------------
 
--- Vague palette
+-- palette
 local bg = "0x141415"
 local fg = "0xcdcdcd"
 local fgDim = "0x606079"
@@ -102,7 +102,6 @@ hl.config({
 
 -- Default curves and animations
 hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
-hl.curve("easeInOutCubic", { type = "bezier", points = { { 0.65, 0.05 }, { 0.36, 1 } } })
 hl.curve("linear", { type = "bezier", points = { { 0, 0 }, { 1, 1 } } })
 hl.curve("almostLinear", { type = "bezier", points = { { 0.5, 0.5 }, { 0.75, 1 } } })
 hl.curve("quick", { type = "bezier", points = { { 0.15, 0 }, { 0.1, 1 } } })
@@ -130,12 +129,6 @@ hl.animation({ leaf = "zoomFactor", enabled = true, speed = 7, bezier = "quick" 
 hl.config({
 	dwindle = {
 		preserve_split = true,
-	},
-})
-
-hl.config({
-	master = {
-		new_status = "master",
 	},
 })
 
@@ -246,6 +239,7 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wleave"))
 hl.bind(secondMod .. " + C", hl.dsp.exec_cmd("/home/maul/.local/bin/caffeine-toggle"))
 hl.bind(secondMod .. " + D", hl.dsp.exec_cmd("/home/maul/.local/bin/dnd-toggle"))
+hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"), { locked = true })
 
 -- Screenshots
 -- saves to ~/Pictures/Screenshots, copies to the live clipboard, notifies.

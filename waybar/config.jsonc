@@ -9,7 +9,7 @@
   "margin-right": 0,
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": ["clock"],
-  "modules-right": ["bluetooth", "network", "pulseaudio", "cpu", "memory", "battery", "tray", "group/modes", "custom/power"],
+  "modules-right": ["bluetooth", "network", "pulseaudio", "memory", "cpu", "tray", "battery",  "group/modes", "custom/power"],
 
   "hyprland/workspaces": {
     "format": "{id}",
@@ -23,7 +23,7 @@
 
   "clock": {
     "interval": 60,
-    "format": "{:%H:%M  %a %d %b}",
+    "format": "{:%H:%M}",
     "tooltip": true,
     "tooltip-format": "{calendar}",
     "calendar": {
@@ -54,19 +54,19 @@
   "network": {
     "format-disconnected": "",
     "format-ethernet": "󰈀",
-    "format-wifi": "󰖩 {signalStrength}%",
+    "format-wifi": "󰖩",
     "on-click": "kitty --class wifitui wifitui",
     "tooltip-format-disconnected": "no connection",
     "tooltip-format-ethernet": "{ifname}: {ipaddr}",
-    "tooltip-format-wifi": "{essid}: {ipaddr}"
+    "tooltip-format-wifi": "{essid}: {ipaddr}\n{signalStrength}%  {frequency}MHz  ({signaldBm} dBm)"
   },
 
   "pulseaudio": {
-    "format": "{icon} {volume}%",
+    "format": "{icon}",
     "format-icons": {
       "default": ["󰖀", "󰕾", "󰕾"]
     },
-    "format-muted": "󰝟 MUT",
+    "format-muted": "󰝟",
     "on-click": "/home/maul/.local/bin/osd-volume mute",
     "on-scroll-down": "/home/maul/.local/bin/osd-volume down",
     "on-scroll-up": "/home/maul/.local/bin/osd-volume up",
