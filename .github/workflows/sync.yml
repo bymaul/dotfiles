@@ -11,6 +11,7 @@ on:
       - "opencode/**"
       - "zsh/**"
       - "tmux/**"
+      - "fastfetch/**"
   workflow_dispatch:
 
 concurrency:
@@ -69,6 +70,7 @@ jobs:
           copy_dir opencode wsl/opencode
           copy_dir zsh wsl/zsh
           copy_dir tmux wsl/tmux
+          copy_dir fastfetch fastfetch
 
       - name: Open or update sync PR
         if: steps.check.outputs.skip != 'true'

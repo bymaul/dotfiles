@@ -43,7 +43,8 @@ like `dconf`/`mozilla` stay as-is). Uninstall a package with
 
 ## Two-repo sync
 
-Shared configs (`nvim`, `starship`, `bat`, `lazygit`, `opencode`, `zsh`, `tmux`)
+Shared configs (`nvim`, `starship`, `bat`, `lazygit`, `opencode`, `zsh`, `tmux`,
+`fastfetch`)
 are mirrored into [`bymaul/winfiles`](https://github.com/bymaul/winfiles)
 (Windows + WSL) via `.github/workflows/sync.yml`. A push touching a shared
 package opens a sync PR in the other repo (auto-merged if clean, manual if
