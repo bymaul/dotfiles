@@ -29,7 +29,6 @@ vim.pack.add {
   gh "windwp/nvim-ts-autotag",
   gh "stevearc/oil.nvim",
   gh "echasnovski/mini.nvim",
-  gh "folke/which-key.nvim",
   gh "williamboman/mason.nvim",
   gh "williamboman/mason-lspconfig.nvim",
   gh "WhoIsSethDaniel/mason-tool-installer.nvim",
@@ -39,7 +38,6 @@ vim.pack.add {
 
 -- UI / appearance
 require "plugins.colorscheme"
-require "plugins.which-key"
 
 -- Editing
 require "plugins.mini"
