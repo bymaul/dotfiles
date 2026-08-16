@@ -34,7 +34,7 @@ jobs:
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if ! git ls-remote "https://github.com/$OTHER_REPO.git" >/dev/null 2>&1; then
+          if ! gh api "repos/$OTHER_REPO" >/dev/null 2>&1; then
             echo "Target repo $OTHER_REPO not reachable yet - skipping sync"
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
