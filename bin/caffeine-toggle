@@ -5,8 +5,12 @@
 if pgrep -f -- "--who=Caffeine" > /dev/null; then
     # release the inhibit lock; killing systemd-inhibit reaps the `sleep infinity` child
     pkill -f -- "--who=Caffeine"
+    # resume hypridle
+    hypridle &
     notify-send -h string:x-canonical-private-synchronous:caffeine "Caffeine Mode" "Disabled"
 else
+    # suspend hypridle so it doesn't override the inhibit
+    pkill hypridle
     systemd-inhibit --what=idle --who=Caffeine --why="User requested" sleep infinity &
     notify-send -h string:x-canonical-private-synchronous:caffeine "Caffeine Mode" "Enabled"
 fi
