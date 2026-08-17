@@ -18,35 +18,44 @@ concurrency:
   group: sync-shared
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     env:
       OTHER_REPO: bymaul/winfiles
       SYNC_BRANCH: sync/from-dotfiles
+
     steps:
-      - name: Check token and target repo
+      - name: Check target repository
         id: check
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          set -euo pipefail
+
           if [ -z "$GH_TOKEN" ]; then
-            echo "GH_TOKEN secret not set yet - skipping sync"
+            echo "::warning::GH_TOKEN secret is not set; skipping sync"
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if ! gh api "repos/$OTHER_REPO" >/dev/null 2>&1; then
-            echo "Target repo $OTHER_REPO not reachable yet - skipping sync"
+
+          if ! gh repo view "$OTHER_REPO" >/dev/null 2>&1; then
+            echo "::warning::Target repository $OTHER_REPO is not reachable; skipping sync"
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Checkout dotfiles
         if: steps.check.outputs.skip != 'true'
         uses: actions/checkout@v4
 
-      - name: Checkout other repo
+      - name: Checkout winfiles
         if: steps.check.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
@@ -54,45 +63,115 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           path: other
 
-      - name: Copy shared packages into other repo
+      - name: Sync shared configs
         if: steps.check.outputs.skip != 'true'
         run: |
-          copy_dir() {
-            local src="$1" dst="$2"
-            [ -d "$src" ] || return 0
-            rsync -a --delete "$src/" "other/$dst/"
+          set -euo pipefail
+
+          sync_dir() {
+            local src="$1"
+            local dst="$2"
+
+            mkdir -p "other/$dst"
+
+            if [ -d "$src" ]; then
+              rsync -a --delete "$src/" "other/$dst/"
+            else
+              echo "Source $src does not exist; removing other/$dst"
+              rm -rf "other/$dst"
+            fi
           }
-          # <local path> <path in the other repo>
-          copy_dir nvim nvim
-          copy_dir starship starship
-          copy_dir bat bat
-          copy_dir lazygit lazygit
-          copy_dir opencode wsl/opencode
-          copy_dir zsh wsl/zsh
-          copy_dir tmux wsl/tmux
-          copy_dir fastfetch fastfetch
+
+          # <source> <destination>
+          sync_dir nvim nvim
+          sync_dir starship starship
+          sync_dir bat bat
+          sync_dir lazygit lazygit
+          sync_dir opencode wsl/opencode
+          sync_dir zsh wsl/zsh
+          sync_dir tmux wsl/tmux
+          sync_dir fastfetch fastfetch
+
+      - name: Create sync branch
+        if: steps.check.outputs.skip != 'true'
+        working-directory: other
+        run: |
+          set -euo pipefail
+
+          git config user.name "sync[bot]"
+          git config user.email "sync[bot]@users.noreply.github.com"
+
+          git fetch origin master
+
+          git checkout -B "$SYNC_BRANCH" origin/master
+
+      - name: Commit and push changes
+        if: steps.check.outputs.skip != 'true'
+        working-directory: other
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to sync"
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "chore: sync shared configs from bymaul/dotfiles"
+          git push --force origin "$SYNC_BRANCH"
 
       - name: Open or update sync PR
         if: steps.check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          cd other
-          if [ -z "$(git status --porcelain)" ]; then
-            echo "No changes to sync - nothing to do"
+          set -euo pipefail
+
+          PR=$(gh pr list \
+            --repo "$OTHER_REPO" \
+            --head "$SYNC_BRANCH" \
+            --base master \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$PR" ]; then
+            echo "Sync PR already exists: #$PR"
             exit 0
           fi
-          git config user.name "sync[bot]"
-          git config user.email "sync[bot]@users.noreply.github.com"
-          git checkout -b "$SYNC_BRANCH"
-          git add -A
-          git commit -m "chore: sync shared configs from bymaul/dotfiles"
-          git push --force origin "$SYNC_BRANCH"
-          PR=$(gh pr list --repo "$OTHER_REPO" --head "$SYNC_BRANCH" --state open --json number -q '.[0].number')
+
+          PR=$(gh pr create \
+            --repo "$OTHER_REPO" \
+            --base master \
+            --head "$SYNC_BRANCH" \
+            --title "chore: sync shared configs from bymaul/dotfiles" \
+            --body "Auto-synced shared configs from bymaul/dotfiles.")
+
+          echo "Created PR: $PR"
+
+      - name: Enable auto-merge
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          PR=$(gh pr list \
+            --repo "$OTHER_REPO" \
+            --head "$SYNC_BRANCH" \
+            --base master \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+
           if [ -z "$PR" ]; then
-            PR=$(gh pr create --repo "$OTHER_REPO" --base master --head "$SYNC_BRANCH" \
-              --title "chore: sync shared configs from bymaul/dotfiles" \
-              --body "Auto-synced from bymaul/dotfiles. Merge to apply; resolve conflicts in this PR." \
-              --json number -q .number)
+            echo "No open sync PR"
+            exit 0
           fi
-          gh pr merge "$PR" --repo "$OTHER_REPO" --squash --auto || true
+
+          gh pr merge "$PR" \
+            --repo "$OTHER_REPO" \
+            --squash \
+            --auto
