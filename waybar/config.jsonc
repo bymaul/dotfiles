@@ -2,14 +2,9 @@
   "layer": "top",
   "position": "top",
   "height": 30,
-  "spacing": 0,
-  "margin-top": 0,
-  "margin-bottom": 0,
-  "margin-left": 0,
-  "margin-right": 0,
   "modules-left": ["hyprland/workspaces", "hyprland/window"],
   "modules-center": ["clock"],
-  "modules-right": ["bluetooth", "network", "pulseaudio", "memory", "cpu", "tray", "battery",  "group/modes", "custom/power"],
+  "modules-right": ["bluetooth", "group/networks", "pulseaudio", "memory", "cpu", "tray", "battery", "group/modes", "custom/power"],
 
   "hyprland/workspaces": {
     "format": "{id}",
@@ -51,6 +46,11 @@
     "tooltip-format-enumerate-connected": "{device_alias}"
   },
 
+  "group/networks": {
+    "orientation": "horizontal",
+    "modules": ["network", "custom/netspeed"]
+  },
+
   "network": {
     "format-disconnected": "",
     "format-ethernet": "󰈀",
@@ -59,6 +59,12 @@
     "tooltip-format-disconnected": "no connection",
     "tooltip-format-ethernet": "{ifname}: {ipaddr}",
     "tooltip-format-wifi": "{essid}: {ipaddr}\n{signalStrength}%  {frequency}MHz  ({signaldBm} dBm)"
+  },
+
+  "custom/netspeed": {
+    "exec": "/home/maul/.local/bin/net-speed",
+    "interval": 2,
+    "return-type": "json"
   },
 
   "pulseaudio": {

@@ -53,6 +53,16 @@ window#waybar {
   padding: 0 3px;
 }
 
+#network,
+#custom-netspeed {
+  padding: 0 6px;
+  color: rgba(205, 205, 205, 0.85);
+}
+
+#network.disconnected {
+  color: rgba(205, 205, 205, 0.35);
+}
+
 #custom-caffeine,
 #custom-dnd {
   padding: 0 6px;
@@ -68,15 +78,10 @@ window#waybar {
 
 #cpu,
 #memory,
-#network,
 #pulseaudio,
 #battery {
   padding: 0 6px;
   color: rgba(205, 205, 205, 0.85);
-}
-
-#network.disconnected {
-  color: rgba(205, 205, 205, 0.35);
 }
 
 #pulseaudio.muted {

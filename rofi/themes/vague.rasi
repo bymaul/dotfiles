@@ -1,8 +1,8 @@
 * {
-    black:      #141415;
-    charcoal:   #252530;
-    gray:       #878787;
-    white:      #cdcdcd;
+    black:       #141415;
+    charcoal:    #252530;
+    gray:        #878787;
+    white:       #cdcdcd;
     transparent: rgba(20, 20, 21, 0.8);
 
     background-color: transparent;
@@ -17,72 +17,55 @@ window {
     border: 1px;
     border-color: rgba(205, 205, 205, 0.15);
     border-radius: 0px;
-    padding: 12px;
+    padding: 0px;
     width: 40%;
     y-offset: 12%;
 }
 
 mainbox {
     background-color: transparent;
-    spacing: 8px;
+    spacing: 0px;
 }
 
 inputbar {
-    background-color: @charcoal;
-    border-radius: 0px;
-    padding: 10px 12px;
-    spacing: 8px;
-    children: [prompt, entry];
+    background-color: transparent;
+    padding: 8px 10px;
+    spacing: 6px;
+    children: [ prompt, entry ];
 }
 
 prompt {
-    background-color: transparent;
     text-color: @gray;
-    margin: 0px;
-    padding: 0px;
 }
 
 entry {
-    background-color: transparent;
     text-color: @white;
     placeholder-color: @gray;
-    placeholder: "Search…";
+    placeholder: "Search...";
 }
 
 listview {
     background-color: transparent;
     lines: 10;
-    spacing: 2px;
+    spacing: 0px;
     padding: 0px;
 }
 
 element {
     background-color: transparent;
     text-color: @gray;
-    padding: 10px 12px;
+    padding: 6px 10px;
 }
 
 element selected {
-    background-color: @white;
-    text-color: @black;
+    background-color: @charcoal;
+    text-color: @white;
 }
 
 element-icon {
-    background-color: transparent;
-    text-color: inherit;
-    size: 1.2em;
+    size: 1.1em;
 }
 
 element-text {
-    background-color: transparent;
     text-color: inherit;
-}
-
-message {
-    background-color: transparent;
-}
-
-message {
-    border: 0px;
-    padding: 0px;
 }

@@ -5,16 +5,9 @@ configuration {
     display-window: "windows";
     drun-display-format: "{name}";
     disable-history: false;
-    location: 0;
-    width: 35%;
-    fixed-num-lines: true;
-    padding: 0;
-    separator-style: none;
-    hide-scrollbar: true;
-    show-icons: true;
+    show-icons: false;
     icon-theme: "Adwaita";
-    font: "JetBrainsMono Nerd Font Mono 12";
-    scroll-method: 0;
+    font: "JetBrainsMono Nerd Font Propo 11";
     case-sensitive: false;
 }
 

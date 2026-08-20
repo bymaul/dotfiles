@@ -1,0 +1,41 @@
+#!/bin/bash
+
+interface=$(ip route | awk '/default/ {print $5; exit}')
+
+rx1=$(cat /sys/class/net/"$interface"/statistics/rx_bytes)
+tx1=$(cat /sys/class/net/"$interface"/statistics/tx_bytes)
+
+sleep 1
+
+rx2=$(cat /sys/class/net/"$interface"/statistics/rx_bytes)
+tx2=$(cat /sys/class/net/"$interface"/statistics/tx_bytes)
+
+rx=$((rx2 - rx1))
+tx=$((tx2 - tx1))
+
+format_speed() {
+    local speed=$1
+
+    if (( speed >= 1048576 )); then
+        awk "BEGIN {printf \"%.1fM\", $speed / 1048576}"
+    elif (( speed >= 1024 )); then
+        awk "BEGIN {printf \"%.0fK\", $speed / 1024}"
+    else
+        printf "%dB" "$speed"
+    fi
+}
+
+download=$(format_speed "$rx")
+upload=$(format_speed "$tx")
+
+if (( rx > tx )); then
+    text="$download"
+elif (( tx > 0 )); then
+    text="$upload"
+else
+    text="0B"
+fi
+
+tooltip="Interface: $interface\nDownload: $download\nUpload: $upload"
+
+printf '{"text":"%s","tooltip":"%s"}\n' "$text" "$tooltip"

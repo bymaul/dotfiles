@@ -355,26 +355,14 @@ hl.layer_rule({
 hl.window_rule({
 	name = "float-btop",
 	match = { class = "btop" },
-
-	float = true,
-	size = { 900, 600 },
-	move = { "monitor_w - 914", "40" },
 })
 
 hl.window_rule({
 	name = "float-bluetui",
 	match = { class = "bluetui" },
-
-	float = true,
-	size = { 800, 600 },
-	move = { "monitor_w - 814", "40" },
 })
 
 hl.window_rule({
 	name = "float-wifitui",
 	match = { class = "wifitui" },
-
-	float = true,
-	size = { 800, 600 },
-	move = { "monitor_w - 814", "40" },
 })
