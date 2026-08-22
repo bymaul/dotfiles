@@ -1,6 +1,6 @@
 # dotfiles
 
-Minimal Hyprland desktop config, managed with GNU Stow.
+Minimal Hyprland desktop config, managed with plain symlinks.
 
 ![screenshot](screenshot.png)
 
@@ -12,28 +12,17 @@ git clone https://github.com/bymaul/dotfiles ~/dotfiles
 ~/dotfiles/install.sh
 ```
 
-Or without the script (same thing, manual):
-
-```sh
-cd ~/dotfiles
-stow -t ~/.config/hypr hypr
-stow -t ~/.config/waybar waybar
-stow -t ~ zsh tmux
-stow -t ~/.local/bin bin
-# ... full package -> target list lives in install.sh
-```
-
-The repo is a stow directory: each app is a flat package dir whose contents
-mirror its real location in `$HOME` (e.g. `waybar/config.jsonc` ->
-`~/.config/waybar/config.jsonc`, `zsh/.config/zsh/.zshrc` ->
-`~/.config/zsh/.zshrc`, `zsh/.zshenv` -> `~/.zshenv`). `install.sh`
-stows every package into place without touching anything else (unmanaged dirs
-like `dconf`/`mozilla` stay as-is). Uninstall a package with
-`stow -t <target> -D <pkg>`.
+The script is idempotent - safe to re-run at any time. Each app is a flat
+package dir whose contents mirror its real location in `$HOME`
+(e.g. `waybar/` -> `~/.config/waybar`, `zsh/.zshenv` -> `~/.zshenv`).
+Dedicated app dirs are folded into a single symlink
+(`~/.config/nvim -> ~/dotfiles/nvim`), so new files show up automatically.
+Shared targets (`~`, `~/.config` root, `~/.local/bin`) get their entries
+linked individually; re-run `./install.sh` after adding new top-level files
+to those packages. Unmanaged dirs like `dconf`/`mozilla` are left alone.
 
 ## Requirements
 
-- **stow** (symlink management)
 - **Hyprland** >= 0.56 (Lua config), **waybar**, **mako**, **rofi**, **kitty**, **nemo**
 - **wleave** (build from source), **swaybg** (wallpaper, `pacman -S swaybg`)
 - **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **yazi**, **eza**, **bat**, **fd**, **btop**

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# install.sh - link dotfiles into $HOME with GNU Stow. Idempotent: safe to re-run.
+# install.sh - link dotfiles into $HOME with plain symlinks. Idempotent: safe to re-run.
 #
-#   ./install.sh          install (stow packages, warn on missing deps)
+#   ./install.sh          install (link packages, warn on missing deps)
 #
-# The repo is a stow directory: each app lives in its own flat package dir
-# (e.g. waybar/ -> ~/.config/waybar, zsh/ -> ~/.zshrc). No .config/ nesting.
-# Unmanaged dirs (dconf, mozilla, ...) are left alone.
+# Each app lives in its own flat package dir (e.g. waybar/ -> ~/.config/waybar).
+# Dedicated app dirs are folded into ONE symlink, so files added to the repo
+# later show up automatically. Shared parents (~/.config root, $HOME,
+# ~/.local/bin) get their entries linked individually. Unmanaged dirs
+# (dconf, mozilla, ...) are left alone.
 
 set -euo pipefail
 
@@ -14,51 +16,122 @@ REPO="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m==>\033[0m %s\n' "$*" >&2; }
 
-# package -> target (relative to $HOME). Stow requires the target to exist.
+# mode package -> target (relative to $HOME).
+# "dir"  fold whole package into a single symlink
+# "tree" link each entry into an existing shared target
 PKGS=(
-    "hypr .config/hypr"
-    "waybar .config/waybar"
-    "mako .config/mako"
-    "rofi .config/rofi"
-    "kitty .config/kitty"
-    "bat .config/bat"
-    "btop .config/btop"
-    "fastfetch .config/fastfetch"
-    "gtk .config"
-    "lazygit .config/lazygit"
-    "nvim .config/nvim"
-    "opencode .config/opencode"
-    "starship .config"
-    "wleave .config/wleave"
-    "yazi .config/yazi"
-    "zsh ."
-    "tmux ."
-    "bin .local/bin"
-    "vague-theme .local/share/themes/Vague"
+    "dir hypr .config/hypr"
+    "dir waybar .config/waybar"
+    "dir mako .config/mako"
+    "dir rofi .config/rofi"
+    "dir kitty .config/kitty"
+    "dir bat .config/bat"
+    "dir btop .config/btop"
+    "dir fastfetch .config/fastfetch"
+    "tree gtk .config"
+    "dir lazygit .config/lazygit"
+    "dir nvim .config/nvim"
+    "dir opencode .config/opencode"
+    "tree starship .config"
+    "dir wleave .config/wleave"
+    "dir yazi .config/yazi"
+    "tree zsh ."
+    "tree tmux ."
+    "tree bin .local/bin"
+    "dir vague-theme .local/share/themes/Vague"
 )
-
-command -v stow >/dev/null 2>&1 || { echo "error: GNU stow is required (pacman -S stow)" >&2; exit 1; }
 
 log "installing dotfiles from $REPO"
 
-# migrate: remove symlinks from previous installers whose (resolved) target
-# points into the repo. Handles absolute links from the old install.sh and
-# relative stow links alike, including dangling ones.
+# migrate: remove legacy ABSOLUTE symlinks written by old installers.
+# Relative links are left for the logic below to sort out.
 migrated=0
 while IFS= read -r link; do
-    case "$(readlink -f "$link")" in
+    case "$(readlink "$link")" in
         "$REPO"/*) rm "$link"; migrated=1 ;;
     esac
 done < <(find "$HOME" -maxdepth 6 -type l 2>/dev/null)
 [ "$migrated" -eq 0 ] || log "removed legacy symlinks"
 
+# true when every direct entry of dir $1 is a symlink resolving into $REPO
+managed_dir() {
+    local dir=$1 entry
+    [ -d "$dir" ] && [ ! -L "$dir" ] || return 1
+    while IFS= read -r -d '' entry; do
+        [ -L "$entry" ] || return 1
+        case "$(readlink -f "$entry")" in
+            "$REPO"/*) ;;
+            *) return 1 ;;
+        esac
+    done < <(find "$dir" -mindepth 1 -maxdepth 1 -print0)
+}
+
+# replace fully-managed real dir $1 with a single symlink to $2.
+collapse_to_link() {
+    local dir=$1 src=$2
+    managed_dir "$dir" || return 1
+    find "$dir" -mindepth 1 -maxdepth 1 -delete
+    rmdir "$dir"
+    ln -s "$(realpath --relative-to="$(dirname "$dir")" "$src")" "$dir"
+}
+
+# fold pkg $1 into ONE symlink at target $2 (relative to $HOME).
+fold_pkg() {
+    local pkg=$1 rel=$2 dest="$HOME/$2"
+    mkdir -p "$(dirname "$dest")"
+
+    if [ -L "$dest" ]; then
+        if [ "$(readlink -f "$dest")" != "$REPO/$pkg" ]; then
+            warn "$rel is a symlink out of our control - skipping $pkg"
+        fi
+    elif [ -e "$dest" ]; then
+        if collapse_to_link "$dest" "$REPO/$pkg"; then
+            log "folding $rel"
+        else
+            warn "$rel holds unmanaged content - skipping $pkg (resolve manually)"
+        fi
+    else
+        ln -s "$(realpath --relative-to="$(dirname "$dest")" "$REPO/$pkg")" "$dest"
+    fi
+}
+
+# link every entry of src dir $1 into dst dir $2. Dir entries become a single
+# symlink when the destination is missing, ours already, or a fully-managed
+# real dir; otherwise we recurse into both sides (shared dirs like ~/.config).
+link_tree() {
+    local src=$1 dst=$2 entry name sub
+    mkdir -p "$dst"
+    while IFS= read -r -d '' entry; do
+        name="$(basename "$entry")"
+        sub="$dst/$name"
+        if [ -d "$entry" ] && [ ! -L "$entry" ]; then
+            if [ -L "$sub" ] || [ ! -e "$sub" ]; then
+                ln -sfn "$(realpath --relative-to="$dst" "$entry")" "$sub"
+            elif collapse_to_link "$sub" "$entry"; then
+                log "folding ${sub#"$HOME"/}"
+            elif [ -d "$sub" ]; then
+                link_tree "$entry" "$sub"
+            else
+                warn "$sub exists and is not ours - skipping"
+            fi
+            continue
+        fi
+        if [ -e "$sub" ] && [ ! -L "$sub" ]; then
+            warn "$sub exists and is not ours - skipping"
+            continue
+        fi
+        ln -sfn "$(realpath --relative-to="$dst" "$entry")" "$sub"
+    done < <(find "$src" -mindepth 1 -maxdepth 1 -print0 | sort -z)
+}
+
 for entry in "${PKGS[@]}"; do
-    pkg="${entry%% *}"
-    target="${entry#* }"
-    mkdir -p "$HOME/$target"
-    stow --dir "$REPO" --target "$HOME/$target" -S "$pkg"
+    read -r mode pkg target <<<"$entry"
+    case "$mode" in
+        dir)  fold_pkg "$pkg" "$target" ;;
+        tree) link_tree "$REPO/$pkg" "$HOME/$target" ;;
+    esac
 done
-log "stowed ${#PKGS[@]} packages"
+log "linked ${#PKGS[@]} packages"
 
 # register vendored bat theme
 if command -v bat >/dev/null 2>&1; then
@@ -75,7 +148,7 @@ log "checking requirements"
 missing=0
 for bin in hyprctl waybar mako rofi kitty nvim tmux zsh starship lazygit \
            yazi eza bat fd btop wl-copy wl-paste grim slurp cliphist jq \
-           playerctl brightnessctl notify-send pipewire swaybg stow pay-respects fastfetch; do
+           playerctl brightnessctl notify-send pipewire swaybg pay-respects fastfetch; do
     if ! command -v "$bin" >/dev/null 2>&1; then
         printf '  \033[1;31m%s\033[0m missing\n' "$bin"
         missing=1
