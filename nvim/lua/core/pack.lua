@@ -29,8 +29,8 @@ vim.pack.add {
   gh "windwp/nvim-ts-autotag",
   gh "stevearc/oil.nvim",
   gh "echasnovski/mini.nvim",
-  gh "williamboman/mason.nvim",
-  gh "williamboman/mason-lspconfig.nvim",
+  gh "mason-org/mason.nvim",
+  gh "mason-org/mason-lspconfig.nvim",
   gh "WhoIsSethDaniel/mason-tool-installer.nvim",
   gh "dmtrKovalenko/fff",
 }
