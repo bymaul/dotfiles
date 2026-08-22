@@ -1,41 +1,68 @@
 #!/bin/bash
 
-interface=$(ip route | awk '/default/ {print $5; exit}')
+# waybar module: live throughput of the default-route interface.
+# Compares interface byte counters against the previous poll (state file),
+# so it never sleeps inside exec and always prints one valid JSON line.
 
-rx1=$(cat /sys/class/net/"$interface"/statistics/rx_bytes)
-tx1=$(cat /sys/class/net/"$interface"/statistics/tx_bytes)
+set -euo pipefail
 
-sleep 1
+state="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/waybar-net-speed.state"
+now=$(date +%s)
 
-rx2=$(cat /sys/class/net/"$interface"/statistics/rx_bytes)
-tx2=$(cat /sys/class/net/"$interface"/statistics/tx_bytes)
+default_iface() { ip route 2>/dev/null | awk '/^default/ {print $5; exit}'; }
 
-rx=$((rx2 - rx1))
-tx=$((tx2 - tx1))
+counter() { cat "/sys/class/net/$1/statistics/$2_bytes" 2>/dev/null || printf '0'; }
 
-format_speed() {
-    local speed=$1
-
-    if (( speed >= 1048576 )); then
-        awk "BEGIN {printf \"%.1fM\", $speed / 1048576}"
-    elif (( speed >= 1024 )); then
-        awk "BEGIN {printf \"%.0fK\", $speed / 1024}"
+fmt() {
+    local b=$1
+    if ((b >= 1048576)); then
+        awk "BEGIN {printf \"%.1fM\", $b / 1048576}"
+    elif ((b >= 1024)); then
+        awk "BEGIN {printf \"%.0fK\", $b / 1024}"
     else
-        printf "%dB" "$speed"
+        printf '%dB' "$b"
     fi
 }
 
-download=$(format_speed "$rx")
-upload=$(format_speed "$tx")
+emit() {  # text down up iface
+    printf '{"text":"%s","tooltip":"Interface: %s\\nDown: %s/s\\nUp: %s/s"}\n' \
+        "$1" "$4" "$2" "$3"
+}
 
-if (( rx > tx )); then
-    text="$download"
-elif (( tx > 0 )); then
-    text="$upload"
-else
-    text="0B"
+iface=$(default_iface)
+if [ -z "$iface" ] || [ ! -d "/sys/class/net/$iface" ]; then
+    emit "0B" "0B" "0B" "none"
+    exit 0
 fi
 
-tooltip="Interface: $interface\nDownload: $download\nUpload: $upload"
+rx=$(counter "$iface" rx)
+tx=$(counter "$iface" tx)
 
-printf '{"text":"%s","tooltip":"%s"}\n' "$text" "$tooltip"
+piface='' prx=0 ptx=0 pt=0
+if [ -r "$state" ]; then
+    read -r piface prx ptx pt <"$state" || true
+fi
+# discard corrupt or partial state instead of crashing on it
+if ! [[ $prx =~ ^[0-9]+$ ]] || ! [[ $ptx =~ ^[0-9]+$ ]] || ! [[ $pt =~ ^[0-9]+$ ]]; then
+    piface=''; prx=0; ptx=0; pt=0
+fi
+
+drx=0 dtx=0
+if [ "$piface" = "$iface" ]; then
+    drx=$((rx - prx))
+    dtx=$((tx - ptx))
+    ((drx < 0)) && drx=0   # counters reset on driver reload
+    ((dtx < 0)) && dtx=0
+fi
+
+dt=$((now - pt))
+((dt < 1)) && dt=1
+
+printf '%s %s %s %s\n' "$iface" "$rx" "$tx" "$now" >"$state"
+
+down=$(fmt $((drx / dt)))
+up=$(fmt $((dtx / dt)))
+
+if ((drx >= dtx)); then speed=$down; else speed=$up; fi
+
+emit "$speed" "$down" "$up" "$iface"
