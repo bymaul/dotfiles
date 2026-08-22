@@ -1,6 +1,8 @@
 vim.cmd.packadd "conform.nvim"
 
-require("conform").setup {
+local conform = require "conform"
+
+conform.setup {
   notify_on_error = false,
   format_on_save = function(bufnr)
     local disable_filetypes = { c = true, cpp = true }
@@ -28,5 +30,5 @@ require("conform").setup {
 }
 
 vim.keymap.set("n", "<leader>f", function()
-  require("conform").format { async = true, lsp_format = "fallback" }
-end, { desc = "[F]ormat buffer" })
+  conform.format { async = true, lsp_format = "fallback" }
+end, { desc = "Format buffer" })

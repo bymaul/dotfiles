@@ -32,7 +32,6 @@ vim.pack.add {
   gh "williamboman/mason.nvim",
   gh "williamboman/mason-lspconfig.nvim",
   gh "WhoIsSethDaniel/mason-tool-installer.nvim",
-  gh "NMAC427/guess-indent.nvim",
   gh "dmtrKovalenko/fff",
 }
 
@@ -43,7 +42,6 @@ require "plugins.colorscheme"
 require "plugins.mini"
 require "plugins.blink"
 require "plugins.conform"
-require "plugins.guess-indent"
 require "plugins.treesitter"
 
 -- Navigation

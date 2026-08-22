@@ -1,24 +1,26 @@
 local map = vim.keymap.set
 
-local function jump(c)
-  return function()
-    vim.diagnostic.jump {
-      count = c,
-      on_jump = function(_, bufnr)
-        vim.diagnostic.open_float { bufnr = bufnr, scope = "cursor", focus = false }
-      end,
-    }
-  end
-end
+-- General
+map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
+map("n", "<leader>w", "<cmd>write<CR>", { desc = "Save file" })
+map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit" })
+map("n", "<leader>d", vim.diagnostic.setloclist, { desc = "Diagnostics" })
 
-map("n", "<Esc>", "<cmd>nohlsearch<CR>")
-map("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
-map("n", "[d", jump(-1), { desc = "Prev diagnostic" })
-map("n", "]d", jump(1), { desc = "Next diagnostic" })
+-- Scrolling
+map("n", "<C-d>", "<C-d>zz", { desc = "Scroll down" })
+map("n", "<C-u>", "<C-u>zz", { desc = "Scroll up" })
+
+-- Search
+map("n", "n", "nzzzv", { desc = "Next search result" })
+map("n", "N", "Nzzzv", { desc = "Previous search result" })
+
+-- Terminal
 map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 
+-- Files
 map("n", "-", "<cmd>Oil<CR>", { desc = "Open parent directory" })
 
+-- Visual
 map("v", "<", "<gv", { desc = "Indent left" })
 map("v", ">", ">gv", { desc = "Indent right" })
 map("v", "J", ":m '>+1<CR>gv=gv", { desc = "Move line down" })

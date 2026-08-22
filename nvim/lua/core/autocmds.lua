@@ -32,13 +32,14 @@ vim.api.nvim_create_autocmd("TermOpen", {
   desc = "Disable line numbers in terminal buffers",
   group = vim.api.nvim_create_augroup("custom-term-open", { clear = true }),
   callback = function()
-    vim.o.number = false
-    vim.o.relativenumber = false
+    vim.wo.number = false
+    vim.wo.relativenumber = false
   end,
 })
 
 vim.api.nvim_create_user_command("PackClean", function()
-  local inactive = vim.iter(vim.pack.get())
+  local inactive = vim
+    .iter(vim.pack.get())
     :filter(function(x)
       return not x.active
     end)
