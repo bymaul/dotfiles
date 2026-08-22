@@ -1,23 +1,7 @@
 vim.api.nvim_create_autocmd("LspAttach", {
   group = vim.api.nvim_create_augroup("custom-lsp-attach", { clear = true }),
   callback = function(event)
-    local map = function(keys, func, desc, mode)
-      mode = mode or "n"
-      vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
-    end
-
     local client = vim.lsp.get_client_by_id(event.data.client_id)
-
-    map("K", vim.lsp.buf.hover, "[H]over documentation")
-    map("gd", vim.lsp.buf.definition, "[G]oto [D]efinition")
-    map("gr", vim.lsp.buf.references, "[G]oto [R]eferences")
-    map("gI", vim.lsp.buf.implementation, "[G]oto [I]mplementation")
-    map("<leader>D", vim.lsp.buf.type_definition, "Type [D]efinition")
-    map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
-    map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction", { "n", "x" })
-    if client:supports_method("textDocument/declaration", event.buf) then
-      map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
-    end
 
     if client:supports_method("textDocument/foldingRange", event.buf) then
       local win = vim.api.nvim_get_current_win()

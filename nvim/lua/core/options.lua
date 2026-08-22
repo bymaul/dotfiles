@@ -1,4 +1,5 @@
 require("vim._core.ui2").enable {}
+
 local o = vim.opt
 
 -- Line numbers
@@ -9,9 +10,7 @@ o.relativenumber = true
 o.expandtab = true
 o.shiftwidth = 2
 o.smartindent = true
-o.softtabstop = 2
 o.tabstop = 2
-o.autoindent = true
 
 -- Scrolling & cursor
 o.scrolloff = 10
@@ -26,7 +25,7 @@ o.signcolumn = "yes"
 o.timeoutlen = 300
 o.wrap = false
 
--- Folding (treesitter)
+-- Folding
 o.foldmethod = "expr"
 o.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 o.foldlevel = 99
@@ -45,6 +44,8 @@ o.splitright = true
 
 -- Editing
 o.undofile = true
+o.confirm = true
+o.autoread = true
 
 -- Invisible characters
 o.list = true
@@ -55,14 +56,8 @@ vim.schedule(function()
   o.clipboard = "unnamedplus"
 end)
 
--- Confirm on :q with unsaved changes instead of failing
-o.confirm = true
-
--- Auto reload files changed outside of nvim
-o.autoread = true
-
--- Rounded borders for floating windows
+-- UI
 o.winborder = "rounded"
 
--- Shell selection
+-- Shell
 o.shell = vim.uv.os_uname().sysname:find "Windows" and "pwsh" or "zsh"

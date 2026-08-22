@@ -1,6 +1,8 @@
 vim.cmd.packadd "gitsigns.nvim"
 
-require("gitsigns").setup {
+local gs = require "gitsigns"
+
+gs.setup {
   signs = {
     add = { text = "▎" },
     change = { text = "▎" },
@@ -11,18 +13,18 @@ require("gitsigns").setup {
   },
   current_line_blame = false,
   on_attach = function(buffer)
-    local gs = package.loaded.gitsigns
     local function map(l, r, desc)
-      vim.keymap.set("n", l, r, { buffer = buffer, desc = desc })
+      vim.keymap.set("n", l, r, { buffer = buffer, desc = "Git: " .. desc })
     end
 
     map("]h", gs.next_hunk, "Next Hunk")
     map("[h", gs.prev_hunk, "Prev Hunk")
-    map("<leader>hs", ":Gitsigns stage_hunk<CR>", "[S]tage Hunk")
-    map("<leader>hr", ":Gitsigns reset_hunk<CR>", "[R]eset Hunk")
-    map("<leader>hS", gs.stage_buffer, "[S]tage Buffer")
-    map("<leader>hu", gs.undo_stage_hunk, "[U]ndo Stage Hunk")
-    map("<leader>hR", gs.reset_buffer, "[R]eset Buffer")
-    map("<leader>hb", gs.toggle_current_line_blame, "Toggle current line [b]lame")
+    map("<leader>hs", gs.stage_hunk, "Stage Hunk")
+    map("<leader>hr", gs.reset_hunk, "Reset Hunk")
+    map("<leader>hS", gs.stage_buffer, "Stage Buffer")
+    map("<leader>hu", gs.undo_stage_hunk, "Undo Stage Hunk")
+    map("<leader>hR", gs.reset_buffer, "Reset Buffer")
+    map("<leader>hp", gs.preview_hunk, "Preview Hunk")
+    map("<leader>hb", gs.toggle_current_line_blame, "Toggle blame")
   end,
 }
