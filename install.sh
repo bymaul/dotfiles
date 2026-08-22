@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # install.sh - link dotfiles into $HOME with plain symlinks. Idempotent: safe to re-run.
 #
-#   ./install.sh          install (link packages, warn on missing deps)
+#   ./install.sh                   install (link packages, warn on missing deps)
+#   ./install.sh --remove [pkg...] unlink packages (default: all of them)
 #
 # Each app lives in its own flat package dir (e.g. waybar/ -> ~/.config/waybar).
 # Dedicated app dirs are folded into ONE symlink, so files added to the repo
@@ -15,6 +16,10 @@ REPO="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m==>\033[0m %s\n' "$*" >&2; }
+
+usage() {
+    sed -n '2,5p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
 
 # mode package -> target (relative to $HOME).
 # "dir"  fold whole package into a single symlink
@@ -41,7 +46,39 @@ PKGS=(
     "dir vague-theme .local/share/themes/Vague"
 )
 
-log "installing dotfiles from $REPO"
+MODE=install
+ONLY=()
+while (($#)); do
+    case "$1" in
+        -R | --remove) MODE=remove ;;
+        -h | --help) usage; exit 0 ;;
+        -*) echo "error: unknown option: $1" >&2; exit 1 ;;
+        *) ONLY+=("$1") ;;
+    esac
+    shift
+done
+
+wanted() {  # true when no package filter given, or $1 is in it
+    local pkg=$1 p
+    ((${#ONLY[@]})) || return 0
+    for p in "${ONLY[@]}"; do
+        [ "$p" = "$pkg" ] && return 0
+    done
+    return 1
+}
+
+if ((${#ONLY[@]})); then
+    known=$(printf '%s\n' "${PKGS[@]}" | awk '{print $2}')
+    for p in "${ONLY[@]}"; do
+        grep -qx "$p" <<<"$known" || { echo "error: unknown package: $p" >&2; exit 1; }
+    done
+fi
+
+if [ "$MODE" = remove ]; then
+    log "unlinking packages managed from $REPO"
+else
+    log "installing dotfiles from $REPO"
+fi
 
 # migrate: remove legacy ABSOLUTE symlinks written by old installers.
 # Relative links are left for the logic below to sort out.
@@ -124,14 +161,68 @@ link_tree() {
     done < <(find "$src" -mindepth 1 -maxdepth 1 -print0 | sort -z)
 }
 
+# unlink a folded package: its single symlink, or a legacy per-entry layout
+remove_fold() {
+    local pkg=$1 rel=$2 dest="$HOME/$2"
+    if [ -L "$dest" ]; then
+        case "$(readlink -f "$dest")" in
+            "$REPO"/*) rm "$dest"; log "removed $rel" ;;
+            *) warn "$rel is a symlink out of our control - leaving it ($pkg)" ;;
+        esac
+    elif [ -d "$dest" ] && managed_dir "$dest"; then
+        find "$dest" -mindepth 1 -maxdepth 1 -delete
+        rmdir "$dest"
+        log "removed $rel"
+    elif [ -e "$dest" ]; then
+        warn "$rel holds unmanaged content - leaving it ($pkg)"
+    fi
+}
+
+# unlink every entry of src dir $1 from dst dir $2 (inverse of link_tree)
+remove_tree() {
+    local src=$1 dst=$2 entry name sub
+    while IFS= read -r -d '' entry; do
+        name="$(basename "$entry")"
+        sub="$dst/$name"
+        if [ -L "$sub" ]; then
+            case "$(readlink -f "$sub")" in
+                "$REPO"/*) rm "$sub" ;;
+                *) warn "$sub is a symlink out of our control - leaving it" ;;
+            esac
+        elif [ -d "$sub" ] && [ -d "$entry" ] && [ ! -L "$entry" ]; then
+            if managed_dir "$sub"; then
+                find "$sub" -mindepth 1 -maxdepth 1 -delete
+                rmdir "$sub"
+            else
+                remove_tree "$entry" "$sub"
+            fi
+        elif [ -e "$sub" ] || [ -L "$sub" ]; then
+            warn "$sub is not ours - leaving it"
+        fi
+    done < <(find "$src" -mindepth 1 -maxdepth 1 -print0 | sort -z)
+}
+
+count=0
 for entry in "${PKGS[@]}"; do
     read -r mode pkg target <<<"$entry"
+    wanted "$pkg" || continue
     case "$mode" in
-        dir)  fold_pkg "$pkg" "$target" ;;
-        tree) link_tree "$REPO/$pkg" "$HOME/$target" ;;
+        dir)
+            if [ "$MODE" = remove ]; then remove_fold "$pkg" "$target"; else fold_pkg "$pkg" "$target"; fi
+            ;;
+        tree)
+            if [ "$MODE" = remove ]; then remove_tree "$REPO/$pkg" "$HOME/$target"; else link_tree "$REPO/$pkg" "$HOME/$target"; fi
+            ;;
     esac
+    count=$((count + 1))
 done
-log "linked ${#PKGS[@]} packages"
+
+if [ "$MODE" = remove ]; then
+    log "unlinked ${count} package(s)"
+    exit 0
+fi
+
+log "linked ${count} package(s)"
 
 # register vendored bat theme
 if command -v bat >/dev/null 2>&1; then

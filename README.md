@@ -21,6 +21,10 @@ Shared targets (`~`, `~/.config` root, `~/.local/bin`) get their entries
 linked individually; re-run `./install.sh` after adding new top-level files
 to those packages. Unmanaged dirs like `dconf`/`mozilla` are left alone.
 
+Unlink again with `./install.sh --remove`, optionally limited to specific
+packages (e.g. `./install.sh --remove nvim bin`). Anything not managed by
+the repo is never touched.
+
 ## Requirements
 
 - **Hyprland** >= 0.56 (Lua config), **waybar**, **mako**, **rofi**, **kitty**, **nemo**
