@@ -1,3 +1,46 @@
+vim.cmd.packadd "mason.nvim"
+vim.cmd.packadd "mason-lspconfig.nvim"
+vim.cmd.packadd "mason-tool-installer.nvim"
+
+require("mason").setup()
+require("mason-lspconfig").setup()
+
+vim.lsp.config("*", {
+  capabilities = vim.tbl_deep_extend(
+    "force",
+    vim.lsp.protocol.make_client_capabilities(),
+    require("blink.cmp").get_lsp_capabilities()
+  ),
+})
+
+local servers = {
+  "emmet_language_server",
+  "gopls",
+  "intelephense",
+  "lua_ls",
+  "tailwindcss",
+  "vtsls",
+}
+
+vim.lsp.enable(servers)
+
+require("mason-tool-installer").setup {
+  ensure_installed = vim.iter({ servers, { "prettierd", "stylua" } }):flatten():totable(),
+}
+
+local signs = { ERROR = "", WARN = "", INFO = "", HINT = "" }
+local diagnostic_signs = {}
+for type, icon in pairs(signs) do
+  diagnostic_signs[vim.diagnostic.severity[type]] = icon
+end
+vim.diagnostic.config {
+  update_in_insert = false,
+  severity_sort = true,
+  float = { border = "rounded", source = "if_many" },
+  underline = { severity = { min = vim.diagnostic.severity.WARN } },
+  signs = { text = diagnostic_signs },
+}
+
 vim.api.nvim_create_autocmd("LspAttach", {
   group = vim.api.nvim_create_augroup("custom-lsp-attach", { clear = true }),
   callback = function(event)
