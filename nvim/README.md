@@ -1,10 +1,11 @@
-# config.nvim
+# nvim
 
 ## Required
 
+- Neovim 0.12 or newer (`vim.pack`, runtimepath `lsp/` configs)
 - `git`, `make`, `unzip`, and a C compiler
 - `ripgrep`, `fd`
-- `tree-sitter` CLI (>= 0.25) — nvim-treesitter builds parsers on install
+- `tree-sitter` CLI (>= 0.25): nvim-treesitter builds parsers on install
 
 <details>
 <summary>Windows treesitter toolchain</summary>
@@ -61,28 +62,31 @@ int main(int argc, char **argv)
     return (int)(status & 0xff);
 }
 ```
+
 </details>
 
 ## Installation
 
-Linux and Mac
+This config lives inside [winfiles](https://github.com/bymaul/winfiles) and is linked
+into place by its installers:
+
+- Windows (elevated PowerShell 7): clone `bymaul/winfiles`, run `.\install.ps1` -
+  junctions `%LOCALAPPDATA%\nvim`
+- WSL / Linux / macOS: run `winfiles/install-wsl.sh` - links `~/.config/nvim`
+
+Want just the editor config without the rest of winfiles? Link the `nvim/` directory
+manually:
 
 ```sh
-git clone https://github.com/bymaul/config.nvim.git "${XDG_CONFIG_HOME:-$HOME/.config}"/nvim
+# Linux / macOS
+git clone https://github.com/bymaul/winfiles.git
+ln -s "$(pwd)/winfiles/nvim" "${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
 ```
 
-Windows
-
-`cmd.exe`:
-
-```
-git clone https://github.com/bymaul/config.nvim.git "%localappdata%\nvim"
-```
-
-`pwsh.exe`
-
-```
-git clone https://github.com/bymaul/config.nvim.git "${env:LOCALAPPDATA}\nvim"
+```powershell
+# Windows (pwsh)
+git clone https://github.com/bymaul/winfiles.git
+New-Item -ItemType Junction -Path "$env:LOCALAPPDATA\nvim" -Target "$PWD\winfiles\nvim"
 ```
 
 ## Structure
@@ -91,11 +95,14 @@ git clone https://github.com/bymaul/config.nvim.git "${env:LOCALAPPDATA}\nvim"
 init.lua                    entry point
 lua/core/                   core setup: options, autocmds, keymaps, package manager
 lua/plugins/                per-plugin config, installed via vim.pack.add
+lsp/                        per-server LSP config, discovered from runtimepath by vim.lsp.config
 ```
 
-The config uses Neovim 0.11's built-in `vim.pack.add` package manager instead of
-lazy.nvim. Each plugin has its own file under `lua/plugins/`; everything is lazy-loaded
-by loading on the relevant event, keymap, or autocmd.
+The config uses Neovim's built-in `vim.pack.add` package manager instead of lazy.nvim,
+with the resolved plugin versions pinned in `nvim-pack-lock.json`. Each plugin has its
+own file under `lua/plugins/`. Each LSP server has its own file under `lsp/`, named after
+the server id (`tailwindcss.lua`, `emmet_language_server.lua`, ...); Neovim picks these up
+automatically, and activation is a single `vim.lsp.enable()` list in `lua/plugins/lsp.lua`.
 
 ## Credits to
 
