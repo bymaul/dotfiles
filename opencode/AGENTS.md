@@ -1,18 +1,25 @@
 # Global Agent Instructions
 
-- Never commit to git unless asked.
-- Never use the em dash "—". Use plain dash "-" instead
-- Never manually modify any files that are marked as auto-generated
-- When making technical decisions, do not give much weight to development cost.
-  Instead, prefer quality, simplicity, robustness, scalability, and long term maintainability.
-- When doing bug fixes, always start with reproducing the bug in an E2E setting as closely aligned with how an end user would experience it as possible.
-  This makes sure you find the real problem so your fix will actually solve it.
-- When end-to-end testing a product, be picky about the UI you see and be obsessed with pixel perfection.
-  If something clearly looks off, even if it is not directly related to what you are doing, try to get it fixed along the way.
-- Apply that same high standard to engineering excellence: lint, test failures, and test flakiness.
-  If you see one, even if it is not caused by what you are working on right now, still get it fixed.
-- Ask before acting when: (1) the task is ambiguous, (2) there are multiple reasonable approaches,
-  (3) changes span 5+ files, or (4) you would be modifying config, CI, or infrastructure files.
-- Be concise. Prefer direct answers. Do not add code explanation or summaries unless asked.
-  Output no more than 3-4 lines of text before using tools.
-- Always read a file before editing it. Never overwrite files without reading them first.
+- Read the relevant code before making changes.
+- Understand the existing implementation before proposing a new one.
+- Make the smallest change that fully solves the task.
+- Prefer existing code, patterns, utilities, and dependencies over creating new ones.
+- Prefer simple, obvious solutions over clever or over-engineered ones.
+- Do not introduce abstractions, dependencies, configuration, or refactors unless they are necessary.
+- Do not modify unrelated code.
+- Do not fix unrelated issues unless they block the task.
+- Do not add comments unless they explain genuinely non-obvious behavior that cannot be made clear through the code itself.
+- Do not add docstrings or documentation unless explicitly requested or required by the project.
+- Preserve existing project conventions unless there is a good reason to change them.
+- Never manually modify generated or machine-managed files.
+- Always read a file before editing it.
+- For bug fixes, reproduce the problem before changing the implementation whenever practical.
+- Validate changes with the most relevant available tests, checks, or tooling.
+- Do not remove validation, error handling, security, accessibility, or tests merely to simplify the implementation.
+- Do not commit, push, reset, rebase, or rewrite git history unless explicitly asked.
+- Do not overwrite or discard existing user changes.
+- Do not ask for permission for ordinary implementation decisions.
+- Ask before acting only when the task is genuinely ambiguous, requires a materially different approach, affects 5+ files, or involves config, CI, or infrastructure.
+- Keep responses concise and focused on the task.
+- Do not explain code or provide summaries unless useful or requested.
+- Never use the em dash character "—"; use "-" instead.
