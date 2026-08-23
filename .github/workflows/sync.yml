@@ -174,7 +174,12 @@ jobs:
             exit 0
           fi
 
-          gh pr merge "$PR" \
-            --repo "$OTHER_REPO" \
-            --squash \
-            --auto
+          # --auto needs protected-branch rules; without them, merge directly
+          if ! gh pr merge "$PR" \
+              --repo "$OTHER_REPO" \
+              --squash \
+              --auto; then
+            gh pr merge "$PR" \
+              --repo "$OTHER_REPO" \
+              --squash
+          fi
