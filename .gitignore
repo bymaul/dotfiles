@@ -8,3 +8,6 @@ node_modules/
 package.json
 package-lock.json
 bun.lock
+
+# tmux plugin clones (managed by tpm / install.sh)
+tmux/plugins/

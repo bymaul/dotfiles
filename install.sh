@@ -41,7 +41,7 @@ PKGS=(
     "dir wleave .config/wleave"
     "dir yazi .config/yazi"
     "tree zsh ."
-    "tree tmux ."
+    "dir tmux .config/tmux"
     "tree bin .local/bin"
     "dir vague-theme .local/share/themes/Vague"
 )
@@ -89,6 +89,13 @@ while IFS= read -r link; do
     esac
 done < <(find "$HOME" -maxdepth 6 -type l 2>/dev/null)
 [ "$migrated" -eq 0 ] || log "removed legacy symlinks"
+
+# migrate: tmux config moved to ~/.config/tmux
+if [ -L "$HOME/.tmux.conf" ]; then
+    case "$(readlink -f "$HOME/.tmux.conf")" in
+        "$REPO"/*) rm "$HOME/.tmux.conf"; log "removed legacy ~/.tmux.conf" ;;
+    esac
+fi
 
 # true when every direct entry of dir $1 is a symlink resolving into $REPO
 managed_dir() {
@@ -228,6 +235,20 @@ log "linked ${count} package(s)"
 if command -v bat >/dev/null 2>&1; then
     bat cache --build >/dev/null 2>&1 && log "rebuilt bat cache"
 fi
+
+# tpm + tmux plugins: with the config folded at ~/.config/tmux, TPM keeps
+# plugins there too. Clone anything declared as "@plugin 'owner/repo'".
+plugins_dir="$HOME/.config/tmux/plugins"
+if [ ! -d "$plugins_dir/tpm" ]; then
+    git clone -q https://github.com/tmux-plugins/tpm "$plugins_dir/tpm" && log "installed tpm"
+fi
+conf="$HOME/.config/tmux/tmux.conf"
+[ -f "$conf" ] && while IFS= read -r repo; do
+    name="${repo##*/}"
+    if [ ! -d "$plugins_dir/$name" ]; then
+        git clone -q "https://github.com/$repo" "$plugins_dir/$name" && log "installed $name"
+    fi
+done < <(sed -n "s/^set -g @plugin '\([^']*\)'.*/\1/p" "$conf")
 
 # reload Hyprland if it's running
 if command -v hyprctl >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
