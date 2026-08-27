@@ -22,8 +22,8 @@
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
     "mason-lspconfig.nvim": {
-      "rev": "67029ccdac1ef8941e13b826417bc0ffac24cc86",
-      "src": "https://github.com/williamboman/mason-lspconfig.nvim"
+      "rev": "1b621470c01bd8190bb32a290d21575d3e6470c5",
+      "src": "https://github.com/mason-org/mason-lspconfig.nvim"
     },
     "mason-tool-installer.nvim": {
       "rev": "443f1ef8b5e6bf47045cb2217b6f748a223cf7dc",

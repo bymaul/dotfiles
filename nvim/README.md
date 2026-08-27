@@ -101,7 +101,7 @@ lsp/                        per-server LSP config, discovered from runtimepath b
 The config uses Neovim's built-in `vim.pack.add` package manager instead of lazy.nvim,
 with the resolved plugin versions pinned in `nvim-pack-lock.json`. Each plugin has its
 own file under `lua/plugins/`. Each LSP server has its own file under `lsp/`, named after
-the server id (`tailwindcss.lua`, `emmet_language_server.lua`, ...); Neovim picks these up
+the server id (`tailwindcss.lua`, `vtsls.lua`, ...); Neovim picks these up
 automatically, and activation is a single `vim.lsp.enable()` list in `lua/plugins/lsp.lua`.
 
 ## Credits to
