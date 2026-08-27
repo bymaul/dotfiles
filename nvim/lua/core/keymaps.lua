@@ -4,7 +4,12 @@ local map = vim.keymap.set
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 map("n", "<leader>w", "<cmd>write<CR>", { desc = "Save file" })
 map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit" })
-map("n", "<leader>d", vim.diagnostic.setloclist, { desc = "Diagnostics" })
+map("n", "<leader>d", function()
+  require("mini.extra").pickers.diagnostic({ scope = "current" })
+end, { desc = "Buffer diagnostics" })
+map("n", "<leader>D", function()
+  require("mini.extra").pickers.diagnostic({ scope = "all" })
+end, { desc = "Workspace diagnostics" })
 
 -- Scrolling
 map("n", "<C-d>", "<C-d>zz", { desc = "Scroll down" })
