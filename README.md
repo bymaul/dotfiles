@@ -30,7 +30,6 @@ the repo is never touched.
 - **Hyprland** >= 0.56 (Lua config), **waybar**, **mako**, **rofi**, **kitty**, **nemo**
 - **wleave** (build from source), **swaybg** (wallpaper, `pacman -S swaybg`)
 - **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **yazi**, **eza**, **bat**, **fd**, **btop**
-- **pay-respects** (fixes typos: press F or type `f`; AUR `pay-respects`)
 - **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **playerctl**, **jq**, **polkit-kde-agent**
 - **Nerd Font**
 
