@@ -1,7 +1,3 @@
-vim.cmd.packadd "mason.nvim"
-vim.cmd.packadd "mason-lspconfig.nvim"
-vim.cmd.packadd "mason-tool-installer.nvim"
-
 require("mason").setup()
 require("mason-lspconfig").setup()
 
@@ -30,15 +26,6 @@ vim.diagnostic.config {
 
 vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(event)
-    local pick = function(scope)
-      return function()
-        require("mini.extra").pickers.lsp { scope = scope }
-      end
-    end
-    vim.keymap.set("n", "gri", pick "implementation", { buffer = event.buf, desc = "Go to implementation" })
-    vim.keymap.set("n", "grt", pick "type_definition", { buffer = event.buf, desc = "Go to type definition" })
-    vim.keymap.set("n", "grr", pick "references", { buffer = event.buf, desc = "Find references" })
-
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method("textDocument/documentHighlight", event.buf) then
       local group = vim.api.nvim_create_augroup("custom-lsp-highlight", { clear = false })
