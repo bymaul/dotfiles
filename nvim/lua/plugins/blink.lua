@@ -1,6 +1,3 @@
-vim.cmd.packadd "blink.cmp"
-vim.cmd.packadd "friendly-snippets"
-
 require("blink.cmp").setup {
   keymap = { preset = "default" },
   appearance = {

@@ -1,7 +1,4 @@
-vim.cmd.packadd "gitsigns.nvim"
-
 local gs = require "gitsigns"
-
 gs.setup {
   signs = {
     add = { text = "▎" },

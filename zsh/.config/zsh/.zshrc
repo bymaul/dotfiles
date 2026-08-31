@@ -31,9 +31,6 @@ zstyle ':completion:*' menu select
 # --- Integrations ---
 eval "$(zoxide init zsh)"
 eval "$(fnm env --use-on-cd --shell zsh)"
-if command -v pay-respects >/dev/null 2>&1; then
-  eval "$(pay-respects zsh --alias)"
-fi
 
 # --- Config modules ---
 source "$ZDOTDIR/aliases.zsh"

@@ -10,7 +10,20 @@ vim.api.nvim_create_autocmd("PackChanged", {
       if not ev.data.active then
         vim.cmd.packadd "fff"
       end
-      require("fff.download").download_or_build_binary()
+      vim.schedule(function()
+        if pcall(require, "fff.download") then
+          require("fff.download").download_or_build_binary()
+        end
+      end)
+    elseif name == "nvim-treesitter" and (kind == "install" or kind == "update") then
+      if not ev.data.active then
+        vim.cmd.packadd "nvim-treesitter"
+      end
+      vim.schedule(function()
+        if pcall(require, "nvim-treesitter") then
+          vim.cmd "TSUpdate"
+        end
+      end)
     end
   end,
 })
@@ -35,21 +48,54 @@ vim.pack.add {
   gh "dmtrKovalenko/fff",
 }
 
--- UI / appearance
-require "plugins.colorscheme"
+for _, plug in ipairs(vim.pack.get()) do
+  if plug.active then
+    vim.cmd.packadd(plug.spec.name)
+  end
+end
 
--- Editing
-require "plugins.mini"
-require "plugins.blink"
-require "plugins.conform"
-require "plugins.treesitter"
+local M = {}
 
--- Navigation
-require "plugins.oil"
-require "plugins.fff"
+local function plugin_configs()
+  local dir = vim.fn.stdpath "config" .. "/lua/plugins"
+  local handle = vim.uv.fs_scandir(dir)
+  local configs = {}
+  while handle do
+    local name, ftype = vim.uv.fs_scandir_next(handle)
+    if not name then
+      break
+    end
+    if ftype == "file" then
+      configs[#configs + 1] = ("plugins.%s"):format(name:gsub("%.lua$", ""))
+    end
+  end
+  return configs
+end
 
--- Git
-require "plugins.gitsigns"
+local configs = plugin_configs()
 
--- LSP
-require "plugins.lsp"
+for _, mod in ipairs(configs) do
+  require(mod)
+end
+
+function M.check()
+  local errors = {}
+  for _, active in ipairs(vim.pack.get()) do
+    if active.active then
+      local on_rtp = vim.tbl_contains(vim.opt.runtimepath:get(), active.path)
+      if not on_rtp then
+        errors[#errors + 1] = ("plugin not loaded: %s"):format(active.spec.name)
+      end
+    end
+  end
+  for _, mod in ipairs(configs) do
+    if not pcall(require, mod) then
+      errors[#errors + 1] = ("config failed to load: %s"):format(mod)
+    end
+  end
+  if #errors > 0 then
+    vim.notify("Plugin self-check failed:\n" .. table.concat(errors, "\n"), vim.log.levels.ERROR)
+  end
+end
+
+return M

@@ -37,6 +37,15 @@ vim.api.nvim_create_autocmd("TermOpen", {
   end,
 })
 
+vim.api.nvim_create_autocmd("VimEnter", {
+  desc = "Verify all configured plugins and configs loaded",
+  callback = function()
+    vim.schedule(function()
+      require("core.pack").check()
+    end)
+  end,
+})
+
 vim.api.nvim_create_user_command("PackClean", function()
   local inactive = vim
     .iter(vim.pack.get())
