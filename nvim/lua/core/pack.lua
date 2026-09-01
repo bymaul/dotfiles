@@ -82,7 +82,14 @@ function M.check()
   local errors = {}
   for _, active in ipairs(vim.pack.get()) do
     if active.active then
-      local on_rtp = vim.tbl_contains(vim.opt.runtimepath:get(), active.path)
+      local target = vim.fs.normalize(active.path)
+      local on_rtp = false
+      for _, rtp in ipairs(vim.opt.runtimepath:get()) do
+        if vim.fs.normalize(rtp) == target then
+          on_rtp = true
+          break
+        end
+      end
       if not on_rtp then
         errors[#errors + 1] = ("plugin not loaded: %s"):format(active.spec.name)
       end
