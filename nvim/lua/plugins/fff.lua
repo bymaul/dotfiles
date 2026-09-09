@@ -1,5 +1,3 @@
-local fff = require "fff"
-fff.setup {
+require("fff").setup {
   lazy_sync = true,
-  prompt = "❯ ",
 }
