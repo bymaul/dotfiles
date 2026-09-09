@@ -4,6 +4,7 @@ alias cat=bat
 alias vim=nvim
 alias lg=lazygit
 alias oc=opencode
+alias rf=rainfrog
 alias ls="eza -a -l --header --icons --hyperlink --time-style relative"
 alias nah="git reset --hard;git clean -df"
 
