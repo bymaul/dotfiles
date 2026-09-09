@@ -12,6 +12,7 @@ on:
       - "zsh/**"
       - "tmux/**"
       - "fastfetch/**"
+      - "yazi/**"
   workflow_dispatch:
 
 concurrency:
@@ -91,6 +92,7 @@ jobs:
           sync_dir zsh wsl/zsh
           sync_dir tmux wsl/tmux
           sync_dir fastfetch fastfetch
+          sync_dir yazi yazi
 
       - name: Create sync branch
         if: steps.check.outputs.skip != 'true'
