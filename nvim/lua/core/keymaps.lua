@@ -4,37 +4,15 @@ local map = vim.keymap.set
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 map("n", "<leader>w", "<cmd>write<CR>", { desc = "Save file" })
 map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Quit" })
-map("n", "<leader>d", vim.diagnostic.setloclist, { desc = "Diagnostic Quickfix list" })
 
 -- Search
-map("n", "<leader>sf", function()
-  require("fff").find_files()
-end, { desc = "Search Files" })
-map("n", "<leader>sg", function()
-  require("fff").live_grep()
-end, { desc = "Search Grep" })
-map({ "n", "x" }, "<leader>sw", function()
-  require("fff").live_grep_under_cursor()
-end, { desc = "Search Word" })
+local fff = require "fff"
+local fff_plus = require "fff_plus"
 
--- Buffers
-vim.keymap.set("n", "<leader><leader>", function()
-  local buffers = vim.tbl_filter(function(buf)
-    return vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted
-  end, vim.api.nvim_list_bufs())
-
-  vim.ui.select(buffers, {
-    prompt = "Buffers:",
-    format_item = function(buf)
-      local name = vim.api.nvim_buf_get_name(buf)
-      return name ~= "" and vim.fn.fnamemodify(name, ":~:.") or "[No Name]"
-    end,
-  }, function(buf)
-    if buf then
-      vim.api.nvim_set_current_buf(buf)
-    end
-  end)
-end, { desc = "Find Buffers" })
+map("n", "<leader>sf", fff.find_files, { desc = "Search Files" })
+map("n", "<leader>sg", fff.live_grep, { desc = "Search Grep" })
+map("n", "<leader><leader>", fff_plus.buffers, { desc = "Search Buffers" })
+map("n", "<leader>d", fff_plus.diagnostics, { desc = "Diagnostic Quickfix list" })
 
 -- Format
 map("n", "<leader>f", function()
@@ -50,7 +28,7 @@ map("n", "n", "nzzzv", { desc = "Next search result" })
 map("n", "N", "Nzzzv", { desc = "Previous search result" })
 
 -- Terminal
-map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
+map("t", "<Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 
 -- Files
 map("n", "-", "<cmd>Oil<CR>", { desc = "Open parent directory" })

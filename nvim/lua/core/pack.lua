@@ -40,12 +40,13 @@ vim.pack.add {
   gh "lewis6991/gitsigns.nvim",
   gh "nvim-treesitter/nvim-treesitter",
   gh "windwp/nvim-ts-autotag",
-  gh "stevearc/oil.nvim",
+  gh "barrettruth/canola.nvim",
   gh "echasnovski/mini.nvim",
   gh "mason-org/mason.nvim",
   gh "mason-org/mason-lspconfig.nvim",
   gh "WhoIsSethDaniel/mason-tool-installer.nvim",
   gh "dmtrKovalenko/fff",
+  gh "vinitkumar/fff-plus.nvim",
 }
 
 for _, plug in ipairs(vim.pack.get()) do
