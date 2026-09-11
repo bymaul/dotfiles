@@ -1,7 +1,0 @@
-#!/bin/bash
-# Waybar status for mako do-not-disturb mode: prints a bell-slash glyph when
-# active, with class "active" so the bar can tint it (style.css #custom-dnd).
-
-if makoctl mode | grep -qx "dnd"; then
-    printf '\n\nactive\n'
-fi

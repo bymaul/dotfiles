@@ -19,7 +19,6 @@ hl.monitor({
 local terminal = "kitty"
 local fileManager = "nemo"
 local menu = "rofi"
-local browser = "helium-browser"
 
 local dotfiles = os.getenv("DOTFILES") or os.getenv("HOME") .. "/dotfiles"
 
@@ -28,7 +27,7 @@ local dotfiles = os.getenv("DOTFILES") or os.getenv("HOME") .. "/dotfiles"
 -------------------
 
 hl.on("hyprland.start", function()
-	hl.exec_cmd("waybar")
+	hl.exec_cmd("qs -c Bar")
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("mako")
 	hl.exec_cmd("wl-paste --watch cliphist store")
@@ -57,10 +56,10 @@ local fgDim = "0x606079"
 
 hl.config({
 	general = {
-		gaps_in = 5,
-		gaps_out = 10,
+		gaps_in = 3,
+		gaps_out = 6,
 
-		border_size = 2,
+		border_size = 1,
 
 		col = {
 			active_border = { colors = { "rgba(cdcdcdcc)", "rgba(606079cc)" }, angle = 45 },
@@ -190,7 +189,7 @@ local mainMod = "SUPER"
 local secondMod = "SUPER + SHIFT"
 
 -- Launch
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
+hl.bind(mainMod .. " + B", hl.dsp.global("qs-bar:Toggle Control Panel"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show drun"))
 hl.bind(secondMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show run"))
@@ -200,9 +199,9 @@ hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("/home/maul/.local/bin/clipboard-pick"))
-hl.bind(secondMod .. " + V", hl.dsp.exec_cmd("/home/maul/.local/bin/clipboard-pick delete"))
-hl.bind(secondMod .. " + BackSpace", hl.dsp.exec_cmd("/home/maul/.local/bin/clipboard-pick clear"))
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(dotfiles .. "/bin/clipboard-pick"))
+hl.bind(secondMod .. " + V", hl.dsp.exec_cmd(dotfiles .. "/bin/clipboard-pick delete"))
+hl.bind(secondMod .. " + BackSpace", hl.dsp.exec_cmd(dotfiles .. "/bin/clipboard-pick clear"))
 
 -- Move focus (vim)
 hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
@@ -228,50 +227,50 @@ hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
 -- Cycle used workspaces (Windows-style)
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("/home/maul/.local/bin/ws-cycle next"))
-hl.bind(secondMod .. " + Tab", hl.dsp.exec_cmd("/home/maul/.local/bin/ws-cycle prev"))
+hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(dotfiles .. "/bin/ws-cycle next"))
+hl.bind(secondMod .. " + Tab", hl.dsp.exec_cmd(dotfiles .. "/bin/ws-cycle prev"))
 
 -- Move/resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- System actions
-hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wleave"))
-hl.bind(secondMod .. " + C", hl.dsp.exec_cmd("/home/maul/.local/bin/caffeine-toggle"))
-hl.bind(secondMod .. " + D", hl.dsp.exec_cmd("/home/maul/.local/bin/dnd-toggle"))
+hl.bind(secondMod .. " + Q", hl.dsp.global("qs-bar:Toggle Power Menu"))
+hl.bind(secondMod .. " + C", hl.dsp.global("qs-bar:Toggle Caffeine"))
+hl.bind(secondMod .. " + D", hl.dsp.global("qs-bar:Toggle DND"))
 hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"), { locked = true })
 
 -- Screenshots
 -- saves to ~/Pictures/Screenshots, copies to the live clipboard, notifies.
 -- the image watcher stores clipboard history.
-hl.bind("Print", hl.dsp.exec_cmd("/home/maul/.local/bin/screenshot area"))
-hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("/home/maul/.local/bin/screenshot full"))
+hl.bind("Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot area"))
+hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot full"))
 
 -- Laptop multimedia keys
 hl.bind(
 	"XF86AudioRaiseVolume",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume up"),
+	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume up"),
 	{ locked = true, repeating = true }
 )
 hl.bind(
 	"XF86AudioLowerVolume",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume down"),
+	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume down"),
 	{ locked = true, repeating = true }
 )
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mute"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume mute"), { locked = true, repeating = true })
 hl.bind(
 	"XF86AudioMicMute",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mic"),
+	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume mic"),
 	{ locked = true, repeating = true }
 )
 hl.bind(
 	"XF86MonBrightnessUp",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness up"),
+	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-brightness up"),
 	{ locked = true, repeating = true }
 )
 hl.bind(
 	"XF86MonBrightnessDown",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness down"),
+	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-brightness down"),
 	{ locked = true, repeating = true }
 )
 
@@ -322,25 +321,9 @@ hl.window_rule({
 	rounding = 0,
 })
 
-hl.window_rule({
-	name = "wleave-float",
-	match = { class = "wleave" },
-
-	float = true,
-	border_size = 0,
-	rounding = 0,
-})
-
 hl.layer_rule({
-	name = "wleave-glass",
-	match = { namespace = "wleave" },
-	blur = true,
-	ignore_alpha = 0.1,
-})
-
-hl.layer_rule({
-	name = "waybar-glass",
-	match = { namespace = "waybar" },
+	name = "qs-bar-glass",
+	match = { namespace = "qs-bar" },
 	blur = true,
 	ignore_alpha = 0.1,
 })

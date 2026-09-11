@@ -14,7 +14,7 @@ git clone https://github.com/bymaul/dotfiles ~/dotfiles
 
 The script is idempotent - safe to re-run at any time. Each app is a flat
 package dir whose contents mirror its real location in `$HOME`
-(e.g. `waybar/` -> `~/.config/waybar`, `zsh/.zshenv` -> `~/.zshenv`).
+(e.g. `kitty/` -> `~/.config/kitty`, `zsh/.zshenv` -> `~/.zshenv`).
 Dedicated app dirs are folded into a single symlink
 (`~/.config/nvim -> ~/dotfiles/nvim`), so new files show up automatically.
 Shared targets (`~`, `~/.config` root, `~/.local/bin`) get their entries
@@ -27,8 +27,8 @@ the repo is never touched.
 
 ## Requirements
 
-- **Hyprland** >= 0.56 (Lua config), **waybar**, **mako**, **rofi**, **kitty**, **nemo**
-- **wleave** (build from source), **swaybg** (wallpaper, `pacman -S swaybg`)
+- **Hyprland** >= 0.56 (Lua config), **quickshell**, **mako**, **rofi**, **kitty**, **nemo**
+- **swaybg** (wallpaper, `pacman -S swaybg`)
 - **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **yazi**, **eza**, **bat**, **fd**, **btop**
 - **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **playerctl**, **jq**, **polkit-kde-agent**
 - **Nerd Font**
