@@ -19,9 +19,10 @@ esac
 
 if [ -s "$file" ]; then
     # -A implies --wait: blocks until the popup is acted on or times out,
-    # then echoes the chosen action name. Left-click = default action (open);
-    # middle-click opens the rofi action menu. The action key must be "default"
-    # for mako's invoke-default-action (left-click) to fire it.
+    # then echoes the chosen action name. Left-click invokes the default
+    # action (open); the quickshell toast also renders every action as
+    # an inline button. The action key must be "default" for the
+    # left-click default to fire it.
     action=$(notify-send -a screenshot -h string:x-canonical-private-synchronous:screenshot -t 10000 -i "$file" \
         -A "default=Open" -A "path=Copy path" "Screenshot" "$(basename "$file")")
     case "$action" in

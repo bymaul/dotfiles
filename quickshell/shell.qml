@@ -1,3 +1,5 @@
+//@ pragma IconTheme Adwaita
+
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -46,6 +48,26 @@ ShellRoot {
         function toggleBluetooth(): void { openExclusive(bluetoothPopup) }
         function togglePower(): void { openExclusive(powerPopup) }
 
+        // Bottom edge of the open right-side popup in TOAST-margin
+        // space, 0 when none is open. At most one popup is visible
+        // via openExclusive; the toast stack parks below it and
+        // never hides behind it.
+        property int rightPopupBottom: {
+            const top = Palette.popupTopGap
+            const popups = [
+                controlPanelPopup,
+                wifiPopup, bluetoothPopup, powerPopup
+            ]
+            let bottom = 0
+
+            for (const p of popups) {
+                if (p.visible)
+                    bottom = Math.max(bottom, top + p.height)
+            }
+
+            return bottom
+        }
+
         function closePopups(): void {
             calendarPopup.visible = false
             controlPanelPopup.visible = false
@@ -68,10 +90,53 @@ ShellRoot {
             controlPanelPopup.visible = false
         }
 
+        // Shared grab for the control panel (history cards live in
+        // the same window, so there is exactly one focus target) plus
+        // the toast stack (clicks on toasts must not clear the grab).
+        // (Same deferred-activation rule as elsewhere: asserting
+        // active in the show frame leaves the grab dead.)
+        HyprlandFocusGrab {
+            id: panelGrab
+
+            windows: [controlPanelPopup, historyPanel, toastStack]
+
+            // A clear also fires when these windows hide for other
+            // reasons (e.g. opening wifi from a panel tile hides the
+            // panel first): close ONLY our own windows, never the
+            // newly opened popup. Equivalent for real outside clicks,
+            // since exclusivity leaves nothing else open.
+            onCleared: controlPanelPopup.visible = false
+        }
+
+        Timer {
+            interval: 100
+            running: controlPanelPopup.visible
+            repeat: false
+
+            onTriggered: panelGrab.active = true
+        }
+
+        function revealHistory(i: int): void {
+            historyPanel.revealAt(i)
+        }
+
+        // Remote control (debugging): qs
+        // ipc call bar closePopups | toggleControl | panelStep -1
+        IpcHandler {
+            target: "bar"
+
+            function closePopups(): void { bar.closePopups() }
+            function toggleControl(): void { bar.toggleControl() }
+            function panelStep(dir: int): void {
+                controlPanelPopup.stepVertical(dir)
+            }
+            function panelActivate(): void {
+                controlPanelPopup.activateSelected()
+            }
+        }
+
         property int cpuUsage: 0
         property real memUsed: 0
-        property real brightness: 0
-        property bool brightnessAvailable: true
 
         property real cpuTotal: 0
         property real cpuIdle: 0
@@ -87,9 +152,6 @@ ShellRoot {
             onTriggered: {
                 cpuProbe.running = true
                 memProbe.running = true
-
-                if (bar.brightnessAvailable)
-                    brightnessProbe.running = true
             }
         }
 
@@ -155,37 +217,6 @@ ShellRoot {
             }
         }
 
-        Process {
-            id: brightnessProbe
-
-            // Routed through sh so a missing brightnessctl binary still
-            // yields a reliable nonzero exit (QProcess start failures
-            // don't guarantee onExited).
-            command: [
-                "sh",
-                "-c",
-                "command -v brightnessctl >/dev/null && brightnessctl -m || exit 1"
-            ]
-
-            stdout: StdioCollector {
-                onStreamFinished: {
-                    const fields = text.split(",")
-
-                    if (fields.length >= 4)
-                        bar.brightness = parseFloat(fields[3]) || 0
-                    else
-                        bar.brightnessAvailable = false
-                }
-            }
-
-            // No backlight (desktop): hide the slider instead of
-            // parking it at a dead 0% forever.
-            onExited: exitCode => {
-                if (exitCode !== 0)
-                    bar.brightnessAvailable = false
-            }
-        }
-
         property var wifiDevice: {
             const devices = Networking.devices.values
 
@@ -246,6 +277,7 @@ ShellRoot {
                 bar: bar
             }
             BatteryIcon {}
+            BellIcon { bar: bar }
             PowerIcon { bar: bar }
         }
 
@@ -263,6 +295,12 @@ ShellRoot {
             id: controlPanelPopup
             bar: bar
             volumeControl: systemGroup.volumeControl
+        }
+
+        NotificationHistoryPopup {
+            id: historyPanel
+            bar: bar
+            panel: controlPanelPopup
         }
 
         WifiPopup {
@@ -312,5 +350,52 @@ ShellRoot {
             description: "Toggle do-not-disturb mode"
             onPressed: Services.Modes.toggleDnd()
         }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Volume Up"
+            description: "Raise the volume"
+            onPressed: Services.Media.volumeUp()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Volume Down"
+            description: "Lower the volume"
+            onPressed: Services.Media.volumeDown()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Volume Mute"
+            description: "Mute the volume"
+            onPressed: Services.Media.toggleVolumeMute()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Mic Mute"
+            description: "Mute the microphone"
+            onPressed: Services.Media.toggleMicMute()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Brightness Up"
+            description: "Raise the brightness"
+            onPressed: Services.Media.brightnessUp()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Brightness Down"
+            description: "Lower the brightness"
+            onPressed: Services.Media.brightnessDown()
+        }
+    }
+
+    // Top-level window: PanelWindows cannot nest inside the bar.
+    ToastStack {
+        id: toastStack
     }
 }

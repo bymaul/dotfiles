@@ -27,12 +27,10 @@ local dotfiles = os.getenv("DOTFILES") or os.getenv("HOME") .. "/dotfiles"
 -------------------
 
 hl.on("hyprland.start", function()
-	hl.exec_cmd("qs -c Bar")
+	hl.exec_cmd("qs")
 	hl.exec_cmd("hypridle")
-	hl.exec_cmd("mako")
 	hl.exec_cmd("wl-paste --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
-	-- wallpaper lives next to this repo; resolve via $DOTFILES (falls back to ~/dotfiles)
 	hl.exec_cmd("swaybg -i " .. dotfiles .. "/wallpapers/wallpaper.jpg -m fill")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
@@ -44,15 +42,11 @@ end)
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+hl.env("QS_ICON_THEME", "Adwaita")
 
 -----------------------
 ---- LOOK AND FEEL ----
 -----------------------
-
--- palette
-local bg = "0x141415"
-local fg = "0xcdcdcd"
-local fgDim = "0x606079"
 
 hl.config({
 	general = {
@@ -83,7 +77,7 @@ hl.config({
 			enabled = true,
 			range = 10,
 			render_power = 2,
-			color = 0xee000000,
+			color = "0xee000000",
 		},
 
 		blur = {
@@ -246,33 +240,13 @@ hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"), { locked = true }
 hl.bind("Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot area"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot full"))
 
--- Laptop multimedia keys
-hl.bind(
-	"XF86AudioRaiseVolume",
-	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume up"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86AudioLowerVolume",
-	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume down"),
-	{ locked = true, repeating = true }
-)
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume mute"), { locked = true, repeating = true })
-hl.bind(
-	"XF86AudioMicMute",
-	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-volume mic"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86MonBrightnessUp",
-	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-brightness up"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86MonBrightnessDown",
-	hl.dsp.exec_cmd(dotfiles .. "/bin/osd-brightness down"),
-	{ locked = true, repeating = true }
-)
+-- Laptop multimedia keys (handled + displayed by quickshell)
+hl.bind("XF86AudioRaiseVolume", hl.dsp.global("qs-bar:Volume Up"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.global("qs-bar:Volume Down"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.global("qs-bar:Volume Mute"), { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute", hl.dsp.global("qs-bar:Mic Mute"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.global("qs-bar:Brightness Up"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.global("qs-bar:Brightness Down"), { locked = true, repeating = true })
 
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -282,13 +256,6 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true 
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
 --------------------------------
-
-local suppressMaximizeRule = hl.window_rule({
-	name = "suppress-maximize-events",
-	match = { class = ".*" },
-
-	suppress_event = "maximize",
-})
 
 hl.window_rule({
 	name = "fix-xwayland-drags",
@@ -329,8 +296,8 @@ hl.layer_rule({
 })
 
 hl.layer_rule({
-	name = "mako-glass",
-	match = { namespace = "notifications" },
+	name = "qs-notifications-glass",
+	match = { namespace = "qs-notifications" },
 	blur = true,
 	ignore_alpha = 0.1,
 })

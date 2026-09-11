@@ -1,0 +1,77 @@
+#!/bin/bash
+# notify-test: exercise the quickshell notification server.
+# Usage: notify-test [CASE]...   (default: all except dnd/actions)
+#
+#   basic     plain summary + body toast (5s)
+#   markup    bold/italic body rendering
+#   image     themed icon AND file-path thumbnail toasts
+#   progress  OSD-style value bar (replaces stacking)
+#   actions   blocking action toast; prints the chosen key (default/dismiss)
+#   urgent    critical urgency (danger border)
+#   sticky    15s timeout instead of the 5s default
+#   dnd       silent-drop check (enable DND in the panel FIRST, then run:
+#             nothing should appear)
+#
+# OSD/media keys are NOT covered here (they need a reloaded Hyprland):
+#   hyprctl dispatch global qs-bar:"Volume Up"
+
+set -u
+
+IMG="$HOME/dotfiles/wallpapers/wallpaper.jpg"
+[ -f "$IMG" ] || IMG="/usr/share/icons/Adwaita/scalable/status/dialog-information-symbolic.svg"
+
+case_basic() {
+    notify-send "Hello" "plain toast, 5s default timeout"
+}
+
+case_markup() {
+    notify-send "Markup" "<b>bold</b> and <i>italic</i> body text"
+}
+
+case_image() {
+    notify-send -i dialog-information "Themed icon" "Adwaita symbolic icon"
+    notify-send -i "$IMG" "File thumbnail" "absolute image path as icon"
+}
+
+case_progress() {
+    for pct in 10 40 70 100; do
+        notify-send -a volume -t 1500 -i audio-volume-high-symbolic \
+            -h int:value:"$pct" \
+            -h string:x-canonical-private-synchronous:volume-test \
+            "$pct%" "Volume"
+        sleep 0.4
+    done
+    echo "expected: ONE toast updating 10 -> 100, not four stacked"
+}
+
+case_actions() {
+    action=$(notify-send -a screenshot \
+        -h string:x-canonical-private-synchronous:screenshot-test \
+        -t 10000 -i "$IMG" \
+        -A "default=Open" -A "dismiss=Dismiss" \
+        "Screenshot" "test-actions.png")
+    echo "chosen action: '${action:-<timed out / dismissed>}'"
+}
+
+case_urgent() {
+    notify-send -u critical "Critical" "danger border, still 5s"
+}
+
+case_sticky() {
+    notify-send -t 15000 "Sticky" "15s timeout, outlives the default"
+}
+
+case_dnd() {
+    notify-send "DND probe" "if DND is on, this must stay silent"
+    echo "if DND is on and nothing appeared: OK"
+}
+
+if (($# == 0)); then
+    set -- basic markup image progress urgent sticky
+fi
+
+for c in "$@"; do
+    echo "--- case: $c"
+    "case_$c"
+    sleep 0.6
+done

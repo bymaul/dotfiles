@@ -1,5 +1,7 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Hyprland
 import "../components"
 import "../Palette.js" as Palette
 
@@ -19,7 +21,24 @@ PopupWindow {
     visible: false
 
     color: "transparent"
-    grabFocus: true
+
+    HyprlandFocusGrab {
+        id: powerGrab
+
+        windows: [powerPopup]
+
+        // No grabFocus: it dismisses on any grab break (e.g. toast
+        // expiry). Assert active from the timer, not bound to visible.
+        onCleared: powerPopup.visible = false
+    }
+
+    Timer {
+        interval: 100
+        running: powerPopup.visible
+        repeat: false
+
+        onTriggered: powerGrab.active = true
+    }
 
     function execPower(cmd: var) {
         bar.closePopups()

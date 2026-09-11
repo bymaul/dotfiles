@@ -4,13 +4,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Single source of truth for caffeine (idle inhibit) and DND (mako mode).
+// Single source of truth for caffeine (idle inhibit) and DND.
 // Bar icons and control-panel tiles bind to these properties. Every toggle
 // flows through here (bar clicks, tiles, GlobalShortcuts), so state updates
 // synchronously with zero polling.
-//
-// DND backend isolation: when mako is replaced by quickshell notifications,
-// only the dndActive writer/reader below changes.
 Singleton {
     id: modes
 
@@ -19,10 +16,6 @@ Singleton {
 
     function toggleCaffeine(): void {
         modes.caffeineActive = !modes.caffeineActive
-    }
-
-    function toggleDnd(): void {
-        modes.dndActive = !modes.dndActive
     }
 
     // Quickshell owns the inhibit lock directly: state IS the process.
@@ -51,35 +44,10 @@ Singleton {
         }
     }
 
-    // NOTE: no notify-send confirmations here. The tiles and bar icons
-    // already flip synchronously, and spawning a toast races the very state
-    // it announces: the DND "On" toast maps just as mako applies the mode,
-    // and its 1500ms map/unmap churn breaks the control panel's keyboard
-    // grab, dismissing the panel ~1.5s after the click.
-    onDndActiveChanged: {
-        if (modes.dndActive) {
-            Quickshell.execDetached(["makoctl", "mode", "-a", "dnd"])
-        } else {
-            Quickshell.execDetached(["makoctl", "mode", "-r", "dnd"])
-        }
-    }
-
-    // One-shot init: pick up DND left enabled by a previous session.
-    // (Caffeine always starts off; stale inhibit locks are cleaned below.)
-    Process {
-        id: dndInitProbe
-
-        command: ["makoctl", "mode"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                modes.dndActive = text.split("\n").some(
-                    line => line.trim() === "dnd"
-                )
-            }
-        }
-
-        Component.onCompleted: dndInitProbe.running = true
+    // No confirmation toasts: the tiles already flip synchronously,
+    // and a toast would race the state it announces.
+    function toggleDnd(): void {
+        modes.dndActive = !modes.dndActive
     }
 
     // Owned locks survive a quickshell crash; reap them on startup so a

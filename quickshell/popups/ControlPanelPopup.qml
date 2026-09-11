@@ -20,14 +20,20 @@ PopupWindow {
 
     implicitWidth: Palette.popupWidth
 
-    // 238 with the brightness row, 190 without (row 40 + spacing 8,
+    // 238 with the brightness row, 190 without (sliders + tiles,
     // plus the 18px keyboard hint row + 8 spacing shared by both).
-    implicitHeight: bar.brightnessAvailable ? 238 : 190
+    // History renders in the companion NotificationHistoryPopup
+    // below, so the panel itself stays fixed height.
+    implicitHeight: Services.Media.brightnessAvailable ? 238 : 190
 
     visible: false
 
     color: "transparent"
-    grabFocus: true
+
+    // No focus grab here: the bar-level grab whitelists both this
+    // panel and the history companion (see shell.qml). A grab owned
+    // by this window alone would read clicks on the companion as
+    // outside clicks and close everything.
 
     Shortcut {
         sequence: "Escape"
@@ -35,25 +41,44 @@ PopupWindow {
     }
 
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
             selectedIndex = 0
+
+            // A newly opened panel maps above anything already on
+            // screen: retire live cards into history first, or
+            // long-lived toasts end up buried under the new window.
+            Services.Notifs.hideAllToasts()
+        }
+
+        // While open, history is on screen: live cards would only
+        // ghost under it, so the server holds new arrivals for
+        // history instead of popping them. On close, whatever
+        // arrived pops retroactively.
+        Services.Notifs.suppressToasts = visible
+
+        if (!visible)
+            Services.Notifs.flushPending()
     }
 
     // ---- keyboard navigation ----
     // items: [brightness?] + [volume] + 6 tiles (wifi, bt, mic,
-    // caffeine, dnd, power)
+    // caffeine, dnd, power) + history rows (0..n)
     property int selectedIndex: 0
 
     function volumeIdx(): int {
-        return bar.brightnessAvailable ? 1 : 0
+        return Services.Media.brightnessAvailable ? 1 : 0
     }
 
     function firstTileIdx(): int {
         return controlPanel.volumeIdx() + 1
     }
 
-    function itemCount(): int {
+    function firstHistIdx(): int {
         return controlPanel.firstTileIdx() + 6
+    }
+
+    function itemCount(): int {
+        return controlPanel.firstHistIdx() + Services.Notifs.history.length
     }
 
     function clampSelection(): void {
@@ -61,14 +86,23 @@ PopupWindow {
             Math.min(controlPanel.itemCount() - 1, selectedIndex))
     }
 
+    function revealSelection(): void {
+        // Rows render in the companion window; ask the bar to scroll
+        // it (cross-file ids are invisible here).
+        if (controlPanel.selectedKind() === "history")
+            bar.revealHistory(controlPanel.selectedHistItem())
+    }
+
     function stepSelection(dir: int): void {
         selectedIndex += dir
         controlPanel.clampSelection()
+        controlPanel.revealSelection()
     }
 
     // Grid is 3 columns: vertical moves jump rows (±3) on tiles,
     // single steps on sliders. Leaving the grid upward lands on
-    // the last slider; clamping handles the bottom edge.
+    // the last slider; Down from the tiles enters the history list
+    // and clamping handles the bottom edge.
     function stepVertical(dir: int): void {
         if (controlPanel.selectedKind() !== "tile") {
             controlPanel.stepSelection(dir)
@@ -83,14 +117,18 @@ PopupWindow {
             selectedIndex = target
 
         controlPanel.clampSelection()
+        controlPanel.revealSelection()
     }
 
     function selectedKind(): string {
-        if (bar.brightnessAvailable && selectedIndex === 0)
+        if (Services.Media.brightnessAvailable && selectedIndex === 0)
             return "brightness"
 
         if (selectedIndex === controlPanel.volumeIdx())
             return "volume"
+
+        if (selectedIndex >= controlPanel.firstHistIdx())
+            return "history"
 
         return "tile"
     }
@@ -99,18 +137,8 @@ PopupWindow {
         return selectedIndex - controlPanel.firstTileIdx()
     }
 
-    function setBrightness(pct: real): void {
-        // Floor at 5%: brightnessctl accepts 0%, which turns the
-        // backlight fully off and leaves a black screen.
-        const clamped = Math.max(5, Math.min(100, Math.round(pct)))
-
-        bar.brightness = clamped
-
-        Quickshell.execDetached([
-            "brightnessctl",
-            "set",
-            clamped + "%"
-        ])
+    function selectedHistItem(): int {
+        return selectedIndex - controlPanel.firstHistIdx()
     }
 
     function adjustVolume(delta: real): void {
@@ -138,7 +166,7 @@ PopupWindow {
         const kind = controlPanel.selectedKind()
 
         if (kind === "brightness")
-            controlPanel.setBrightness(bar.brightness + dir * 5)
+            Services.Media.setBrightness(Services.Media.brightness + dir * 5, true)
         else if (kind === "volume")
             controlPanel.adjustVolume(dir * 0.05)
         else
@@ -155,6 +183,13 @@ PopupWindow {
 
         if (kind === "brightness")
             return
+
+        // History rows: Enter removes the entry.
+        if (kind === "history") {
+            Services.Notifs.dismissHistoryAt(controlPanel.selectedHistItem())
+            controlPanel.clampSelection()
+            return
+        }
 
         const tileActions = [
             () => bar.toggleWifi(),
@@ -259,7 +294,7 @@ PopupWindow {
             Rectangle {
                 id: brightnessRow
 
-                visible: bar.brightnessAvailable
+                visible: Services.Media.brightnessAvailable
 
                 width: parent.width
                 height: visible ? 40 : 0
@@ -299,10 +334,10 @@ PopupWindow {
 
                         width: parent.width - 80
 
-                        value: bar.brightness / 100
+                        value: Services.Media.brightness / 100
 
                         onSliderMoved: value => {
-                            controlPanel.setBrightness(value * 100)
+                            Services.Media.setBrightness(value * 100, true)
                         }
                     }
 
@@ -313,7 +348,7 @@ PopupWindow {
 
                         horizontalAlignment: Text.AlignRight
 
-                        text: Math.round(bar.brightness) + "%"
+                        text: Math.round(Services.Media.brightness) + "%"
 
                         color: Palette.dim
 
@@ -410,10 +445,6 @@ PopupWindow {
                 }
             }
 
-            // ============================================
-            // QUICK TOGGLE TILES
-            // ============================================
-
             Grid {
                 columns: 3
                 columnSpacing: 4
@@ -421,7 +452,6 @@ PopupWindow {
 
                 width: parent.width
 
-                // WIFI
                 ToggleTile {
                     glyph: Networking.wifiEnabled
                         ? (bar.connectedWifi ? "󰤨" : "󰤭")
@@ -438,7 +468,6 @@ PopupWindow {
                     }
                 }
 
-                // BLUETOOTH
                 ToggleTile {
                     glyph:
                         Bluetooth.defaultAdapter?.enabled
@@ -459,7 +488,6 @@ PopupWindow {
                     }
                 }
 
-                // MIC
                 ToggleTile {
                     glyph:
                         controlPanel.micSource?.audio?.muted
@@ -479,7 +507,6 @@ PopupWindow {
                     }
                 }
 
-                // CAFFEINE
                 ToggleTile {
                     glyph: ""
 
@@ -494,7 +521,6 @@ PopupWindow {
                     }
                 }
 
-                // DND
                 ToggleTile {
                     glyph: ""
 
@@ -509,7 +535,6 @@ PopupWindow {
                     }
                 }
 
-                // POWER
                 ToggleTile {
                     glyph: "󰐥"
 
@@ -531,7 +556,7 @@ PopupWindow {
 
                 horizontalAlignment: Text.AlignHCenter
 
-                text: "j/k move · h/l adjust · enter activate · m mute"
+                text: "j/k move · h/l adjust · enter select · m mute"
 
                 color: Palette.dim
 

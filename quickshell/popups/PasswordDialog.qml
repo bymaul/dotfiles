@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
@@ -25,7 +26,24 @@ PopupWindow {
     visible: false
 
     color: "transparent"
-    grabFocus: true
+
+    HyprlandFocusGrab {
+        id: dialogGrab
+
+        windows: [passwordDialog]
+
+        // No grabFocus: it dismisses on any grab break (e.g. toast
+        // expiry). Assert active from the timer, not bound to visible.
+        onCleared: passwordDialog.visible = false
+    }
+
+    Timer {
+        interval: 100
+        running: passwordDialog.visible
+        repeat: false
+
+        onTriggered: dialogGrab.active = true
+    }
 
     Shortcut {
         sequence: "Escape"

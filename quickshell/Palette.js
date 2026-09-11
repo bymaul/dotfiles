@@ -25,3 +25,7 @@ var px18 = 18;
 var popupWidth = 340;
 var popupMargin = 10;
 var popupTopGap = 6;
+
+// Toast width follows context: full popupWidth when parked below an
+// open popup (edges align), narrower toastWidth when floating alone.
+var toastWidth = 300;

@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Bluetooth
 import "../Palette.js" as Palette
 
@@ -19,7 +20,24 @@ PopupWindow {
     visible: false
 
     color: "transparent"
-    grabFocus: true
+
+    HyprlandFocusGrab {
+        id: bluetoothGrab
+
+        windows: [bluetoothPopup]
+
+        // No grabFocus: it dismisses on any grab break (e.g. toast
+        // expiry). Assert active from the timer, not bound to visible.
+        onCleared: bluetoothPopup.visible = false
+    }
+
+    Timer {
+        interval: 100
+        running: bluetoothPopup.visible
+        repeat: false
+
+        onTriggered: bluetoothGrab.active = true
+    }
 
     Shortcut {
         sequence: "Escape"

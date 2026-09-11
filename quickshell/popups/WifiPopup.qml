@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
@@ -19,7 +20,24 @@ PopupWindow {
     visible: false
 
     color: "transparent"
-    grabFocus: true
+
+    HyprlandFocusGrab {
+        id: wifiGrab
+
+        windows: [wifiPopup]
+
+        // No grabFocus: it dismisses on any grab break (e.g. toast
+        // expiry). Assert active from the timer, not bound to visible.
+        onCleared: wifiPopup.visible = false
+    }
+
+    Timer {
+        interval: 100
+        running: wifiPopup.visible
+        repeat: false
+
+        onTriggered: wifiGrab.active = true
+    }
 
     Shortcut {
         sequence: "Escape"

@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import "../Palette.js" as Palette
 
 PopupWindow {
@@ -23,7 +24,23 @@ PopupWindow {
 
     color: "transparent"
 
-    grabFocus: true
+    HyprlandFocusGrab {
+        id: calendarGrab
+
+        windows: [calendar]
+
+        // No grabFocus: it dismisses on any grab break (e.g. toast
+        // expiry). Assert active from the timer, not bound to visible.
+        onCleared: calendar.visible = false
+    }
+
+    Timer {
+        interval: 100
+        running: calendar.visible
+        repeat: false
+
+        onTriggered: calendarGrab.active = true
+    }
 
     Shortcut {
         sequence: "Escape"
