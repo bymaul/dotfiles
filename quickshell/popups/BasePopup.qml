@@ -29,7 +29,7 @@ PopupWindow {
     // it and keyboard focus stays stuck on a hidden window.
     onVisibleChanged: {
         if (!base.visible)
-            grab.active = false
+            grab.active = false;
     }
 
     HyprlandFocusGrab {
@@ -43,10 +43,26 @@ PopupWindow {
     }
 
     Timer {
+        id: grabTimer
+
         interval: 100
         running: base.visible && base.useGrab
         repeat: false
 
         onTriggered: grab.active = true
+    }
+
+    // A workspace switch steals keyboard focus without clearing the
+    // grab (active stays true), so re-setting it is a no-op: drop it
+    // first, then re-assert after the usual deferral.
+    Connections {
+        target: Hyprland
+
+        function onFocusedWorkspaceChanged(): void {
+            if (base.visible && base.useGrab) {
+                grab.active = false;
+                grabTimer.restart();
+            }
+        }
     }
 }

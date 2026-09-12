@@ -129,6 +129,8 @@ ShellRoot {
         }
 
         Timer {
+            id: panelGrabTimer
+
             interval: 100
             running: controlPanelPopup.visible
             repeat: false
@@ -142,6 +144,19 @@ ShellRoot {
             function onVisibleChanged(): void {
                 if (!controlPanelPopup.visible)
                     panelGrab.active = false;
+            }
+        }
+
+        // Same re-assert as BasePopup: a workspace switch steals
+        // keyboard focus without clearing the grab.
+        Connections {
+            target: Hyprland
+
+            function onFocusedWorkspaceChanged(): void {
+                if (controlPanelPopup.visible) {
+                    panelGrab.active = false;
+                    panelGrabTimer.restart();
+                }
             }
         }
 
