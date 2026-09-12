@@ -3,44 +3,15 @@ import Quickshell
 import Quickshell.Hyprland
 import "../Palette.js" as Palette
 
-PopupWindow {
+BasePopup {
     id: calendar
 
-    required property var bar
     required property var clock
 
-    anchor.window: bar
-
-    anchor.rect.x:
-        bar.width / 2 - width / 2
-
-    anchor.rect.y:
-        bar.height + Palette.popupTopGap
+    anchorMode: "center"
 
     implicitWidth: Palette.popupWidth
-    implicitHeight: 268
-
-    visible: false
-
-    color: "transparent"
-
-    HyprlandFocusGrab {
-        id: calendarGrab
-
-        windows: [calendar]
-
-        // No grabFocus: it dismisses on any grab break (e.g. toast
-        // expiry). Assert active from the timer, not bound to visible.
-        onCleared: calendar.visible = false
-    }
-
-    Timer {
-        interval: 100
-        running: calendar.visible
-        repeat: false
-
-        onTriggered: calendarGrab.active = true
-    }
+    implicitHeight: 256
 
     Shortcut {
         sequence: "Escape"
@@ -48,13 +19,13 @@ PopupWindow {
     }
 
     Shortcut {
-        sequence: "Left"
+        sequence: "h"
         enabled: calendar.visible
         onActivated: calendarFrame.stepMonth(-1)
     }
 
     Shortcut {
-        sequence: "Right"
+        sequence: "l"
         enabled: calendar.visible
         onActivated: calendarFrame.stepMonth(1)
     }
@@ -79,8 +50,7 @@ PopupWindow {
 
         color: Palette.bg
 
-        border.width: 1
-        border.color: Palette.border
+        border.width: 0
 
         property date viewDate: new Date(
             clock.date.getFullYear(),
@@ -149,12 +119,11 @@ PopupWindow {
         Column {
             anchors {
                 fill: parent
-                margins: 12
+                margins: Palette.popupPadding
             }
 
-            spacing: 8
+            spacing: Palette.popupSpacing
 
-            // MONTH NAVIGATION
             Row {
                 width: parent.width
                 height: 26
@@ -173,7 +142,7 @@ PopupWindow {
                         : Palette.dim
 
                     font.family: Palette.font
-                    font.pixelSize: Palette.px18
+                    font.pixelSize: Palette.px14
 
                     MouseArea {
                         id: navLeftHover
@@ -204,8 +173,7 @@ PopupWindow {
                     color: Palette.fg
 
                     font.family: Palette.font
-                    font.pixelSize: Palette.px16
-                    font.bold: true
+                    font.pixelSize: Palette.px13
                 }
 
                 Text {
@@ -222,7 +190,7 @@ PopupWindow {
                         : Palette.dim
 
                     font.family: Palette.font
-                    font.pixelSize: Palette.px18
+                    font.pixelSize: Palette.px14
 
                     MouseArea {
                         id: navRightHover
@@ -239,7 +207,6 @@ PopupWindow {
                 }
             }
 
-            // FULL DATE
             Text {
                 width: parent.width
 
@@ -250,18 +217,16 @@ PopupWindow {
                     "dddd, dd MMMM yyyy"
                 )
 
-                color: Palette.accent
+                color: Palette.dim
 
                 font.family: Palette.font
-                font.pixelSize: Palette.px13
+                font.pixelSize: Palette.px11
             }
 
-            // WEEKDAY HEADERS
             Row {
                 width: parent.width
                 height: 16
 
-                // Rotated to the locale's first weekday (see weekStart).
                 Repeater {
                     model: calendarFrame.weekdayHeaders()
 
@@ -282,7 +247,6 @@ PopupWindow {
                 }
             }
 
-            // DAY GRID
             Grid {
                 width: parent.width
                 height: 156
@@ -303,12 +267,6 @@ PopupWindow {
                             ? Palette.accent
                             : "transparent"
 
-                        // Display-only cells: no hover or click affordance.
-                        Rectangle {
-                            anchors.fill: parent
-                            color: "transparent"
-                        }
-
                         Text {
                             anchors.centerIn: parent
 
@@ -319,7 +277,7 @@ PopupWindow {
                             color: modelData.day > 0 &&
                                 calendarFrame.isToday(modelData.day)
                                 ? Palette.onAccent
-                                : Palette.fg
+                                : Palette.dim
 
                             font.family:
                                 Palette.font

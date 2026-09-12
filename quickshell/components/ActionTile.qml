@@ -6,25 +6,18 @@ Rectangle {
 
     required property string glyph
     required property string label
-    property string hint: ""
-
-    // Keyboard selection (power menu nav). Selected is one step
-    // brighter than hover: surfaceHover bg + fg border.
-    property bool selected: false
 
     signal actionClicked
 
     width: (parent.width - 8) / 2
-    height: 46
+    height: 40
     radius: 0
 
     readonly property bool highlighted:
-        tileHover.containsMouse || actionTile.selected
+        tileHover.containsMouse
 
-    color: actionTile.selected ? Palette.surfaceHover
-        : tileHover.containsMouse ? Palette.surface : Palette.onAccent
-    border.width: 1
-    border.color: actionTile.selected ? Palette.fg : Palette.border
+    color: tileHover.containsMouse ? Palette.hoverBg : Palette.surface
+    border.width: 0
 
     Column {
         anchors.centerIn: parent
@@ -36,24 +29,18 @@ Rectangle {
 
             text: actionTile.glyph
 
-            color: actionTile.highlighted
-                ? Palette.accent
-                : Palette.fg
+            color: actionTile.highlighted ? Palette.accent : Palette.dim
 
             font.family: Palette.font
-            font.pixelSize: Palette.px16
+            font.pixelSize: Palette.px14
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
 
-            text: actionTile.hint !== ""
-                ? actionTile.label + " [" + actionTile.hint + "]"
-                : actionTile.label
+            text: actionTile.label
 
-            color: actionTile.highlighted
-                ? Palette.fg
-                : Palette.dim
+            color: actionTile.highlighted ? Palette.fg : Palette.dim
 
             font.family: Palette.font
             font.pixelSize: Palette.px11

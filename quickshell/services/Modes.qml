@@ -16,6 +16,15 @@ Singleton {
 
     function toggleCaffeine(): void {
         modes.caffeineActive = !modes.caffeineActive
+        modes.caffeineToast()
+    }
+
+    function caffeineToast(): void {
+        Quickshell.execDetached([
+            "notify-send", "-a", "caffeine", "-t", "1500",
+            "-h", "string:x-canonical-private-synchronous:caffeine",
+            modes.caffeineActive ? "Caffeine on" : "Caffeine off"
+        ])
     }
 
     // Quickshell owns the inhibit lock directly: state IS the process.
@@ -44,10 +53,19 @@ Singleton {
         }
     }
 
-    // No confirmation toasts: the tiles already flip synchronously,
-    // and a toast would race the state it announces.
+    // State flips announce themselves like the volume OSD: same
+    // synchronous-replace contract, so they never touch history.
     function toggleDnd(): void {
         modes.dndActive = !modes.dndActive
+        modes.dndToast()
+    }
+
+    function dndToast(): void {
+        Quickshell.execDetached([
+            "notify-send", "-a", "dnd", "-t", "1500",
+            "-h", "string:x-canonical-private-synchronous:dnd",
+            modes.dndActive ? "DND on" : "DND off"
+        ])
     }
 
     // Owned locks survive a quickshell crash; reap them on startup so a

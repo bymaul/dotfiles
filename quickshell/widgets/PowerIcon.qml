@@ -1,18 +1,31 @@
 import QtQuick
 import "../Palette.js" as Palette
 
-Text {
-
+Item {
     required property var bar
-    text: "󰐥"
 
-    color: Palette.fg
+    anchors.verticalCenter: parent.verticalCenter
 
-    font.family: Palette.font
-    font.pixelSize: Palette.px13
+    width: powerText.width + 16
+    height: 24
+
+    Text {
+        id: powerText
+
+        anchors.centerIn: parent
+
+        text: "󰐥"
+
+        color: Palette.fg
+
+        font.family: Palette.font
+        font.pixelSize: Palette.px13
+    }
 
     MouseArea {
         anchors.fill: parent
+
+        cursorShape: Qt.PointingHandCursor
 
         onClicked: bar.togglePower()
     }

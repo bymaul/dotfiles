@@ -4,40 +4,11 @@ import Quickshell.Hyprland
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
-PopupWindow {
+BasePopup {
     id: wifiPopup
 
-    required property var bar
-
-    anchor.window: bar
-
-    anchor.rect.x: bar.width - width - Palette.popupMargin
-    anchor.rect.y: bar.height + Palette.popupTopGap
-
     implicitWidth: Palette.popupWidth
-    implicitHeight: 430
-
-    visible: false
-
-    color: "transparent"
-
-    HyprlandFocusGrab {
-        id: wifiGrab
-
-        windows: [wifiPopup]
-
-        // No grabFocus: it dismisses on any grab break (e.g. toast
-        // expiry). Assert active from the timer, not bound to visible.
-        onCleared: wifiPopup.visible = false
-    }
-
-    Timer {
-        interval: 100
-        running: wifiPopup.visible
-        repeat: false
-
-        onTriggered: wifiGrab.active = true
-    }
+    implicitHeight: 446
 
     Shortcut {
         sequence: "Escape"
@@ -124,16 +95,6 @@ PopupWindow {
     // Letter shortcuts stay scoped to the open popup so they never
     // leak into typing elsewhere.
     Shortcut {
-        sequence: "Down"
-        enabled: wifiPopup.visible
-        onActivated: wifiPopup.stepSelection(1)
-    }
-    Shortcut {
-        sequence: "Up"
-        enabled: wifiPopup.visible
-        onActivated: wifiPopup.stepSelection(-1)
-    }
-    Shortcut {
         sequence: "j"
         enabled: wifiPopup.visible
         onActivated: wifiPopup.stepSelection(1)
@@ -181,25 +142,24 @@ PopupWindow {
 
         color: Palette.bg
 
-        border.width: 1
-        border.color: Palette.border
+        border.width: 0
 
         Column {
             anchors {
                 fill: parent
-                margins: 12
+                margins: Palette.popupPadding
             }
 
-            spacing: 8
+            spacing: Palette.popupSpacing
 
-            // CURRENT NETWORK
             Rectangle {
                 width: parent.width
-                height: 40
+                height: Palette.rowHeight
 
                 radius: 0
 
-                color: Palette.surface
+                color: "transparent"
+                border.width: 0
 
                 Text {
                     anchors {
@@ -228,16 +188,15 @@ PopupWindow {
                     font.family:
                         Palette.font
 
-                    font.pixelSize: Palette.px13
+                    font.pixelSize: Palette.px12
 
                     elide: Text.ElideRight
                 }
             }
 
-            // ENABLE + SCAN
             Row {
                 width: parent.width
-                height: 36
+                height: Palette.rowHeight
                 spacing: 8
 
                 Rectangle {
@@ -247,7 +206,8 @@ PopupWindow {
                     radius: 0
 
                     color: enableHover.containsMouse
-                        ? Palette.surfaceHover : Palette.surface
+                        ? Palette.hoverBg : Palette.surface
+                    border.width: 0
 
                     Text {
                         anchors.centerIn: parent
@@ -257,13 +217,13 @@ PopupWindow {
                             : "󰖩  Enable"
 
                         color: Networking.wifiEnabled
-                            ? Palette.fg
+                            ? Palette.dim
                             : Palette.accent
 
                         font.family:
                             Palette.font
 
-                        font.pixelSize: Palette.px13
+                        font.pixelSize: Palette.px12
                     }
 
                     MouseArea {
@@ -288,7 +248,8 @@ PopupWindow {
                     radius: 0
 
                     color: scanHover.containsMouse
-                        ? Palette.surfaceHover : Palette.surface
+                        ? Palette.hoverBg : Palette.surface
+                    border.width: 0
 
                     Text {
                         anchors.centerIn: parent
@@ -297,12 +258,12 @@ PopupWindow {
                             ? "󰑓  Scanning..."
                             : "󰑐  Scan"
 
-                        color: Palette.fg
+                        color: Palette.dim
 
                         font.family:
                             Palette.font
 
-                        font.pixelSize: Palette.px13
+                        font.pixelSize: Palette.px12
                     }
 
                     MouseArea {
@@ -314,19 +275,17 @@ PopupWindow {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            if (bar.wifiDevice)
-                                bar.wifiDevice.scannerEnabled = true
+                            wifiPopup.toggleScan()
                         }
                     }
                 }
             }
 
-            // NETWORK LIST
             ListView {
                 id: wifiList
 
                 width: parent.width
-                height: parent.height - 40 - 36 - 18 - 24
+                height: parent.height - 36 - 36 - 14 - 24
 
                 clip: true
 
@@ -345,33 +304,21 @@ PopupWindow {
                     required property var modelData
                     required property int index
 
-                    // Keyboard selection outshines hover: surfaceHover
-                    // (connectedRow when connected) vs plain surface.
                     readonly property bool selected:
                         wifiList.currentIndex === index
 
                     width: wifiList.width
-                    height: 40
+                    height: Palette.listRowHeight
 
                     radius: 0
 
-                    color: {
-                        if (selected)
-                            return modelData.connected
-                                ? Palette.connectedRow
-                                : Palette.surfaceHover
+                    color: selected ? Palette.accent
+                        : rowHover.containsMouse ? Palette.hoverBg
+                        : (modelData.connected ? Palette.activeBg : "transparent")
+                    border.width: selected ? 1 : 0
+                    border.color: selected ? Palette.accent
+                        : modelData.connected ? Palette.accent : Palette.dim
 
-                        if (rowHover.containsMouse)
-                            return Palette.surface
-
-                        return modelData.connected
-                            ? Palette.surface
-                            : "transparent"
-                    }
-
-                    // Declared BEFORE the content row so the nested
-                    // forget button (later = on top) receives its clicks
-                    // instead of being swallowed here.
                     MouseArea {
                         id: rowHover
 
@@ -408,14 +355,14 @@ PopupWindow {
                                 return "󰤯"
                             }
 
-                            color: modelData.connected
-                                ? Palette.accent
-                                : Palette.dim
+                            color: selected ? Palette.onAccent
+                                : modelData.connected ? Palette.accent
+                                : rowHover.containsMouse ? Palette.fg : Palette.dim
 
                             font.family:
                                 Palette.font
 
-                            font.pixelSize: Palette.px14
+                            font.pixelSize: Palette.px13
                         }
 
                         Text {
@@ -427,14 +374,14 @@ PopupWindow {
                             text: modelData.name ||
                                 "Hidden network"
 
-                            color: modelData.connected
-                                ? Palette.fg
-                                : Palette.dim
+                            color: selected ? Palette.onAccent
+                                : (modelData.connected || rowHover.containsMouse)
+                                ? Palette.fg : Palette.dim
 
                             font.family:
                                 Palette.font
 
-                            font.pixelSize: Palette.px13
+                            font.pixelSize: Palette.px12
 
                             elide: Text.ElideRight
                         }
@@ -447,12 +394,13 @@ PopupWindow {
 
                             text: "󰌾"
 
-                            color: Palette.dim
+                            color: selected ? Palette.onAccent
+                                : rowHover.containsMouse ? Palette.fg : Palette.dim
 
                             font.family:
                                 Palette.font
 
-                            font.pixelSize: Palette.px13
+                            font.pixelSize: Palette.px12
 
                             visible:
                                 modelData.security !==
@@ -472,14 +420,15 @@ PopupWindow {
 
                             text: "󰅖"
 
-                            color: forgetHover.containsMouse
+                            color: selected ? Palette.onAccent
+                                : forgetHover.containsMouse
                                 ? Palette.fg
                                 : Palette.dim
 
                             font.family:
                                 Palette.font
 
-                            font.pixelSize: Palette.px14
+                            font.pixelSize: Palette.px13
 
                             visible:
                                 modelData.known &&
@@ -504,13 +453,14 @@ PopupWindow {
                 }
             }
 
-            // KEYBOARD HINTS
             Text {
                 width: parent.width
 
                 horizontalAlignment: Text.AlignHCenter
 
-                text: "j/k move · enter connect · d forget · s scan · e on/off"
+                text: "↵ connect · d forget · s scan · e on/off"
+
+                wrapMode: Text.WordWrap
 
                 color: Palette.dim
 

@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
+import Quickshell.Services.Mpris
 
 // Media state + feedback toasts (replaces osd-volume/osd-brightness).
 // The control panel sliders and all media keys drive through here, so
@@ -16,6 +17,10 @@ Singleton {
 
     property var sink: Pipewire.defaultAudioSink
     property var source: Pipewire.defaultAudioSource
+
+    // Touch Mpris at startup so its player list is already warm on
+    // the first media key (singletons start on first access).
+    property var _mprisPlayers: Mpris.players
 
     PwObjectTracker {
         objects: [media.sink, media.source]
@@ -111,6 +116,77 @@ Singleton {
         media.micToast()
     }
 
+    // Player pick mirrors playerctl: the playing one, else the first.
+    function activePlayer(): var {
+        let first = null
+
+        for (const player of Mpris.players?.values ?? []) {
+            if (!first)
+                first = player
+
+            if (player.isPlaying)
+                return player
+        }
+
+        return first
+    }
+
+    function mediaToast(): void {
+        const player = media.activePlayer()
+
+        if (!player)
+            return
+
+        Quickshell.execDetached([
+            "notify-send", "-a", "media", "-t", "1500",
+            "-i", "audio-x-generic-symbolic",
+            "-h", "string:x-canonical-private-synchronous:media",
+            player.trackTitle || "Unknown title",
+            player.trackArtist || ""
+        ])
+    }
+
+    // MPRIS round-trips over dbus, so the toast waits a beat for the
+    // new track state instead of announcing the stale one.
+    Timer {
+        id: mediaToastTimer
+
+        interval: 400
+        repeat: false
+
+        onTriggered: media.mediaToast()
+    }
+
+    function mediaToggle(): void {
+        const player = media.activePlayer()
+
+        if (!player)
+            return
+
+        player.togglePlaying()
+        mediaToastTimer.restart()
+    }
+
+    function mediaNext(): void {
+        const player = media.activePlayer()
+
+        if (!player)
+            return
+
+        player.next()
+        mediaToastTimer.restart()
+    }
+
+    function mediaPrev(): void {
+        const player = media.activePlayer()
+
+        if (!player)
+            return
+
+        player.previous()
+        mediaToastTimer.restart()
+    }
+
     // quiet = true when the caller already shows the value itself
     // (control panel slider); the toast would just double it.
     function setBrightness(pct: real, quiet: bool): void {
@@ -168,10 +244,12 @@ Singleton {
             onStreamFinished: {
                 const fields = text.split(",")
 
-                if (fields.length >= 4)
+                if (fields.length >= 4) {
                     media.brightness = parseFloat(fields[3]) || 0
-                else
+                    media.brightnessAvailable = true
+                } else {
                     media.brightnessAvailable = false
+                }
             }
         }
 

@@ -4,40 +4,11 @@ import Quickshell.Hyprland
 import Quickshell.Bluetooth
 import "../Palette.js" as Palette
 
-PopupWindow {
+BasePopup {
     id: bluetoothPopup
-
-    required property var bar
-
-    anchor.window: bar
-
-    anchor.rect.x: bar.width - width - Palette.popupMargin
-    anchor.rect.y: bar.height + Palette.popupTopGap
 
     implicitWidth: Palette.popupWidth
     implicitHeight: 430
-
-    visible: false
-
-    color: "transparent"
-
-    HyprlandFocusGrab {
-        id: bluetoothGrab
-
-        windows: [bluetoothPopup]
-
-        // No grabFocus: it dismisses on any grab break (e.g. toast
-        // expiry). Assert active from the timer, not bound to visible.
-        onCleared: bluetoothPopup.visible = false
-    }
-
-    Timer {
-        interval: 100
-        running: bluetoothPopup.visible
-        repeat: false
-
-        onTriggered: bluetoothGrab.active = true
-    }
 
     Shortcut {
         sequence: "Escape"
@@ -90,18 +61,49 @@ PopupWindow {
                 !Bluetooth.defaultAdapter.enabled
     }
 
+    // Discovery left running drains battery like wifi scanning:
+    // a manual scan gets one 15s pass, then the radio goes quiet.
+    function toggleScan(): void {
+        if (!Bluetooth.defaultAdapter)
+            return
+
+        Bluetooth.defaultAdapter.discovering =
+            !Bluetooth.defaultAdapter.discovering
+
+        if (Bluetooth.defaultAdapter.discovering)
+            scanTimeout.restart()
+        else
+            scanTimeout.stop()
+    }
+
+    Timer {
+        id: scanTimeout
+
+        interval: 15000
+        repeat: false
+
+        onTriggered: {
+            if (Bluetooth.defaultAdapter)
+                Bluetooth.defaultAdapter.discovering = false
+        }
+    }
+
+    function forgetSelected(): void {
+        const dev = bluetoothPopup.selectedDevice()
+
+        if (dev && dev.paired && !dev.connected)
+            dev.forget()
+    }
+
+    function toggleTrust(): void {
+        const dev = bluetoothPopup.selectedDevice()
+
+        if (dev)
+            dev.trusted = !dev.trusted
+    }
+
     // Letter shortcuts stay scoped to the open popup so they never
     // leak into typing elsewhere.
-    Shortcut {
-        sequence: "Down"
-        enabled: bluetoothPopup.visible
-        onActivated: bluetoothPopup.stepSelection(1)
-    }
-    Shortcut {
-        sequence: "Up"
-        enabled: bluetoothPopup.visible
-        onActivated: bluetoothPopup.stepSelection(-1)
-    }
     Shortcut {
         sequence: "j"
         enabled: bluetoothPopup.visible
@@ -127,6 +129,26 @@ PopupWindow {
         enabled: bluetoothPopup.visible
         onActivated: bluetoothPopup.toggleAdapter()
     }
+    Shortcut {
+        sequence: "s"
+        enabled: bluetoothPopup.visible
+        onActivated: bluetoothPopup.toggleScan()
+    }
+    Shortcut {
+        sequence: "d"
+        enabled: bluetoothPopup.visible
+        onActivated: bluetoothPopup.forgetSelected()
+    }
+    Shortcut {
+        sequence: "Delete"
+        enabled: bluetoothPopup.visible
+        onActivated: bluetoothPopup.forgetSelected()
+    }
+    Shortcut {
+        sequence: "t"
+        enabled: bluetoothPopup.visible
+        onActivated: bluetoothPopup.toggleTrust()
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -135,62 +157,101 @@ PopupWindow {
 
         color: Palette.bg
 
-        border.width: 1
-        border.color: Palette.border
+        border.width: 0
 
         Column {
             anchors {
                 fill: parent
-                margins: 12
+                margins: Palette.popupPadding
             }
 
-            spacing: 8
+            spacing: Palette.popupSpacing
 
-            // ADAPTER TOGGLE
-            Rectangle {
+            Row {
                 width: parent.width
-                height: 36
+                height: Palette.rowHeight
+                spacing: 8
 
-                radius: 0
+                Rectangle {
+                    width: (parent.width - 8) / 2
+                    height: parent.height
 
-                color: btToggleHover.containsMouse
-                    ? Palette.surfaceHover : Palette.surface
+                    radius: 0
 
-                Text {
-                    anchors.centerIn: parent
+                    color: enableHover.containsMouse
+                        ? Palette.hoverBg : Palette.surface
+                    border.width: 0
 
-                    text: Bluetooth.defaultAdapter?.enabled
-                        ? "󰂲  Disable"
-                        : "󰂯  Enable"
+                    Text {
+                        anchors.centerIn: parent
 
-                    color: Bluetooth.defaultAdapter?.enabled
-                        ? Palette.fg
-                        : Palette.accent
+                        text: Bluetooth.defaultAdapter?.enabled
+                            ? "󰂲  Disable"
+                            : "󰂯  Enable"
 
-                    font.family:
-                        Palette.font
+                        color: Bluetooth.defaultAdapter?.enabled
+                            ? Palette.dim
+                            : Palette.accent
 
-                    font.pixelSize: Palette.px13
-                }
+                        font.family: Palette.font
+                        font.pixelSize: Palette.px12
+                    }
 
-                MouseArea {
-                    id: btToggleHover
+                    MouseArea {
+                        id: enableHover
 
-                    anchors.fill: parent
+                        anchors.fill: parent
 
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
                             bluetoothPopup.toggleAdapter()
                         }
+                    }
+                }
+
+                Rectangle {
+                    width: (parent.width - 8) / 2
+                    height: parent.height
+
+                    radius: 0
+
+                    color: scanHover.containsMouse
+                        ? Palette.hoverBg : Palette.surface
+                    border.width: 0
+
+                    Text {
+                        anchors.centerIn: parent
+
+                        text: Bluetooth.defaultAdapter?.discovering
+                            ? "󰑓  Scanning..."
+                            : "󰑐  Scan"
+
+                        color: Palette.dim
+
+                        font.family: Palette.font
+                        font.pixelSize: Palette.px12
+                    }
+
+                    MouseArea {
+                        id: scanHover
+
+                        anchors.fill: parent
+
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: {
+                            bluetoothPopup.toggleScan()
+                        }
+                    }
                 }
             }
 
-            // DEVICE LIST + ADAPTER OFF HINT
             Item {
                 width: parent.width
-                height: parent.height - 36 - 18 - 16
+                height: parent.height - 36 - 14 - 16
 
                 ListView {
                     id: btList
@@ -214,32 +275,22 @@ PopupWindow {
                         required property var modelData
                         required property int index
 
-                        // Keyboard selection outshines hover:
-                        // surfaceHover (connectedRow when connected)
-                        // vs plain surface.
                         readonly property bool selected:
                             btList.currentIndex === index
+                        readonly property bool connected: modelData.state ===
+                            BluetoothDeviceState.Connected
 
                         width: btList.width
-                        height: 40
+                        height: Palette.listRowHeight
 
                         radius: 0
 
-                        color: {
-                            if (selected)
-                                return modelData.state ===
-                                    BluetoothDeviceState.Connected
-                                    ? Palette.connectedRow
-                                    : Palette.surfaceHover
-
-                            if (btRowHover.containsMouse)
-                                return Palette.surface
-
-                            return modelData.state ===
-                                BluetoothDeviceState.Connected
-                                ? Palette.surface
-                                : "transparent"
-                        }
+                        color: selected ? Palette.accent
+                            : btRowHover.containsMouse ? Palette.hoverBg
+                            : (connected ? Palette.activeBg : "transparent")
+                        border.width: selected ? 1 : 0
+                        border.color: selected ? Palette.accent
+                            : connected ? Palette.accent : Palette.dim
 
                         Row {
                             anchors {
@@ -250,29 +301,31 @@ PopupWindow {
 
                             spacing: 8
 
-                            Text {
-                                anchors.verticalCenter:
-                                    parent.verticalCenter
+                                Text {
+                                    anchors.verticalCenter:
+                                        parent.verticalCenter
 
-                                text: modelData.connected
+                                    width: 18
+
+                                    text: modelData.connected
                                     ? "󰂯"
                                     : "󰂲"
 
-                                color: modelData.connected
-                                    ? Palette.accent
-                                    : Palette.dim
+                                color: selected ? Palette.onAccent
+                                    : modelData.connected ? Palette.accent
+                                    : btRowHover.containsMouse ? Palette.fg : Palette.dim
 
                                 font.family:
                                     Palette.font
 
-                                font.pixelSize: Palette.px16
+                                font.pixelSize: Palette.px13
                             }
 
                             Column {
                                 anchors.verticalCenter:
                                     parent.verticalCenter
 
-                                width: parent.width - 30
+                                width: parent.width - 58
 
                                 spacing: 2
 
@@ -282,14 +335,14 @@ PopupWindow {
                                     text: modelData.name ||
                                         "Unknown device"
 
-                                    color: modelData.connected
-                                        ? Palette.fg
-                                        : Palette.dim
+                                    color: selected ? Palette.onAccent
+                                        : (modelData.connected || btRowHover.containsMouse)
+                                        ? Palette.fg : Palette.dim
 
                                     font.family:
                                         Palette.font
 
-                                    font.pixelSize: Palette.px13
+                                    font.pixelSize: Palette.px12
 
                                     elide: Text.ElideRight
                                 }
@@ -298,21 +351,33 @@ PopupWindow {
                                     width: parent.width
 
                                     text: {
+                                        let s
+
                                         if (modelData.state ===
                                                 BluetoothDeviceState.Connected)
-                                            return "Connected"
-                                        if (modelData.state ===
+                                            s = "Connected"
+                                        else if (modelData.state ===
                                                 BluetoothDeviceState.Connecting)
-                                            return "Connecting..."
-                                        if (modelData.state ===
+                                            s = "Connecting..."
+                                        else if (modelData.state ===
                                                 BluetoothDeviceState.Disconnecting)
-                                            return "Disconnecting..."
-                                        if (modelData.pairing)
-                                            return "Pairing..."
-                                        return "Available"
+                                            s = "Disconnecting..."
+                                        else if (modelData.pairing)
+                                            s = "Pairing..."
+                                        else
+                                            s = "Available"
+
+                                        if (modelData.trusted && !modelData.connected)
+                                            s += " · Trusted"
+
+                                        if (modelData.address !== "")
+                                            s += " · " + modelData.address
+
+                                        return s
                                     }
 
-                                    color: Palette.dim
+                                    color: selected ? Palette.onAccent
+                                        : btRowHover.containsMouse ? Palette.fg : Palette.dim
 
                                     font.family:
                                         Palette.font
@@ -320,6 +385,43 @@ PopupWindow {
                                     font.pixelSize: Palette.px10
                                 }
                             }
+
+                                Text {
+                                    anchors.verticalCenter:
+                                        parent.verticalCenter
+
+                                    width: 24
+
+                                    horizontalAlignment:
+                                        Text.AlignHCenter
+
+                                    text: "󰅖"
+
+                                    color: selected ? Palette.onAccent
+                                        : forgetHover.containsMouse
+                                        ? Palette.fg : Palette.dim
+
+                                    font.family:
+                                        Palette.font
+
+                                    font.pixelSize: Palette.px13
+
+                                    visible:
+                                        modelData.paired &&
+                                        !modelData.connected
+
+                                    MouseArea {
+                                        id: forgetHover
+
+                                        anchors.fill: parent
+
+                                        hoverEnabled: true
+                                        cursorShape:
+                                            Qt.PointingHandCursor
+
+                                        onClicked: modelData.forget()
+                                    }
+                                }
                         }
 
                         MouseArea {
@@ -354,13 +456,14 @@ PopupWindow {
                 }
             }
 
-            // KEYBOARD HINTS
             Text {
                 width: parent.width
 
                 horizontalAlignment: Text.AlignHCenter
 
-                text: "j/k move · enter connect · e on/off"
+                text: "↵ connect · d forget · t trust · s scan · e on/off"
+
+                wrapMode: Text.WordWrap
 
                 color: Palette.dim
 

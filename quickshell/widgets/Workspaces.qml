@@ -27,7 +27,7 @@ Row {
                 radius: 0
 
                 color: modelData.focused
-                    ? Palette.bg
+                    ? Palette.surface
                     : "transparent"
             }
 

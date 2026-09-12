@@ -16,17 +16,14 @@ Rectangle {
 
     radius: 0
 
-    // Elevated surface, not base bg: a parked toast sits directly on
-    // top of history cards (same anchor/width), and identical
-    // backgrounds melt it into the list. Surface keeps it readable
-    // as the topmost layer.
-    color: Palette.surface
+    property bool parked: false
+    color: Palette.bg
 
     border.width: 1
     border.color: card.notification.urgency === NotificationUrgency.Critical ||
         (card.notification.appName === "volume" &&
             card.notification.summary === "Muted")
-        ? Palette.danger : Palette.border
+        ? Palette.danger : Palette.dim
 
     readonly property var valueHint: notification.hints
         ? notification.hints["value"] : undefined
@@ -41,33 +38,18 @@ Rectangle {
 
         return hit ?? ""
     }
-    readonly property bool hasIcon: card.rawIcon !== ""
-    readonly property bool iconIsDirect: card.rawIcon.startsWith("image://") ||
-        card.rawIcon.startsWith("/") || card.rawIcon.startsWith("file://")
-    readonly property string directSource: card.rawIcon.startsWith("file://") ||
-        card.rawIcon.startsWith("image://")
-        ? card.rawIcon : "file://" + card.rawIcon
-    // Theme names resolve through the platform theme; the check
-    // variant yields "" instead of a missing-texture square.
-    readonly property string themeIcon: card.hasIcon && !card.iconIsDirect
-        ? Quickshell.iconPath(card.rawIcon, true) : ""
 
-    // Click (behind the action buttons): default action when the
-    // notification has actions, dismiss otherwise. Mirrors mako's
-    // [actionable] split and replaces its rofi middle-click menu
-    // with the inline buttons below.
+    // Click dismisses; a file-backed toast (screenshot) opens the
+    // file instead. Buttons below stay the action path.
     MouseArea {
         anchors.fill: parent
 
         onClicked: {
-            const def = card.notification.actions.find(
-                a => a.identifier === "default"
-            ) ?? card.notification.actions[0] ?? null
-
-            if (def)
-                def.invoke()
+            if (Services.Notifs.filepathOf(card.notification) !== "")
+                Quickshell.execDetached(["xdg-open",
+                    Services.Notifs.filepathOf(card.notification)])
             else
-                card.notification.dismiss()
+                Services.Notifs.hideToast(card.notification)
 
             Services.Notifs.forgetLive(card.notification)
         }
@@ -100,40 +82,14 @@ Rectangle {
                 width: parent.width
                 spacing: 8
 
-                Image {
-                anchors.verticalCenter: parent.verticalCenter
+                NotificationIcon {
+                    id: cardIcon
 
-                visible: card.hasIcon && card.iconIsDirect
+                    rawIcon: card.rawIcon
+                }
 
-                source: card.directSource
-
-                sourceSize.width: 32
-                sourceSize.height: 32
-
-                width: 32
-                height: 32
-
-                fillMode: Image.PreserveAspectFit
-            }
-
-            Image {
-                anchors.verticalCenter: parent.verticalCenter
-
-                visible: card.themeIcon !== ""
-
-                source: card.themeIcon
-
-                sourceSize.width: 32
-                sourceSize.height: 32
-
-                width: 32
-                height: 32
-
-                fillMode: Image.PreserveAspectFit
-            }
-
-            Column {
-                width: parent.width - (card.hasIcon ? 40 : 0)
+                Column {
+                    width: parent.width - (cardIcon.hasIcon ? 32 : 0)
 
                 spacing: 2
 
@@ -145,8 +101,7 @@ Rectangle {
                     color: Palette.fg
 
                     font.family: Palette.font
-                    font.pixelSize: Palette.px13
-                    font.bold: true
+                    font.pixelSize: Palette.px12
 
                     elide: Text.ElideRight
                 }
@@ -172,7 +127,7 @@ Rectangle {
         // OSD-style progress (osd-volume/osd-brightness int:value).
         Rectangle {
             width: parent.width
-            height: 6
+            height: 3
 
             visible: card.hasProgress
 
@@ -206,15 +161,15 @@ Rectangle {
                     required property var modelData
 
                     width: actionLabel.width + 16
-                    height: 26
+                    height: 24
 
                     radius: 0
 
-                    color: actionHover.containsMouse
-                        ? Palette.surfaceHover : Palette.surface
+                                            color: actionHover.containsMouse
+                                                ? Palette.hoverBg
+                                                : Palette.surface
 
-                    border.width: 1
-                    border.color: Palette.border
+                                            border.width: 0
 
                     Text {
                         id: actionLabel
@@ -237,7 +192,11 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
 
-                        onClicked: modelData.invoke()
+                        onClicked: {
+                            if (Services.Notifs.activateAction(
+                                card.notification, modelData))
+                                Services.Notifs.hideToast(card.notification)
+                        }
                     }
                 }
             }

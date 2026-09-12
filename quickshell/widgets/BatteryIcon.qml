@@ -6,7 +6,9 @@ import "../Palette.js" as Palette
 Item {
     id: battery
 
-    visible: battery.laptopBattery !== null
+    visible: battery.laptopBattery != null
+
+    anchors.verticalCenter: parent.verticalCenter
 
     width: batteryText.width
     height: batteryText.height

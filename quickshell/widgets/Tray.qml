@@ -3,6 +3,8 @@ import Quickshell
 import Quickshell.Services.SystemTray
 
 Row {
+    anchors.verticalCenter: parent.verticalCenter
+
     spacing: 6
 
     Repeater {

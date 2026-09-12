@@ -9,6 +9,8 @@ Item {
 
     required property var bar
 
+    anchors.verticalCenter: parent.verticalCenter
+
     width: 20
     height: 20
 

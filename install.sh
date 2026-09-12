@@ -27,7 +27,6 @@ usage() {
 PKGS=(
     "dir hypr .config/hypr"
     "dir quickshell .config/quickshell"
-    "dir rofi .config/rofi"
     "dir kitty .config/kitty"
     "dir bat .config/bat"
     "dir btop .config/btop"
@@ -256,7 +255,7 @@ fi
 # requirements check (warn-only; full list in README)
 log "checking requirements"
 missing=0
-for bin in hyprctl quickshell rofi kitty nvim tmux zsh starship lazygit \
+for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
            yazi eza bat fd btop wl-copy wl-paste grim slurp cliphist jq \
            playerctl brightnessctl notify-send pipewire swaybg fastfetch; do
     if ! command -v "$bin" >/dev/null 2>&1; then

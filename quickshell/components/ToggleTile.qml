@@ -18,18 +18,15 @@ Rectangle {
     signal tileClicked
 
     width: (parent.width - 8) / 3
-    height: 44
+    height: 40
     radius: 0
 
-    // Selection always wins visibly: an active+selected tile must
-    // differ from active-only, otherwise keyboard focus disappears
-    // on tiles that are already on.
-    color: !tile.enabled ? Palette.onAccent
-        : tile.selected ? Palette.surfaceHover
-        : tile.active ? Palette.surface : Palette.onAccent
-    border.width: tile.selected && tile.enabled ? 2 : 1
-    border.color: tile.active && tile.enabled ? Palette.accent
-        : tile.selected && tile.enabled ? Palette.fg : Palette.border
+    color: !tile.enabled ? "transparent"
+        : tile.selected ? Palette.accent
+        : tile.active ? Palette.activeBg
+        : tileHover.containsMouse ? Palette.hoverBg : Palette.surface
+    border.width: tile.selected ? 1 : 0
+    border.color: Palette.accent
     opacity: tile.enabled ? 1 : 0.45
 
     Column {
@@ -43,11 +40,12 @@ Rectangle {
             text: tile.glyph
 
             color: !tile.enabled ? Palette.dim
+                : tile.selected ? Palette.onAccent
                 : tile.active ? Palette.accent
-                : tile.selected ? Palette.fg : Palette.dim
+                : tileHover.containsMouse ? Palette.fg : Palette.dim
 
             font.family: Palette.font
-            font.pixelSize: Palette.px15
+            font.pixelSize: Palette.px14
         }
 
         Text {
@@ -56,7 +54,8 @@ Rectangle {
             text: tile.label
 
             color: !tile.enabled ? Palette.dim
-                : (tile.active || tile.selected) ? Palette.fg : Palette.dim
+                : tile.selected ? Palette.onAccent
+                : (tile.active || tileHover.containsMouse) ? Palette.fg : Palette.dim
 
             font.family: Palette.font
             font.pixelSize: Palette.px10
@@ -64,6 +63,8 @@ Rectangle {
     }
 
     MouseArea {
+        id: tileHover
+
         anchors.fill: parent
 
         enabled: tile.enabled

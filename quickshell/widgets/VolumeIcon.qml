@@ -33,13 +33,13 @@ Item {
             if (muted)
                 return "󰝟"
 
-            if (level <= 0.01)
+            if (level <= 0.3)
                 return "󰖀"
 
-            if (level < 0.5)
+            if (level < 1.0)
                 return "󰕾"
 
-            return "󰕾"
+            return "󰝝"
         }
 
         color: volumeText.level > 1 ? Palette.warn : Palette.fg

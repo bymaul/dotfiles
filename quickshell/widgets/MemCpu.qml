@@ -57,5 +57,7 @@ Item {
         ]
 
         running: false
+
+        onExited: btop.running = false
     }
 }

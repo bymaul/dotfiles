@@ -4,18 +4,10 @@ import Quickshell.Hyprland
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
-PopupWindow {
+BasePopup {
     id: passwordDialog
 
-    required property var bar
-
-    anchor.window: bar
-
-    anchor.rect.x:
-        bar.width / 2 - width / 2
-
-    anchor.rect.y:
-        bar.height + 20
+    anchorMode: "center"
 
     implicitWidth: 280
 
@@ -23,51 +15,29 @@ PopupWindow {
     // would keep a permanent blank gap at the bottom.
     implicitHeight: passwordDialog.authError !== "" ? 172 : 150
 
-    visible: false
-
-    color: "transparent"
-
-    HyprlandFocusGrab {
-        id: dialogGrab
-
-        windows: [passwordDialog]
-
-        // No grabFocus: it dismisses on any grab break (e.g. toast
-        // expiry). Assert active from the timer, not bound to visible.
-        onCleared: passwordDialog.visible = false
-    }
-
-    Timer {
-        interval: 100
-        running: passwordDialog.visible
-        repeat: false
-
-        onTriggered: dialogGrab.active = true
-    }
-
     Shortcut {
         sequence: "Escape"
         onActivated: bar.closePopups()
     }
 
-    // 0 = Cancel, 1 = Connect. Arrow keys only reach these when the
-    // password field is unfocused (it consumes arrows for cursor
+    // 0 = Cancel, 1 = Connect. h/l only reach these when the
+    // password field is unfocused (it consumes keys for cursor
     // movement while focused); Enter always connects from the field.
     property int selectedButton: 1
 
     Shortcut {
-        sequence: "Left"
-        enabled: passwordDialog.visible
+        sequence: "h"
+        enabled: passwordDialog.visible && !wifiPassword.activeFocus
         onActivated: passwordDialog.selectedButton = 0
     }
     Shortcut {
-        sequence: "Right"
-        enabled: passwordDialog.visible
+        sequence: "l"
+        enabled: passwordDialog.visible && !wifiPassword.activeFocus
         onActivated: passwordDialog.selectedButton = 1
     }
     Shortcut {
         sequence: "Space"
-        enabled: passwordDialog.visible
+        enabled: passwordDialog.visible && !wifiPassword.activeFocus
         onActivated: passwordDialog.activateSelectedButton()
     }
     Shortcut {
@@ -155,6 +125,8 @@ PopupWindow {
             if (net && net.known && !net.connected)
                 net.forget()
 
+            passwordDialog.network = net
+
             passwordDialog.authError =
                 (reason === ConnectionFailReason.NoSecrets ||
                     reason === ConnectionFailReason.WifiAuthTimeout)
@@ -162,7 +134,6 @@ PopupWindow {
                 : "Connection failed (" +
                     ConnectionFailReason.toString(reason) + ")"
 
-            passwordDialog.network = net
             passwordDialog.visible = true
         }
     }
@@ -174,18 +145,18 @@ PopupWindow {
 
         color: Palette.bg
 
-        border.width: 1
-        border.color: Palette.border
+        border.width: 0
 
         Column {
             anchors {
                 fill: parent
-                margins: 12
+                margins: Palette.popupPadding
             }
 
-            spacing: 8
+            spacing: Palette.popupSpacing
 
             Text {
+                width: parent.width
                 text: "󰌾  " +
                     (passwordDialog.network?.name ??
                      "Wi-Fi password")
@@ -195,8 +166,8 @@ PopupWindow {
                 font.family:
                     Palette.font
 
-                font.pixelSize: Palette.px14
-                font.bold: true
+                font.pixelSize: Palette.px12
+                elide: Text.ElideRight
             }
 
             Text {
@@ -219,11 +190,13 @@ PopupWindow {
 
             Rectangle {
                 width: parent.width
-                height: 36
+                height: Palette.rowHeight
 
                 radius: 0
 
                 color: Palette.surface
+                border.width: 1
+                border.color: Palette.border
 
                 TextInput {
                     id: wifiPassword
@@ -245,9 +218,12 @@ PopupWindow {
                     font.family:
                         Palette.font
 
-                    font.pixelSize: Palette.px13
+                    font.pixelSize: Palette.px12
 
                     Keys.onReturnPressed: {
+                        passwordDialog.doConnect()
+                    }
+                    Keys.onEnterPressed: {
                         passwordDialog.doConnect()
                     }
                 }
@@ -265,9 +241,9 @@ PopupWindow {
 
                     color: Palette.surface
 
-                    border.width: 1
+                    border.width: passwordDialog.selectedButton === 0 ? 1 : 0
                     border.color: passwordDialog.selectedButton === 0
-                        ? Palette.accent : "transparent"
+                        ? Palette.fg : Palette.dim
 
                     Text {
                         anchors.centerIn: parent
@@ -302,7 +278,7 @@ PopupWindow {
 
                     border.width: 1
                     border.color: passwordDialog.selectedButton === 1
-                        ? Palette.fg : "transparent"
+                        ? Palette.fg : Palette.accent
 
                     Text {
                         anchors.centerIn: parent
@@ -315,7 +291,6 @@ PopupWindow {
                             Palette.font
 
                         font.pixelSize: Palette.px12
-                        font.bold: true
                     }
 
                     MouseArea {

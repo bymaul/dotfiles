@@ -20,7 +20,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         width: slider.width
-        height: 6
+        height: 3
 
         radius: 0
 
@@ -31,7 +31,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
 
         width: slider.width * slider.fraction
-        height: 6
+        height: 3
 
         radius: 0
 
@@ -41,10 +41,10 @@ Item {
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
 
-        x: slider.width * slider.fraction - 5
+        x: slider.width * slider.fraction - 2
 
-        width: 10
-        height: 18
+        width: 4
+        height: 14
 
         radius: 0
 
@@ -63,7 +63,10 @@ Item {
         }
 
         onPressed: mouse => adjust(mouse)
-        onPositionChanged: mouse => adjust(mouse)
+        onPositionChanged: mouse => {
+            if (pressed)
+                adjust(mouse)
+        }
 
         // Match the bar volume icon: scroll steps 5% of range.
         onWheel: event => {

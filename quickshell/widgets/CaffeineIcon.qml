@@ -3,8 +3,6 @@ import "../services" as Services
 import "../Palette.js" as Palette
 
 Item {
-    id: caffeineIcon
-
     visible: Services.Modes.caffeineActive
 
     width: caffeineText.width

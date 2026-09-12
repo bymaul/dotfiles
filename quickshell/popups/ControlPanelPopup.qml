@@ -7,33 +7,23 @@ import "../components"
 import "../services" as Services
 import "../Palette.js" as Palette
 
-PopupWindow {
+BasePopup {
     id: controlPanel
 
-    required property var bar
     required property var volumeControl
 
-    anchor.window: bar
-
-    anchor.rect.x: bar.width - width - Palette.popupMargin
-    anchor.rect.y: bar.height + Palette.popupTopGap
+    // Covered by the bar-level grab (see shell.qml), which whitelists
+    // both this panel and the history companion: a grab owned here
+    // would read clicks on the companion as outside clicks and close
+    // everything.
+    useGrab: false
 
     implicitWidth: Palette.popupWidth
 
-    // 238 with the brightness row, 190 without (sliders + tiles,
-    // plus the 18px keyboard hint row + 8 spacing shared by both).
     // History renders in the companion NotificationHistoryPopup
     // below, so the panel itself stays fixed height.
-    implicitHeight: Services.Media.brightnessAvailable ? 238 : 190
-
-    visible: false
-
-    color: "transparent"
-
-    // No focus grab here: the bar-level grab whitelists both this
-    // panel and the history companion (see shell.qml). A grab owned
-    // by this window alone would read clicks on the companion as
-    // outside clicks and close everything.
+    implicitHeight: (Services.Media.brightnessAvailable ? 212 : 168) +
+        (Services.Notifs.history.length > 0 ? 12 : 0)
 
     Shortcut {
         sequence: "Escape"
@@ -84,6 +74,18 @@ PopupWindow {
     function clampSelection(): void {
         selectedIndex = Math.max(0,
             Math.min(controlPanel.itemCount() - 1, selectedIndex))
+    }
+
+    // History can shrink under us (clear/dismiss from the companion
+    // window or a sync replace): keep the cursor in range so Enter
+    // can't address a stale row.
+    Connections {
+        target: Services.Notifs
+
+        function onHistoryChanged() {
+            controlPanel.clampSelection()
+            controlPanel.revealSelection()
+        }
     }
 
     function revealSelection(): void {
@@ -203,22 +205,33 @@ PopupWindow {
         tileActions[controlPanel.selectedTile()]()
     }
 
+    // Runs the selected history row's primary action button
+    // (default id, else first). Rows without actions do nothing;
+    // Enter stays the dismiss key.
+    function invokeSelectedAction(): void {
+        if (controlPanel.selectedKind() !== "history")
+            return
+
+        const item = Services.Notifs.history[controlPanel.selectedHistItem()] ?? null
+        const live = item?.live ?? null
+        const actions = live?.actions ?? []
+
+        if (!live || actions.length === 0)
+            return
+
+        const def = actions.find(a => a.identifier === "default") ?? actions[0]
+
+        Services.Notifs.activateAction(live, def)
+        controlPanel.clampSelection()
+        bar.closePopups()
+    }
+
     // Letter shortcuts stay scoped to the open panel so they never
     // leak into typing elsewhere.
-    Shortcut {
-        sequence: "Down"
-        enabled: controlPanel.visible
-        onActivated: controlPanel.stepVertical(1)
-    }
     Shortcut {
         sequence: "j"
         enabled: controlPanel.visible
         onActivated: controlPanel.stepVertical(1)
-    }
-    Shortcut {
-        sequence: "Up"
-        enabled: controlPanel.visible
-        onActivated: controlPanel.stepVertical(-1)
     }
     Shortcut {
         sequence: "k"
@@ -226,19 +239,9 @@ PopupWindow {
         onActivated: controlPanel.stepVertical(-1)
     }
     Shortcut {
-        sequence: "Left"
-        enabled: controlPanel.visible
-        onActivated: controlPanel.adjustSelected(-1)
-    }
-    Shortcut {
         sequence: "h"
         enabled: controlPanel.visible
         onActivated: controlPanel.adjustSelected(-1)
-    }
-    Shortcut {
-        sequence: "Right"
-        enabled: controlPanel.visible
-        onActivated: controlPanel.adjustSelected(1)
     }
     Shortcut {
         sequence: "l"
@@ -265,6 +268,18 @@ PopupWindow {
         enabled: controlPanel.visible
         onActivated: controlPanel.toggleVolumeMute()
     }
+    Shortcut {
+        sequence: "c"
+        enabled: controlPanel.visible &&
+            Services.Notifs.history.length > 0
+        onActivated: Services.Notifs.clearHistory()
+    }
+    Shortcut {
+        sequence: "o"
+        enabled: controlPanel.visible &&
+            Services.Notifs.history.length > 0
+        onActivated: controlPanel.invokeSelectedAction()
+    }
 
     property var micSource: Pipewire.defaultAudioSource
 
@@ -279,31 +294,30 @@ PopupWindow {
 
         color: Palette.bg
 
-        border.width: 1
-        border.color: Palette.border
+        border.width: 0
 
         Column {
             anchors {
                 fill: parent
-                margins: 12
+                margins: Palette.popupPadding
             }
 
-            spacing: 8
+            spacing: Palette.popupSpacing
 
-            // BRIGHTNESS SLIDER (hidden when no backlight device exists)
             Rectangle {
                 id: brightnessRow
 
                 visible: Services.Media.brightnessAvailable
 
                 width: parent.width
-                height: visible ? 40 : 0
+                height: visible ? Palette.rowHeight : 0
 
                 radius: 0
 
-                color: controlPanel.selectedIndex === 0
-                    ? Palette.surfaceHover
-                    : Palette.surface
+                color: Palette.surface
+                border.width: controlPanel.selectedIndex === 0 ? 1 : 0
+                border.color: controlPanel.selectedIndex === 0
+                    ? Palette.accent : Palette.dim
 
                 Row {
                     anchors {
@@ -326,7 +340,7 @@ PopupWindow {
                         font.family:
                             Palette.font
 
-                        font.pixelSize: Palette.px16
+                        font.pixelSize: Palette.px14
                     }
 
                     SliderBar {
@@ -360,16 +374,16 @@ PopupWindow {
                 }
             }
 
-            // VOLUME SLIDER + MUTE + MIC
             Rectangle {
                 width: parent.width
-                height: 40
+                height: Palette.rowHeight
 
                 radius: 0
 
-                color: controlPanel.selectedIndex === controlPanel.volumeIdx()
-                    ? Palette.surfaceHover
-                    : Palette.surface
+                color: Palette.surface
+                border.width: controlPanel.selectedIndex === controlPanel.volumeIdx() ? 1 : 0
+                border.color: controlPanel.selectedIndex === controlPanel.volumeIdx()
+                    ? Palette.accent : Palette.dim
 
                 Row {
                     anchors {
@@ -394,7 +408,7 @@ PopupWindow {
                         font.family:
                             Palette.font
 
-                        font.pixelSize: Palette.px16
+                        font.pixelSize: Palette.px14
 
                         MouseArea {
                             anchors.fill: parent
@@ -550,13 +564,16 @@ PopupWindow {
                 }
             }
 
-            // KEYBOARD HINTS
             Text {
                 width: parent.width
 
                 horizontalAlignment: Text.AlignHCenter
 
-                text: "j/k move · h/l adjust · enter select · m mute"
+                text: Services.Notifs.history.length > 0
+                    ? "jk move · hl adjust · ↵ activate\nm mute · c clear · o open"
+                    : "jk move · hl adjust · ↵ activate · m mute"
+
+                wrapMode: Text.WordWrap
 
                 color: Palette.dim
 

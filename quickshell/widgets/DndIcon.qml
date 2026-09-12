@@ -3,8 +3,6 @@ import "../services" as Services
 import "../Palette.js" as Palette
 
 Item {
-    id: dndIcon
-
     visible: Services.Modes.dndActive
 
     width: dndText.width

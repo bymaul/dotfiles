@@ -52,7 +52,7 @@ PanelWindow {
         }
 
         width: toastStack.stackWidth
-        spacing: 8
+        spacing: Palette.popupSpacing
 
         Repeater {
             model: Services.Notifs.toasts
@@ -62,6 +62,7 @@ PanelWindow {
 
                 notification: modelData
                 width: toastStack.stackWidth
+                parked: toastStack.parked
             }
         }
     }

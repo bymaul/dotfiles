@@ -27,6 +27,17 @@ ShellRoot {
 
         color: Palette.barBg
 
+        Rectangle {
+            anchors {
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+
+            height: 1
+            color: Palette.border
+        }
+
         WlrLayershell.namespace: "qs-bar"
 
         function openExclusive(target): void {
@@ -38,6 +49,8 @@ ShellRoot {
             bluetoothPopup.visible = false
             powerPopup.visible = false
             passwordDialog.visible = false
+            launcherPopup.visible = false
+            clipboardPopup.visible = false
 
             target.visible = open
         }
@@ -47,6 +60,14 @@ ShellRoot {
         function toggleWifi(): void { openExclusive(wifiPopup) }
         function toggleBluetooth(): void { openExclusive(bluetoothPopup) }
         function togglePower(): void { openExclusive(powerPopup) }
+
+        function toggleLauncher(): void {
+            openExclusive(launcherPopup)
+        }
+
+        function toggleClipboard(): void {
+            openExclusive(clipboardPopup)
+        }
 
         // Bottom edge of the open right-side popup in TOAST-margin
         // space, 0 when none is open. At most one popup is visible
@@ -75,6 +96,8 @@ ShellRoot {
             bluetoothPopup.visible = false
             powerPopup.visible = false
             passwordDialog.visible = false
+            launcherPopup.visible = false
+            clipboardPopup.visible = false
         }
 
         function showPasswordDialog(network): void {
@@ -323,6 +346,16 @@ ShellRoot {
             bar: bar
         }
 
+        LauncherPopup {
+            id: launcherPopup
+            bar: bar
+        }
+
+        ClipboardPopup {
+            id: clipboardPopup
+            bar: bar
+        }
+
         GlobalShortcut {
             appid: "qs-bar"
             name: "Toggle Power Menu"
@@ -335,6 +368,20 @@ ShellRoot {
             name: "Toggle Control Panel"
             description: "Open the control panel"
             onPressed: bar.toggleControl()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Toggle Launcher"
+            description: "Open the application launcher"
+            onPressed: bar.toggleLauncher()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Toggle Clipboard"
+            description: "Open the clipboard history picker"
+            onPressed: bar.toggleClipboard()
         }
 
         GlobalShortcut {
@@ -381,6 +428,27 @@ ShellRoot {
 
         GlobalShortcut {
             appid: "qs-bar"
+            name: "Media Play/Pause"
+            description: "Play or pause media"
+            onPressed: Services.Media.mediaToggle()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Media Next"
+            description: "Next media track"
+            onPressed: Services.Media.mediaNext()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Media Previous"
+            description: "Previous media track"
+            onPressed: Services.Media.mediaPrev()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
             name: "Brightness Up"
             description: "Raise the brightness"
             onPressed: Services.Media.brightnessUp()
@@ -391,6 +459,35 @@ ShellRoot {
             name: "Brightness Down"
             description: "Lower the brightness"
             onPressed: Services.Media.brightnessDown()
+        }
+    }
+
+    // Wallpaper (replaces swaybg): fullscreen background layer,
+    // replicated per screen by quickshell. Same namespace the old
+    // setup used, so layer behavior is unchanged.
+    PanelWindow {
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
+        }
+
+        exclusiveZone: -1
+
+        color: "transparent"
+
+        WlrLayershell.namespace: "wallpaper"
+        WlrLayershell.layer: WlrLayer.Background
+
+        Image {
+            anchors.fill: parent
+
+            source: "file://" + Quickshell.env("HOME") +
+                "/dotfiles/wallpapers/wallpaper.jpg"
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            cache: false
         }
     }
 

@@ -18,7 +18,6 @@ hl.monitor({
 
 local terminal = "kitty"
 local fileManager = "nemo"
-local menu = "rofi"
 
 local dotfiles = os.getenv("DOTFILES") or os.getenv("HOME") .. "/dotfiles"
 
@@ -31,7 +30,6 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("hypridle")
 	hl.exec_cmd("wl-paste --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
-	hl.exec_cmd("swaybg -i " .. dotfiles .. "/wallpapers/wallpaper.jpg -m fill")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
@@ -185,17 +183,14 @@ local secondMod = "SUPER + SHIFT"
 -- Launch
 hl.bind(mainMod .. " + B", hl.dsp.global("qs-bar:Toggle Control Panel"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show drun"))
-hl.bind(secondMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show run"))
+hl.bind(mainMod .. " + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd(dotfiles .. "/bin/clipboard-pick"))
-hl.bind(secondMod .. " + V", hl.dsp.exec_cmd(dotfiles .. "/bin/clipboard-pick delete"))
-hl.bind(secondMod .. " + BackSpace", hl.dsp.exec_cmd(dotfiles .. "/bin/clipboard-pick clear"))
+hl.bind(mainMod .. " + V", hl.dsp.global("qs-bar:Toggle Clipboard"))
 
 -- Move focus (vim)
 hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
@@ -239,6 +234,7 @@ hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"), { locked = true }
 -- the image watcher stores clipboard history.
 hl.bind("Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot area"))
 hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot full"))
+hl.bind(secondMod .. " + Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot window"))
 
 -- Laptop multimedia keys (handled + displayed by quickshell)
 hl.bind("XF86AudioRaiseVolume", hl.dsp.global("qs-bar:Volume Up"), { locked = true, repeating = true })
@@ -248,10 +244,10 @@ hl.bind("XF86AudioMicMute", hl.dsp.global("qs-bar:Mic Mute"), { locked = true, r
 hl.bind("XF86MonBrightnessUp", hl.dsp.global("qs-bar:Brightness Up"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.global("qs-bar:Brightness Down"), { locked = true, repeating = true })
 
-hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.global("qs-bar:Media Next"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = true })
+hl.bind("XF86AudioPlay", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.global("qs-bar:Media Previous"), { locked = true })
 
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
@@ -279,15 +275,6 @@ hl.window_rule({
 	opacity = "0.8 override 0.8 override",
 })
 
-hl.window_rule({
-	name = "rofi-float",
-	match = { class = "rofi" },
-
-	float = true,
-	border_size = 0,
-	rounding = 0,
-})
-
 hl.layer_rule({
 	name = "qs-bar-glass",
 	match = { namespace = "qs-bar" },
@@ -302,17 +289,4 @@ hl.layer_rule({
 	ignore_alpha = 0.1,
 })
 
-hl.window_rule({
-	name = "float-btop",
-	match = { class = "btop" },
-})
 
-hl.window_rule({
-	name = "float-bluetui",
-	match = { class = "bluetui" },
-})
-
-hl.window_rule({
-	name = "float-wifitui",
-	match = { class = "wifitui" },
-})

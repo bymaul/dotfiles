@@ -52,10 +52,6 @@ Singleton {
     property int readCount: 0
     readonly property int unread: Math.max(0, history.length - readCount)
 
-    function markRead(): void {
-        readCount = history.length
-    }
-
     // Visual hide only: the server object stays resident (and its
     // actions invokable) until the history row goes away.
     function hideToast(n): void {
@@ -69,8 +65,15 @@ Singleton {
     }
 
     function dropLive(item): void {
-        if (item && item.live)
+        if (!item || !item.live)
+            return
+
+        // A dead sender's object can throw here; the row removal
+        // below must still run, so never let it propagate.
+        try {
             item.live.dismiss()
+        } catch (_) {
+        }
     }
 
     // A server object that died outside history (toast click,
@@ -80,6 +83,43 @@ Singleton {
         notifs.history = notifs.history.filter(h => h.live !== n)
         notifs.pending = notifs.pending.filter(t => t !== n)
         notifs.readCount = Math.min(notifs.readCount, notifs.history.length)
+    }
+
+    function filepathOf(notification): string {
+        const hints = notification?.hints
+        const path = hints && typeof hints["filepath"] === "string"
+            ? hints["filepath"] : ""
+
+        return path
+    }
+
+    // File-backed notifications (screenshots): the sender is already
+    // gone (fire-and-forget notify), so Open/Copy run here instead of
+    // relaying to a dead process. Anything else invokes normally.
+    // Returns true when handled natively (caller dismisses the toast).
+    function activateAction(notification, action): bool {
+        const path = notifs.filepathOf(notification)
+        const id = action?.identifier ?? ""
+
+        if (path !== "" &&
+                (id === "open" || id === "path" || id === "default")) {
+            if (id === "path")
+                Quickshell.execDetached(["sh", "-c",
+                    'printf "%s" "$1" | wl-copy', "qs", path])
+            else
+                Quickshell.execDetached(["xdg-open", path])
+
+            return true
+        }
+
+        // Same dead-sender exposure as dropLive: never let a dead
+        // relay abort the caller's row handling.
+        try {
+            action.invoke()
+        } catch (_) {
+        }
+
+        return false
     }
 
     function clearHistory(): void {
@@ -170,9 +210,11 @@ Singleton {
                 notifs.history = next.slice(0, 30)
             }
 
-            // DND: never pop up (mako parity: invisible mode). The
-            // snapshot above still lands in the center.
-            if (Modes.dndActive) {
+            // DND: never pop up (mako parity: invisible mode), except
+            // our own mode toggles, which must confirm both directions.
+            // The snapshot above still lands in the center.
+            if (Modes.dndActive && notification.appName !== "dnd" &&
+                    notification.appName !== "caffeine") {
                 notification.tracked = false
                 return
             }

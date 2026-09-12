@@ -7,6 +7,10 @@
 #   image     themed icon AND file-path thumbnail toasts
 #   progress  OSD-style value bar (replaces stacking)
 #   actions   blocking action toast; prints the chosen key (default/dismiss)
+#   buttons   fire-and-forget action toast (no --wait, sender is gone on
+#             click): buttons render, relay is a harmless no-op
+#   open      file-backed Open/Copy path actions (filepath hint, no
+#             --wait): handled natively, sender may be gone
 #   urgent    critical urgency (danger border)
 #   sticky    15s timeout instead of the 5s default
 #   dnd       silent-drop check (enable DND in the panel FIRST, then run:
@@ -57,6 +61,24 @@ case_urgent() {
     notify-send -u critical "Critical" "danger border, still 5s"
 }
 
+case_buttons() {
+    notify-send -a screenshot-test \
+        -h string:x-canonical-private-synchronous:buttons-test \
+        -t 10000 -i "$IMG" \
+        -A "default=Open" -A "dismiss=Dismiss" \
+        "Dead sender" "no --wait: gone before any click"
+    echo "expected: buttons render; clicks relay nowhere (no-op)"
+}
+
+case_open() {
+    notify-send -a screenshot-test \
+        -h string:x-canonical-private-synchronous:open-test \
+        -h string:filepath:"$IMG" -t 10000 -i "$IMG" \
+        -A "default=Open" -A "path=Copy path" \
+        "Open something" "$IMG"
+    echo "expected: Open launches viewer, Copy path copies path (native)"
+}
+
 case_sticky() {
     notify-send -t 15000 "Sticky" "15s timeout, outlives the default"
 }
@@ -67,7 +89,7 @@ case_dnd() {
 }
 
 if (($# == 0)); then
-    set -- basic markup image progress urgent sticky
+    set -- basic markup image progress urgent sticky buttons open
 fi
 
 for c in "$@"; do

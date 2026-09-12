@@ -1,44 +1,15 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Hyprland
 import "../components"
 import "../Palette.js" as Palette
 
-PopupWindow {
+BasePopup {
     id: powerPopup
 
-    required property var bar
-
-    anchor.window: bar
-
-    anchor.rect.x: bar.width - width - Palette.popupMargin
-    anchor.rect.y: bar.height + Palette.popupTopGap
-
     implicitWidth: Palette.popupWidth
-    implicitHeight: 178
-
-    visible: false
-
-    color: "transparent"
-
-    HyprlandFocusGrab {
-        id: powerGrab
-
-        windows: [powerPopup]
-
-        // No grabFocus: it dismisses on any grab break (e.g. toast
-        // expiry). Assert active from the timer, not bound to visible.
-        onCleared: powerPopup.visible = false
-    }
-
-    Timer {
-        interval: 100
-        running: powerPopup.visible
-        repeat: false
-
-        onTriggered: powerGrab.active = true
-    }
+    implicitHeight: 16 + powerGrid.height +
+        Palette.popupSpacing + hintText.implicitHeight
 
     function execPower(cmd: var) {
         bar.closePopups()
@@ -116,71 +87,79 @@ PopupWindow {
 
         color: Palette.bg
 
-        border.width: 1
-        border.color: Palette.border
+        border.width: 0
 
-        Grid {
+        Column {
             anchors {
                 fill: parent
-                margins: 12
+                margins: Palette.popupPadding
             }
 
-            columns: 2
-            columnSpacing: 8
-            rowSpacing: 8
+            spacing: Palette.popupSpacing
 
-            // POWER OFF
-            ActionTile {
-                glyph: "󰐥"
-                label: "Power off"
-                hint: "s"
+            Grid {
+                id: powerGrid
 
-                onActionClicked: powerPopup.powerOff()
+                width: parent.width
+
+                columns: 2
+                columnSpacing: 8
+                rowSpacing: 8
+
+                ActionTile {
+                    glyph: "󰐥"
+                    label: "Power off"
+
+                    onActionClicked: powerPopup.powerOff()
+                }
+
+                ActionTile {
+                    glyph: "󰜉"
+                    label: "Reboot"
+
+                    onActionClicked: powerPopup.reboot()
+                }
+
+                ActionTile {
+                    glyph: "󰤄"
+                    label: "Suspend"
+
+                    onActionClicked: powerPopup.suspend()
+                }
+
+                ActionTile {
+                    glyph: "󰋊"
+                    label: "Hibernate"
+
+                    onActionClicked: powerPopup.hibernate()
+                }
+
+                ActionTile {
+                    glyph: "󰌾"
+                    label: "Lock"
+
+                    onActionClicked: powerPopup.lock()
+                }
+
+                ActionTile {
+                    glyph: "󰍃"
+                    label: "Logout"
+
+                    onActionClicked: powerPopup.logout()
+                }
             }
 
-            // REBOOT
-            ActionTile {
-                glyph: "󰜉"
-                label: "Reboot"
-                hint: "r"
+            Text {
+                id: hintText
 
-                onActionClicked: powerPopup.reboot()
-            }
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: "s power off · r reboot· u suspend\nh hibernate · l lock · e logout"
 
-            // SUSPEND
-            ActionTile {
-                glyph: "󰤄"
-                label: "Suspend"
-                hint: "u"
-
-                onActionClicked: powerPopup.suspend()
-            }
-
-            // HIBERNATE
-            ActionTile {
-                glyph: "󰋊"
-                label: "Hibernate"
-                hint: "h"
-
-                onActionClicked: powerPopup.hibernate()
-            }
-
-            // LOCK
-            ActionTile {
-                glyph: "󰌾"
-                label: "Lock"
-                hint: "l"
-
-                onActionClicked: powerPopup.lock()
-            }
-
-            // LOGOUT
-            ActionTile {
-                glyph: "󰍃"
-                label: "Logout"
-                hint: "e"
-
-                onActionClicked: powerPopup.logout()
+                wrapMode: Text.WordWrap
+                color: Palette.dim
+                font.family: Palette.font
+                font.pixelSize: Palette.px10
             }
         }
     }

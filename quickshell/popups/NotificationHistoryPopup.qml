@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import "../components"
 import "../services" as Services
 import "../Palette.js" as Palette
 
@@ -14,31 +15,28 @@ import "../Palette.js" as Palette
 // Keyboard: the panel owns selectedIndex and all nav logic, but keys
 // reach only the focused window. This window carries a mirror
 // shortcut set delegating to the panel, so nav works from either.
-PopupWindow {
+BasePopup {
     id: historyPanel
 
-    required property var bar
     required property var panel
 
-    anchor.window: bar
+    // Covered by the bar-level grab alongside the control panel.
+    useGrab: false
 
-    anchor.rect.x: bar.width - width - Palette.popupMargin
-    anchor.rect.y: bar.height + Palette.popupTopGap + panel.height + 8
+    extraTop: panel.height + 8
 
     implicitWidth: Palette.popupWidth
 
     // Header bar 34 + spacing + scrollable cards, capped at half
-    // the screen. Header only when empty.
+    // the screen. Hidden entirely when there is no history.
     readonly property int listCap: Math.max(96,
-        Math.round(Screen.height / 2) - 34 - 8)
+        Math.round(Screen.height / 2) - 32 - 8)
 
-    implicitHeight: 34 + (Services.Notifs.history.length > 0
+    implicitHeight: 32 + (Services.Notifs.history.length > 0
         ? 8 + Math.min(historyPanel.listCap, histList.contentHeight)
         : 0)
 
-    visible: panel.visible
-
-    color: "transparent"
+    visible: panel.visible && Services.Notifs.history.length > 0
 
     function revealAt(i: int): void {
         histList.positionViewAtIndex(i, ListView.Contain)
@@ -54,19 +52,9 @@ PopupWindow {
     // Mirror of the panel's nav set (delegating to it): key events
     // reach only the focused window, so the sets can't double-fire.
     Shortcut {
-        sequence: "Down"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.stepVertical(1)
-    }
-    Shortcut {
         sequence: "j"
         enabled: historyPanel.visible
         onActivated: historyPanel.panel.stepVertical(1)
-    }
-    Shortcut {
-        sequence: "Up"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.stepVertical(-1)
     }
     Shortcut {
         sequence: "k"
@@ -74,19 +62,9 @@ PopupWindow {
         onActivated: historyPanel.panel.stepVertical(-1)
     }
     Shortcut {
-        sequence: "Left"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.adjustSelected(-1)
-    }
-    Shortcut {
         sequence: "h"
         enabled: historyPanel.visible
         onActivated: historyPanel.panel.adjustSelected(-1)
-    }
-    Shortcut {
-        sequence: "Right"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.adjustSelected(1)
     }
     Shortcut {
         sequence: "l"
@@ -113,6 +91,18 @@ PopupWindow {
         enabled: historyPanel.visible
         onActivated: historyPanel.panel.toggleVolumeMute()
     }
+    Shortcut {
+        sequence: "c"
+        enabled: historyPanel.visible &&
+            Services.Notifs.history.length > 0
+        onActivated: Services.Notifs.clearHistory()
+    }
+    Shortcut {
+        sequence: "o"
+        enabled: historyPanel.visible &&
+            Services.Notifs.history.length > 0
+        onActivated: historyPanel.panel.invokeSelectedAction()
+    }
 
     Column {
         anchors {
@@ -121,19 +111,17 @@ PopupWindow {
             right: parent.right
         }
 
-        spacing: 8
+        spacing: Palette.popupSpacing
 
-        // THIN HEADER BAR (clear + unread badge live here)
         Rectangle {
             width: parent.width
-            height: 34
+            height: 32
 
             radius: 0
 
             color: Palette.bg
 
-            border.width: 1
-            border.color: Palette.border
+            border.width: 0
 
             Row {
                 anchors {
@@ -145,63 +133,17 @@ PopupWindow {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
 
-                    width: parent.width - 130 -
-                        (Services.Notifs.unread > 0 ? 50 : 0)
+                    width: parent.width - 60
 
                     text: "Notifications (" +
                         Services.Notifs.history.length + ")"
 
-                    color: Palette.fg
+                    color: Palette.dim
 
                     font.family: Palette.font
                     font.pixelSize: Palette.px12
-                    font.bold: true
 
                     elide: Text.ElideRight
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    width: Services.Notifs.unread > 0 ? 50 : 0
-
-                    horizontalAlignment: Text.AlignRight
-
-                    visible: Services.Notifs.unread > 0
-
-                    text: Services.Notifs.unread + " new"
-
-                    color: Palette.accent
-
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    width: 70
-
-                    horizontalAlignment: Text.AlignRight
-
-                    text: "Mark read"
-
-                    color: markReadHover.containsMouse
-                        ? Palette.fg : Palette.dim
-
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
-
-                    MouseArea {
-                        id: markReadHover
-
-                        anchors.fill: parent
-
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: Services.Notifs.markRead()
-                    }
                 }
 
                 Text {
@@ -233,7 +175,6 @@ PopupWindow {
             }
         }
 
-        // ONE FLOATING CARD PER NOTIFICATION
         Item {
             width: parent.width
             height: Services.Notifs.history.length > 0
@@ -268,32 +209,23 @@ PopupWindow {
                     // bare theme name.
                     readonly property string rawIcon:
                         modelData.icon ?? ""
-                    readonly property bool hasIcon: rawIcon !== ""
-                    readonly property bool iconIsDirect:
-                        rawIcon.startsWith("image://") ||
-                        rawIcon.startsWith("/") ||
-                        rawIcon.startsWith("file://")
-                    readonly property string directSource:
-                        rawIcon.startsWith("file://") ||
-                        rawIcon.startsWith("image://")
-                        ? rawIcon : "file://" + rawIcon
-                    readonly property string themeIcon:
-                        hasIcon && !iconIsDirect
-                        ? Quickshell.iconPath(rawIcon, true) : ""
 
                     width: histList.width
                     height: content.height + 16
 
                     radius: 0
 
-                    color: selected ? Palette.surfaceHover : Palette.bg
+                    color: selected ? Palette.accent
+                        : histHover.containsMouse ? Palette.hoverBg : Palette.bg
 
                     border.width: 1
                     border.color: modelData.critical
                         ? Palette.danger
-                        : selected ? Palette.fg : Palette.border
+                        : selected ? Palette.accent : Palette.dim
 
                     MouseArea {
+                        id: histHover
+
                         anchors.fill: parent
 
                         hoverEnabled: true
@@ -318,42 +250,15 @@ PopupWindow {
                             width: parent.width
                             spacing: 8
 
-                            Image {
-                                anchors.verticalCenter: parent.verticalCenter
+                            NotificationIcon {
+                                id: histIcon
 
-                                visible: histCard.hasIcon &&
-                                    histCard.iconIsDirect
-
-                                source: histCard.directSource
-
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-
-                                width: 32
-                                height: 32
-
-                                fillMode: Image.PreserveAspectFit
-                            }
-
-                            Image {
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                visible: histCard.themeIcon !== ""
-
-                                source: histCard.themeIcon
-
-                                sourceSize.width: 32
-                                sourceSize.height: 32
-
-                                width: 32
-                                height: 32
-
-                                fillMode: Image.PreserveAspectFit
+                                rawIcon: histCard.rawIcon
                             }
 
                             Column {
                                 width: parent.width -
-                                    (histCard.hasIcon ? 40 : 0)
+                                    (histIcon.hasIcon ? 32 : 0)
 
                                 spacing: 2
 
@@ -369,11 +274,11 @@ PopupWindow {
                                         text: modelData.summary ||
                                             modelData.app
 
-                                        color: Palette.fg
+                                        color: selected ? Palette.onAccent
+                                            : Palette.fg
 
                                         font.family: Palette.font
-                                        font.pixelSize: Palette.px13
-                                        font.bold: true
+                                        font.pixelSize: Palette.px12
 
                                         elide: Text.ElideRight
                                     }
@@ -388,7 +293,8 @@ PopupWindow {
                                         text: Qt.formatDateTime(
                                             modelData.time, "HH:mm")
 
-                                        color: Palette.dim
+                                        color: selected ? Palette.onAccent
+                                            : Palette.dim
 
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px10
@@ -402,7 +308,8 @@ PopupWindow {
 
                                     text: modelData.body
 
-                                    color: Palette.dim
+                                    color: selected ? Palette.onAccent
+                                        : Palette.dim
 
                                     font.family: Palette.font
                                     font.pixelSize: Palette.px12
@@ -411,9 +318,6 @@ PopupWindow {
                                     wrapMode: Text.WordWrap
                                 }
 
-                                // Live actions: the server object stays
-                                // resident after hide, so these invoke
-                                // for real; acting retires the row.
                                 Flow {
                                     width: parent.width
 
@@ -430,16 +334,15 @@ PopupWindow {
                                             required property var modelData
 
                                             width: actionLabel.width + 16
-                                            height: 26
+                                            height: 24
 
                                             radius: 0
 
                                             color: actionHover.containsMouse
-                                                ? Palette.surfaceHover
+                                                ? Palette.hoverBg
                                                 : Palette.surface
 
-                                            border.width: 1
-                                            border.color: Palette.border
+                                            border.width: 0
 
                                             Text {
                                                 id: actionLabel
@@ -462,11 +365,14 @@ PopupWindow {
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
 
-                                                onClicked: {
-                                                    modelData.invoke()
-                                                    Services.Notifs.dismissHistoryAt(
-                                                        histCard.index)
-                                                }
+                                            onClicked: {
+                                                Services.Notifs.activateAction(
+                                                    histCard.modelData.live,
+                                                    modelData)
+                                                Services.Notifs.dismissHistoryAt(
+                                                    histCard.index)
+                                                bar.closePopups()
+                                            }
                                             }
                                         }
                                     }

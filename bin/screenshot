@@ -1,6 +1,9 @@
 #!/bin/bash
 # Screenshot: saves a timestamped PNG to ~/Pictures/Screenshots and copies
-# it to the clipboard, then notifies. Usage: screenshot [area|full]
+# it to the clipboard, then notifies. The quickshell toast handles the
+# Open/Copy path actions natively (via the filepath hint), so this stays
+# fire-and-forget with no --wait blocking.
+# Usage: screenshot [area|full|window]
 # Cancelling the selection produces no file and no notification.
 
 mode="${1:-area}"
@@ -12,23 +15,18 @@ case "$mode" in
     full)
         grim - | tee "$file" | wl-copy -t image/png
         ;;
+    window)
+        geom=$(hyprctl activewindow -j | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+        grim -g "$geom" - | tee "$file" | wl-copy -t image/png
+        ;;
     *) # area
         grim -g "$(slurp -d)" - | tee "$file" | wl-copy -t image/png
         ;;
 esac
 
 if [ -s "$file" ]; then
-    # -A implies --wait: blocks until the popup is acted on or times out,
-    # then echoes the chosen action name. Left-click invokes the default
-    # action (open); the quickshell toast also renders every action as
-    # an inline button. The action key must be "default" for the
-    # left-click default to fire it.
-    action=$(notify-send -a screenshot -h string:x-canonical-private-synchronous:screenshot -t 10000 -i "$file" \
-        -A "default=Open" -A "path=Copy path" "Screenshot" "$(basename "$file")")
-    case "$action" in
-        default|open) xdg-open "$file" ;;
-        path) wl-copy "$file" ;;
-    esac
+    notify-send -a screenshot -h string:x-canonical-private-synchronous:screenshot -h string:filepath:"$file" -t 10000 -i "$file" \
+        -A "default=Open" -A "path=Copy path" "Screenshot" "$(basename "$file")"
 else
     rm -f "$file"
 fi
