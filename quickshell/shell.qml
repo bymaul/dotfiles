@@ -136,6 +136,15 @@ ShellRoot {
             onTriggered: panelGrab.active = true
         }
 
+        Connections {
+            target: controlPanelPopup
+
+            function onVisibleChanged(): void {
+                if (!controlPanelPopup.visible)
+                    panelGrab.active = false;
+            }
+        }
+
         function revealHistory(i: int): void {
             historyPanel.revealAt(i);
         }
@@ -311,11 +320,16 @@ ShellRoot {
                 bar: bar
             }
             BatteryIcon {}
-            BellIcon {
-                bar: bar
-            }
-            PowerIcon {
-                bar: bar
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+
+                BellIcon {
+                    bar: bar
+                }
+                PowerIcon {
+                    bar: bar
+                }
             }
         }
 

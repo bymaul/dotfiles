@@ -24,6 +24,14 @@ PopupWindow {
 
     color: "transparent"
 
+    // Release explicitly on hide: if the window closes while grab
+    // creation is still in flight, the compositor may never clear
+    // it and keyboard focus stays stuck on a hidden window.
+    onVisibleChanged: {
+        if (!base.visible)
+            grab.active = false
+    }
+
     HyprlandFocusGrab {
         id: grab
 
