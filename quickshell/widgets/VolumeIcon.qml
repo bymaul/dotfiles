@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import Quickshell.Services.Pipewire
 import "../Palette.js" as Palette
 
@@ -13,9 +12,8 @@ Item {
 
     property var sink: Pipewire.defaultAudioSink
 
-    // IMPORTANT:
-    // audio.volume and audio.muted require
-    // the node to be bound.
+    // audio.volume/muted need the node bound (PwObjectTracker),
+    // otherwise they stay null.
     PwObjectTracker {
         objects: [volumeControl.sink]
     }
@@ -23,23 +21,21 @@ Item {
     Text {
         id: volumeText
 
-        property real level:
-            volumeControl.sink?.audio?.volume ?? 0
+        property real level: volumeControl.sink?.audio?.volume ?? 0
 
-        property bool muted:
-            volumeControl.sink?.audio?.muted ?? false
+        property bool muted: volumeControl.sink?.audio?.muted ?? false
 
         text: {
             if (muted)
-                return "󰝟"
+                return "󰝟";
 
             if (level <= 0.3)
-                return "󰖀"
+                return "󰖀";
 
             if (level < 1.0)
-                return "󰕾"
+                return "󰕾";
 
-            return "󰝝"
+            return "󰝝";
         }
 
         color: volumeText.level > 1 ? Palette.warn : Palette.fg
@@ -53,26 +49,16 @@ Item {
             onClicked: bar.toggleControl()
 
             onWheel: event => {
-                const audio =
-                    volumeControl.sink?.audio
+                const audio = volumeControl.sink?.audio;
 
                 if (!audio)
-                    return
-
-                const step = 0.05
+                    return;
+                const step = 0.05;
 
                 if (event.angleDelta.y > 0) {
-                    audio.volume =
-                        Math.min(
-                            1.5,
-                            audio.volume + step
-                        )
+                    audio.volume = Math.min(1.5, audio.volume + step);
                 } else {
-                    audio.volume =
-                        Math.max(
-                            0.0,
-                            audio.volume - step
-                        )
+                    audio.volume = Math.max(0.0, audio.volume - step);
                 }
             }
         }

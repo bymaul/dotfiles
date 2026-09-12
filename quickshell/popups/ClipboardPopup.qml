@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import "../Palette.js" as Palette
 
@@ -10,17 +9,15 @@ BasePopup {
     anchorMode: "center"
 
     implicitWidth: Palette.popupWidth
-    implicitHeight: 16 + titleText.implicitHeight + Palette.rowHeight +
-        Palette.popupSpacing * 3 +
-        (10 * Palette.rowHeight + 9 * 4) + hintText.implicitHeight
+    implicitHeight: 16 + titleText.implicitHeight + Palette.rowHeight + Palette.popupSpacing * 3 + (10 * Palette.rowHeight + 9 * 4) + hintText.implicitHeight
 
     Shortcut {
         sequence: "Escape"
         onActivated: {
             if (clipboardPopup.wipeConfirm)
-                clipboardPopup.wipeConfirm = false
+                clipboardPopup.wipeConfirm = false;
             else
-                bar.closePopups()
+                bar.closePopups();
         }
     }
 
@@ -81,147 +78,139 @@ BasePopup {
 
     onVisibleChanged: {
         if (visible)
-            clipboardPopup.reset()
+            clipboardPopup.reset();
     }
 
     function reset(): void {
-        activeAddress = ""
-        activeClass = ""
-        pendingIndex = 0
-        deleteQueue = []
-        wipeConfirm = false
-        wipeChoice = 1
-        focusProbe.running = true
-        listProbe.running = true
+        activeAddress = "";
+        activeClass = "";
+        pendingIndex = 0;
+        deleteQueue = [];
+        wipeConfirm = false;
+        wipeChoice = 1;
+        focusProbe.running = true;
+        listProbe.running = true;
     }
 
     function parseHistory(text: string): void {
-        const out = []
+        const out = [];
 
         for (const line of text.split("\n")) {
             if (line.trim() === "")
-                continue
-
-            const tab = line.indexOf("\t")
+                continue;
+            const tab = line.indexOf("\t");
 
             if (tab <= 0)
-                continue
-
+                continue;
             out.push({
                 line: line,
                 id: line.slice(0, tab),
                 preview: line.slice(tab + 1)
-            })
+            });
         }
 
-        clipboardPopup.allEntries = out
+        clipboardPopup.allEntries = out;
 
         if (out.length > 0) {
-            list.currentIndex =
-                Math.min(clipboardPopup.pendingIndex, out.length - 1)
-            list.positionViewAtIndex(list.currentIndex, ListView.Contain)
+            list.currentIndex = Math.min(clipboardPopup.pendingIndex, out.length - 1);
+            list.positionViewAtIndex(list.currentIndex, ListView.Contain);
         } else {
-            list.currentIndex = -1
+            list.currentIndex = -1;
         }
     }
 
     function stepSelection(dir: int): void {
-        clipboardPopup.wipeConfirm = false
+        clipboardPopup.wipeConfirm = false;
 
         if (list.count === 0)
-            return
-
-        list.currentIndex = Math.max(0,
-            Math.min(list.count - 1, list.currentIndex + dir))
-        list.positionViewAtIndex(list.currentIndex, ListView.Contain)
+            return;
+        list.currentIndex = Math.max(0, Math.min(list.count - 1, list.currentIndex + dir));
+        list.positionViewAtIndex(list.currentIndex, ListView.Contain);
     }
 
     function confirm(): void {
         if (clipboardPopup.wipeConfirm)
-            clipboardPopup.confirmWipe()
+            clipboardPopup.confirmWipe();
         else
-            clipboardPopup.pasteSelected()
+            clipboardPopup.pasteSelected();
     }
 
     function pasteSelected(): void {
-        const entry = clipboardPopup.allEntries[list.currentIndex]
+        const entry = clipboardPopup.allEntries[list.currentIndex];
 
         if (!entry)
-            return
-
-        clipboardPopup.copySelection(entry)
+            return;
+        clipboardPopup.copySelection(entry);
     }
 
     function deleteSelected(): void {
-        const entry = clipboardPopup.allEntries[list.currentIndex]
+        const entry = clipboardPopup.allEntries[list.currentIndex];
 
         if (!entry)
-            return
-
-        clipboardPopup.deleteEntry(entry)
+            return;
+        clipboardPopup.deleteEntry(entry);
     }
 
     function deleteEntry(entry: var): void {
-        clipboardPopup.pendingIndex = Math.max(0, list.currentIndex)
-        clipboardPopup.wipeConfirm = false
-        clipboardPopup.deleteQueue.push(entry.line)
-        clipboardPopup.runNextDelete()
+        clipboardPopup.pendingIndex = Math.max(0, list.currentIndex);
+        clipboardPopup.wipeConfirm = false;
+        clipboardPopup.deleteQueue.push(entry.line);
+        clipboardPopup.runNextDelete();
     }
 
     function runNextDelete(): void {
         if (deleteProbe.running || clipboardPopup.deleteQueue.length === 0)
-            return
-
-        deleteProbe.command = [
-            "sh",
-            "-c",
-            'printf "%s\\n" "$1" | cliphist delete',
-            "qs",
-            clipboardPopup.deleteQueue[0]
-        ]
-        deleteProbe.running = true
+            return;
+        deleteProbe.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist delete', "qs", clipboardPopup.deleteQueue[0]];
+        deleteProbe.running = true;
     }
 
     function requestWipe(): void {
-        clipboardPopup.wipeConfirm = true
-        clipboardPopup.wipeChoice = 1
+        clipboardPopup.wipeConfirm = true;
+        clipboardPopup.wipeChoice = 1;
     }
 
     function confirmWipe(): void {
-        const wipe = clipboardPopup.wipeChoice === 1
+        const wipe = clipboardPopup.wipeChoice === 1;
 
-        clipboardPopup.wipeConfirm = false
+        clipboardPopup.wipeConfirm = false;
 
         if (!wipe)
-            return
-
-        bar.closePopups()
-        Quickshell.execDetached(["cliphist", "wipe"])
+            return;
+        bar.closePopups();
+        Quickshell.execDetached(["cliphist", "wipe"]);
     }
 
     function copySelection(entry: var): void {
-        bar.closePopups()
+        // A copy already in flight owns the probe: re-entering here
+        // (fast double-Enter) would overwrite its command mid-run
+        // and lose the first paste.
+        if (copyProbe.running)
+            return;
+        bar.closePopups();
 
-        copyProbe.command = [
-            "sh",
-            "-c",
-            'printf "%s\\n" "$1" | cliphist decode | wl-copy',
-            "qs",
-            entry.line
-        ]
-        copyProbe.running = true
+        copyProbe.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist decode | wl-copy', "qs", entry.line];
+        copyProbe.running = true;
     }
 
     Process {
         id: deleteProbe
 
         onExited: exitCode => {
-            clipboardPopup.deleteQueue.shift()
+            // A failed delete (e.g. cliphist missing) must not
+            // silently drop the entry: keep it queued and refresh so
+            // the failure stays visible instead of vanishing.
+            if (exitCode !== 0) {
+                listProbe.running = true;
+                return;
+            }
+
+            clipboardPopup.deleteQueue.shift();
 
             if (clipboardPopup.deleteQueue.length > 0)
-                clipboardPopup.runNextDelete()
+                clipboardPopup.runNextDelete();
             else
-                listProbe.running = true
+                listProbe.running = true;
         }
     }
 
@@ -230,9 +219,8 @@ BasePopup {
 
         onExited: exitCode => {
             if (exitCode !== 0)
-                return
-
-            pasteTimer.start()
+                return;
+            pasteTimer.start();
         }
     }
 
@@ -246,34 +234,26 @@ BasePopup {
     }
 
     function pasteIntoActive(): void {
-        const terminal = /kitty|alacritty|foot|wezterm|ghostty|konsole|gnome-terminal|xfce4-terminal|terminator|tilix|xterm|rxvt|hyper|tabby|stterm|\bst\b/.test(
-            clipboardPopup.activeClass)
-        const mods = terminal ? "CTRL, SHIFT" : "CTRL"
-        const windowArg = clipboardPopup.activeAddress !== ""
-            ? ", window = \"address:" + clipboardPopup.activeAddress + "\""
-            : ""
+        const terminal = /kitty|alacritty|foot|wezterm|ghostty|konsole|gnome-terminal|xfce4-terminal|terminator|tilix|xterm|rxvt|hyper|tabby|stterm|\bst\b/.test(clipboardPopup.activeClass);
+        const mods = terminal ? "CTRL, SHIFT" : "CTRL";
+        const windowArg = clipboardPopup.activeAddress !== "" ? ", window = \"address:" + clipboardPopup.activeAddress + "\"" : "";
 
-        const req = "hl.dsp.send_shortcut({ mods = \"" + mods +
-            "\", key = \"V\"" + windowArg + " })"
+        const req = "hl.dsp.send_shortcut({ mods = \"" + mods + "\", key = \"V\"" + windowArg + " })";
 
-        Quickshell.execDetached(["hyprctl", "dispatch", req])
+        Quickshell.execDetached(["hyprctl", "dispatch", req]);
     }
 
     Process {
         id: focusProbe
 
-        command: [
-            "sh",
-            "-c",
-            "hyprctl activewindow -j 2>/dev/null | jq -r '[.address,.class] | @tsv' 2>/dev/null"
-        ]
+        command: ["sh", "-c", "hyprctl activewindow -j 2>/dev/null | jq -r '[.address,.class] | @tsv' 2>/dev/null"]
 
         stdout: StdioCollector {
             onStreamFinished: {
-                const parts = text.trim().split("\t")
+                const parts = text.trim().split("\t");
 
-                clipboardPopup.activeAddress = parts[0] ?? ""
-                clipboardPopup.activeClass = (parts[1] ?? "").toLowerCase()
+                clipboardPopup.activeAddress = parts[0] ?? "";
+                clipboardPopup.activeClass = (parts[1] ?? "").toLowerCase();
             }
         }
     }
@@ -281,11 +261,7 @@ BasePopup {
     Process {
         id: listProbe
 
-        command: [
-            "sh",
-            "-c",
-            "cliphist list 2>/dev/null"
-        ]
+        command: ["sh", "-c", "cliphist list 2>/dev/null"]
 
         stdout: StdioCollector {
             onStreamFinished: clipboardPopup.parseHistory(text)
@@ -339,27 +315,23 @@ BasePopup {
 
                 onCountChanged: {
                     if (currentIndex >= count)
-                        currentIndex = Math.max(0, count - 1)
+                        currentIndex = Math.max(0, count - 1);
                 }
 
                 delegate: Rectangle {
                     required property var modelData
                     required property int index
 
-                    readonly property bool selected:
-                        list.currentIndex === index
+                    readonly property bool selected: list.currentIndex === index
 
                     width: list.width
                     height: Palette.rowHeight
 
                     radius: 0
 
-                    color: selected ? Palette.accent
-                        : rowPaste.containsMouse ? Palette.hoverBg
-                        : "transparent"
+                    color: selected ? Palette.accent : rowPaste.containsMouse ? Palette.hoverBg : "transparent"
                     border.width: selected ? 1 : 0
-                    border.color: selected
-                        ? Palette.accent : Palette.dim
+                    border.color: selected ? Palette.accent : Palette.dim
 
                     MouseArea {
                         id: rowPaste
@@ -370,8 +342,8 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            list.currentIndex = index
-                            clipboardPopup.pasteSelected()
+                            list.currentIndex = index;
+                            clipboardPopup.pasteSelected();
                         }
                     }
 
@@ -384,12 +356,9 @@ BasePopup {
 
                         width: parent.width - 56
 
-                        text: modelData.preview !== ""
-                            ? modelData.preview
-                            : "󰆏 Image"
+                        text: modelData.preview !== "" ? modelData.preview : "󰆏 Image"
 
-                        color: selected ? Palette.onAccent
-                            : rowPaste.containsMouse ? Palette.fg : Palette.dim
+                        color: selected ? Palette.onAccent : rowPaste.containsMouse ? Palette.fg : Palette.dim
 
                         font.family: Palette.font
                         font.pixelSize: Palette.px12
@@ -418,9 +387,7 @@ BasePopup {
 
                             text: "✕"
 
-                            color: selected ? Palette.onAccent
-                                : rowDelete.containsMouse
-                                ? Palette.fg : Palette.dim
+                            color: selected ? Palette.onAccent : rowDelete.containsMouse ? Palette.fg : Palette.dim
 
                             font.family: Palette.font
                             font.pixelSize: Palette.px12
@@ -477,16 +444,14 @@ BasePopup {
 
                         color: "transparent"
                         border.width: clipboardPopup.wipeChoice === 0 ? 1 : 0
-                        border.color: clipboardPopup.wipeChoice === 0
-                            ? Palette.fg : Palette.dim
+                        border.color: clipboardPopup.wipeChoice === 0 ? Palette.fg : Palette.dim
 
                         Text {
                             anchors.centerIn: parent
 
                             text: "No"
 
-                            color: clipboardPopup.wipeChoice === 0
-                                ? Palette.fg : Palette.dim
+                            color: clipboardPopup.wipeChoice === 0 ? Palette.fg : Palette.dim
 
                             font.family: Palette.font
                             font.pixelSize: Palette.px12
@@ -499,8 +464,8 @@ BasePopup {
                             cursorShape: Qt.PointingHandCursor
 
                             onClicked: {
-                                clipboardPopup.wipeChoice = 0
-                                clipboardPopup.confirmWipe()
+                                clipboardPopup.wipeChoice = 0;
+                                clipboardPopup.confirmWipe();
                             }
                         }
                     }
@@ -513,16 +478,14 @@ BasePopup {
 
                         color: "transparent"
                         border.width: clipboardPopup.wipeChoice === 1 ? 1 : 0
-                        border.color: clipboardPopup.wipeChoice === 1
-                            ? Palette.fg : Palette.dim
+                        border.color: clipboardPopup.wipeChoice === 1 ? Palette.fg : Palette.dim
 
                         Text {
                             anchors.centerIn: parent
 
                             text: "Yes"
 
-                            color: clipboardPopup.wipeChoice === 1
-                                ? Palette.fg : Palette.dim
+                            color: clipboardPopup.wipeChoice === 1 ? Palette.fg : Palette.dim
 
                             font.family: Palette.font
                             font.pixelSize: Palette.px12
@@ -535,8 +498,8 @@ BasePopup {
                             cursorShape: Qt.PointingHandCursor
 
                             onClicked: {
-                                clipboardPopup.wipeChoice = 1
-                                clipboardPopup.confirmWipe()
+                                clipboardPopup.wipeChoice = 1;
+                                clipboardPopup.confirmWipe();
                             }
                         }
                     }

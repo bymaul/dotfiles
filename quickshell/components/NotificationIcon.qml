@@ -1,10 +1,8 @@
 import QtQuick
 import Quickshell
 
-// Shared notification icon (ToastCard + history rows): a ready-made
-// image:// URL, a file path, or a bare theme name. Only bare names
-// go through theme lookup; URLs load directly. Invisible when there
-// is nothing to show, so Row layouts skip it exactly as before.
+// image:// URL, file path, or theme name; invisible when empty so
+// Row layouts skip it.
 Item {
     id: notifIcon
 
@@ -14,15 +12,10 @@ Item {
     anchors.verticalCenter: parent.verticalCenter
 
     readonly property bool hasIcon: rawIcon !== ""
-    readonly property bool iconIsDirect: rawIcon.startsWith("image://") ||
-        rawIcon.startsWith("/") || rawIcon.startsWith("file://")
-    readonly property string directSource: rawIcon.startsWith("file://") ||
-        rawIcon.startsWith("image://")
-        ? rawIcon : "file://" + rawIcon
-    // Theme names resolve through the platform theme; the check
-    // variant yields "" instead of a missing-texture square.
-    readonly property string themeIcon: hasIcon && !iconIsDirect
-        ? Quickshell.iconPath(rawIcon, true) : ""
+    readonly property bool iconIsDirect: rawIcon.startsWith("image://") || rawIcon.startsWith("/") || rawIcon.startsWith("file://")
+    readonly property string directSource: rawIcon.startsWith("file://") || rawIcon.startsWith("image://") ? rawIcon : "file://" + rawIcon
+    // iconPath's check variant returns "" instead of a broken image.
+    readonly property string themeIcon: hasIcon && !iconIsDirect ? Quickshell.iconPath(rawIcon, true) : ""
 
     visible: (hasIcon && iconIsDirect) || themeIcon !== ""
 

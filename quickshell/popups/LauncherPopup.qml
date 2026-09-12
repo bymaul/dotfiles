@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import "../services" as Services
 import "../Palette.js" as Palette
 
@@ -10,8 +9,7 @@ BasePopup {
     anchorMode: "center"
 
     implicitWidth: Palette.popupWidth
-    implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 +
-        (10 * Palette.rowHeight + 9 * 4) + hintText.implicitHeight
+    implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + (10 * Palette.rowHeight + 9 * 4) + hintText.implicitHeight
 
     Shortcut {
         sequence: "Escape"
@@ -69,12 +67,12 @@ BasePopup {
 
     onVisibleChanged: {
         if (visible) {
-            launcherPopup.appsCache = DesktopEntries.applications.values
-            Services.RunMode.refresh()
-            Services.LaunchHistory.load()
-            queryField.text = ""
-            launcherPopup.refilter()
-            queryField.forceActiveFocus()
+            launcherPopup.appsCache = DesktopEntries.applications.values;
+            Services.RunMode.refresh();
+            Services.LaunchHistory.load();
+            queryField.text = "";
+            launcherPopup.refilter();
+            queryField.forceActiveFocus();
         }
     }
 
@@ -83,7 +81,7 @@ BasePopup {
 
         function onBinariesChanged() {
             if (launcherPopup.visible && launcherPopup.runMode)
-                launcherPopup.refilter()
+                launcherPopup.refilter();
         }
     }
 
@@ -92,15 +90,15 @@ BasePopup {
 
         function onValuesChanged() {
             if (launcherPopup.visible && !launcherPopup.runMode) {
-                launcherPopup.appsCache = DesktopEntries.applications.values
-                launcherPopup.refilter()
+                launcherPopup.appsCache = DesktopEntries.applications.values;
+                launcherPopup.refilter();
             }
         }
 
         function onObjectInsertedPost() {
             if (launcherPopup.visible && !launcherPopup.runMode) {
-                launcherPopup.appsCache = DesktopEntries.applications.values
-                launcherPopup.refilter()
+                launcherPopup.appsCache = DesktopEntries.applications.values;
+                launcherPopup.refilter();
             }
         }
     }
@@ -110,78 +108,65 @@ BasePopup {
 
         function onLoadedChanged() {
             if (launcherPopup.visible)
-                launcherPopup.refilter()
+                launcherPopup.refilter();
         }
     }
 
     function stepSelection(dir: int): void {
         if (list.count === 0)
-            return
-
-        list.currentIndex = Math.max(0,
-            Math.min(list.count - 1, list.currentIndex + dir))
-        list.positionViewAtIndex(list.currentIndex, ListView.Contain)
+            return;
+        list.currentIndex = Math.max(0, Math.min(list.count - 1, list.currentIndex + dir));
+        list.positionViewAtIndex(list.currentIndex, ListView.Contain);
     }
 
-    readonly property bool runMode:
-        queryField.text.trim().startsWith(">")
+    readonly property bool runMode: queryField.text.trim().startsWith(">")
 
     function refilter(): void {
         if (launcherPopup.runMode) {
-            launcherPopup.refilterRun(
-                queryField.text.trim().slice(1).trim().toLowerCase())
+            launcherPopup.refilterRun(queryField.text.trim().slice(1).trim().toLowerCase());
         } else {
-            launcherPopup.refilterApps(queryField.text.toLowerCase().trim())
+            launcherPopup.refilterApps(queryField.text.toLowerCase().trim());
         }
     }
 
     function matchScore(text: string, q: string): int {
         if (q === "")
-            return 1
+            return 1;
 
         if (text === q)
-            return 0
+            return 0;
 
         if (text.startsWith(q))
-            return 1
+            return 1;
 
         if (text.includes(q))
-            return 2
+            return 2;
 
-        return 3
+        return 3;
     }
 
     function sortScored(out: var): void {
-        out.sort((a, b) => (a.score - b.score) ||
-            ((b.use ?? 0) - (a.use ?? 0)) ||
-            ((b.last ?? 0) - (a.last ?? 0)) ||
-            a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
+        out.sort((a, b) => (a.score - b.score) || ((b.use ?? 0) - (a.use ?? 0)) || ((b.last ?? 0) - (a.last ?? 0)) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
     }
 
     function refilterApps(q: string): void {
-        const apps = launcherPopup.appsCache ?? []
-        const out = []
+        const apps = launcherPopup.appsCache ?? [];
+        const out = [];
 
         for (const app of apps) {
-            const name = app.name ?? app.genericName ?? ""
+            const name = app.name ?? app.genericName ?? "";
 
             if (name === "")
-                continue
+                continue;
+            const haystacks = [app.name ?? "", app.genericName ?? "", app.comment ?? ""].concat(app.keywords ?? []);
 
-            const haystacks = [
-                app.name ?? "",
-                app.genericName ?? "",
-                app.comment ?? ""
-            ].concat(app.keywords ?? [])
-
-            let best = 3
+            let best = 3;
 
             for (const h of haystacks) {
-                best = Math.min(best,
-                    launcherPopup.matchScore(h.toLowerCase(), q))
+                best = Math.min(best, launcherPopup.matchScore(h.toLowerCase(), q));
 
                 if (best === 0)
-                    break
+                    break;
             }
 
             if (best < 3)
@@ -191,18 +176,18 @@ BasePopup {
                     score: best,
                     use: Services.LaunchHistory.countFor("app:" + (app.id ?? "")),
                     last: Services.LaunchHistory.lastFor("app:" + (app.id ?? ""))
-                })
+                });
         }
 
-        launcherPopup.sortScored(out)
-        launcherPopup.applyResults(out)
+        launcherPopup.sortScored(out);
+        launcherPopup.applyResults(out);
     }
 
     function refilterRun(q: string): void {
-        const out = []
+        const out = [];
 
         for (const name of Services.RunMode.binaries) {
-            const score = launcherPopup.matchScore(name.toLowerCase(), q)
+            const score = launcherPopup.matchScore(name.toLowerCase(), q);
 
             if (score < 3)
                 out.push({
@@ -210,97 +195,92 @@ BasePopup {
                     score: score,
                     use: Services.LaunchHistory.countFor("bin:" + name),
                     last: Services.LaunchHistory.lastFor("bin:" + name)
-                })
+                });
         }
 
-        launcherPopup.sortScored(out)
-        launcherPopup.applyResults(out)
+        launcherPopup.sortScored(out);
+        launcherPopup.applyResults(out);
     }
 
     function applyResults(out: var): void {
-        launcherPopup.entries = out
+        launcherPopup.entries = out;
 
         if (out.length > 0) {
-            list.currentIndex = 0
-            list.positionViewAtIndex(0, ListView.Contain)
+            list.currentIndex = 0;
+            list.positionViewAtIndex(0, ListView.Contain);
         } else {
-            list.currentIndex = -1
+            list.currentIndex = -1;
         }
     }
 
     function launch(): void {
         if (launcherPopup.runMode) {
-            const rest = queryField.text.trim().slice(1).trim()
+            const rest = queryField.text.trim().slice(1).trim();
 
             if (rest === "") {
-                const picked = launcherPopup.entries[list.currentIndex]
+                const picked = launcherPopup.entries[list.currentIndex];
 
                 if (picked) {
-                    Services.LaunchHistory.record("bin:" + picked.name)
-                    launcherPopup.run([picked.name])
+                    Services.LaunchHistory.record("bin:" + picked.name);
+                    launcherPopup.run([picked.name]);
                 }
 
-                return
+                return;
             }
 
-            const app = launcherPopup.findApp(rest)
+            const app = launcherPopup.findApp(rest);
 
             if (app) {
-                Services.LaunchHistory.record("app:" + (app.id ?? ""))
-                launcherPopup.runApp(app)
+                Services.LaunchHistory.record("app:" + (app.id ?? ""));
+                launcherPopup.runApp(app);
             } else {
-                Services.LaunchHistory.record("cmd:" + rest)
-                launcherPopup.run(["sh", "-c", rest])
+                Services.LaunchHistory.record("cmd:" + rest);
+                launcherPopup.run(["sh", "-c", rest]);
             }
 
-            return
+            return;
         }
 
-        const entry = launcherPopup.entries[list.currentIndex]
+        const entry = launcherPopup.entries[list.currentIndex];
 
         if (!entry)
-            return
-
-        Services.LaunchHistory.record("app:" + (entry.entry.id ?? ""))
-        launcherPopup.runApp(entry.entry)
+            return;
+        Services.LaunchHistory.record("app:" + (entry.entry.id ?? ""));
+        launcherPopup.runApp(entry.entry);
     }
 
-    // Single-token commands that name an installed app (by executable
-    // or display name) launch through its desktop entry, so terminal
-    // programs like btop get a terminal. Anything else runs raw.
+    // Single tokens naming an installed app launch via its desktop
+    // entry, so terminal programs get a terminal. Rest runs raw.
     function findApp(rest: string): var {
         if (/\s/.test(rest))
-            return null
+            return null;
 
-        const q = rest.toLowerCase()
+        const q = rest.toLowerCase();
 
         for (const app of launcherPopup.appsCache ?? []) {
-            const cmd = app.command && app.command.length > 0
-                ? app.command[0] : ""
-            const base = String(cmd).split("/").pop().toLowerCase()
-            const name = (app.name ?? "").toLowerCase()
+            const cmd = app.command && app.command.length > 0 ? app.command[0] : "";
+            const base = String(cmd).split("/").pop().toLowerCase();
+            const name = (app.name ?? "").toLowerCase();
 
             if (base !== "" && base === q)
-                return app
+                return app;
 
             if (name !== "" && name === q)
-                return app
+                return app;
         }
 
-        return null
+        return null;
     }
 
     function runApp(entry: var): void {
-        const cmd = entry.runInTerminal
-            ? ["kitty"].concat(entry.command)
-            : entry.command
+        const cmd = entry.runInTerminal ? ["kitty"].concat(entry.command) : entry.command;
 
-        launcherPopup.run(cmd)
+        launcherPopup.run(cmd);
     }
 
     function run(cmd: var): void {
-        bar.closePopups()
-        Quickshell.execDetached(cmd)
+        bar.closePopups();
+        Quickshell.execDetached(cmd);
     }
 
     Rectangle {
@@ -328,8 +308,7 @@ BasePopup {
 
                 color: "transparent"
                 border.width: 1
-                border.color: launcherPopup.runMode
-                    ? Palette.accent : Palette.border
+                border.color: launcherPopup.runMode ? Palette.accent : Palette.border
 
                 TextInput {
                     id: queryField
@@ -370,27 +349,23 @@ BasePopup {
 
                 onCountChanged: {
                     if (currentIndex >= count)
-                        currentIndex = Math.max(0, count - 1)
+                        currentIndex = Math.max(0, count - 1);
                 }
 
                 delegate: Rectangle {
                     required property var modelData
                     required property int index
 
-                    readonly property bool selected:
-                        list.currentIndex === index
+                    readonly property bool selected: list.currentIndex === index
 
                     width: list.width
                     height: Palette.rowHeight
 
                     radius: 0
 
-                    color: selected ? Palette.accent
-                        : rowHover.containsMouse ? Palette.hoverBg
-                        : "transparent"
+                    color: selected ? Palette.accent : rowHover.containsMouse ? Palette.hoverBg : "transparent"
                     border.width: selected ? 1 : 0
-                    border.color: selected
-                        ? Palette.accent : Palette.dim
+                    border.color: selected ? Palette.accent : Palette.dim
 
                     MouseArea {
                         id: rowHover
@@ -401,8 +376,8 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            list.currentIndex = index
-                            launcherPopup.launch()
+                            list.currentIndex = index;
+                            launcherPopup.launch();
                         }
                     }
 
@@ -417,8 +392,7 @@ BasePopup {
 
                         text: modelData.name
 
-                        color: selected ? Palette.onAccent
-                            : rowHover.containsMouse ? Palette.fg : Palette.dim
+                        color: selected ? Palette.onAccent : rowHover.containsMouse ? Palette.fg : Palette.dim
 
                         font.family: Palette.font
                         font.pixelSize: Palette.px12

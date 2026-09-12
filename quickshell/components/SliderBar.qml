@@ -12,9 +12,7 @@ Item {
 
     height: 24
 
-    readonly property real fraction: Math.max(0, Math.min(1,
-        (slider.value - slider.minimum) /
-        (slider.maximum - slider.minimum)))
+    readonly property real fraction: Math.max(0, Math.min(1, (slider.value - slider.minimum) / (slider.maximum - slider.minimum)))
 
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
@@ -55,28 +53,19 @@ Item {
         anchors.fill: parent
 
         function adjust(mouse: var): void {
-            slider.sliderMoved(
-                slider.minimum +
-                Math.max(0, Math.min(1, mouse.x / slider.width)) *
-                (slider.maximum - slider.minimum)
-            )
+            slider.sliderMoved(slider.minimum + Math.max(0, Math.min(1, mouse.x / slider.width)) * (slider.maximum - slider.minimum));
         }
 
         onPressed: mouse => adjust(mouse)
         onPositionChanged: mouse => {
             if (pressed)
-                adjust(mouse)
+                adjust(mouse);
         }
 
-        // Match the bar volume icon: scroll steps 5% of range.
         onWheel: event => {
-            const step = (event.angleDelta.y > 0 ? 0.05 : -0.05) *
-                (slider.maximum - slider.minimum)
+            const step = (event.angleDelta.y > 0 ? 0.05 : -0.05) * (slider.maximum - slider.minimum);
 
-            slider.sliderMoved(
-                Math.max(slider.minimum,
-                    Math.min(slider.maximum, slider.value + step))
-            )
+            slider.sliderMoved(Math.max(slider.minimum, Math.min(slider.maximum, slider.value + step)));
         }
     }
 }

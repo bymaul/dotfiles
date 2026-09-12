@@ -19,7 +19,9 @@ Item {
 
         CaffeineIcon {}
         DndIcon {}
-        MemCpu { bar: systemGroup.bar }
+        MemCpu {
+            bar: systemGroup.bar
+        }
         NetworkGroup {
             id: networkGroup
 

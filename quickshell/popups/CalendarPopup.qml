@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import "../Palette.js" as Palette
 
 BasePopup {
@@ -38,7 +37,7 @@ BasePopup {
 
     onVisibleChanged: {
         if (visible)
-            calendarFrame.resetToToday()
+            calendarFrame.resetToToday();
     }
 
     Rectangle {
@@ -52,68 +51,60 @@ BasePopup {
 
         border.width: 0
 
-        property date viewDate: new Date(
-            clock.date.getFullYear(),
-            clock.date.getMonth(),
-            1
-        )
+        property date viewDate: new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
 
         function resetToToday(): void {
-            calendarFrame.viewDate = new Date(
-                clock.date.getFullYear(),
-                clock.date.getMonth(),
-                1
-            )
+            calendarFrame.viewDate = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
         }
 
         function stepMonth(offset: int): void {
-            calendarFrame.viewDate = new Date(
-                calendarFrame.viewDate.getFullYear(),
-                calendarFrame.viewDate.getMonth() + offset,
-                1
-            )
+            calendarFrame.viewDate = new Date(calendarFrame.viewDate.getFullYear(), calendarFrame.viewDate.getMonth() + offset, 1);
         }
 
         function daysInMonth(year: int, month: int): int {
-            return new Date(year, month + 1, 0).getDate()
+            return new Date(year, month + 1, 0).getDate();
         }
 
-        // Qt day-of-week is 1 = Monday .. 7 = Sunday; JS getDay() is
-        // 0 = Sunday. The grid follows the system locale's first day.
+        // Qt weeks start Monday, JS Sundays; grid follows locale.
         function weekStart(): int {
-            return Qt.locale().firstDayOfWeek % 7
+            return Qt.locale().firstDayOfWeek % 7;
         }
 
         function weekdayHeaders(): var {
-            const names = ["S", "M", "T", "W", "T", "F", "S"]
-            const start = calendarFrame.weekStart()
+            const names = ["S", "M", "T", "W", "T", "F", "S"];
+            const start = calendarFrame.weekStart();
 
-            return names.slice(start).concat(names.slice(0, start))
+            return names.slice(start).concat(names.slice(0, start));
         }
 
         function isToday(day: int): bool {
-            return day === clock.date.getDate()
-                && viewDate.getMonth() === clock.date.getMonth()
-                && viewDate.getFullYear() === clock.date.getFullYear()
+            return day === clock.date.getDate() && viewDate.getMonth() === clock.date.getMonth() && viewDate.getFullYear() === clock.date.getFullYear();
         }
 
         function dayCells(): var {
-            const first = (viewDate.getDay() - calendarFrame.weekStart() + 7) % 7
-            const total = daysInMonth(
-                viewDate.getFullYear(), viewDate.getMonth()
-            )
-            const cells = []
+            const first = (viewDate.getDay() - calendarFrame.weekStart() + 7) % 7;
+            const total = daysInMonth(viewDate.getFullYear(), viewDate.getMonth());
+            const cells = [];
 
             for (let i = 0; i < first; ++i)
-                cells.push({ day: 0, other: true })
+                cells.push({
+                    day: 0,
+                    other: true
+                });
 
             for (let d = 1; d <= total; ++d)
-                cells.push({ day: d, other: false })
+                cells.push({
+                    day: d,
+                    other: false
+                });
 
             while (cells.length < 42)
-                cells.push({ day: 0, other: true })
+                cells.push({
+                    day: 0,
+                    other: true
+                });
 
-            return cells
+            return cells;
         }
 
         Column {
@@ -137,9 +128,7 @@ BasePopup {
 
                     text: "󰅁"
 
-                    color: navLeftHover.containsMouse
-                        ? Palette.fg
-                        : Palette.dim
+                    color: navLeftHover.containsMouse ? Palette.fg : Palette.dim
 
                     font.family: Palette.font
                     font.pixelSize: Palette.px14
@@ -153,7 +142,7 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            calendarFrame.stepMonth(-1)
+                            calendarFrame.stepMonth(-1);
                         }
                     }
                 }
@@ -165,10 +154,7 @@ BasePopup {
 
                     horizontalAlignment: Text.AlignHCenter
 
-                    text: Qt.formatDateTime(
-                        calendarFrame.viewDate,
-                        "MMMM yyyy"
-                    )
+                    text: Qt.formatDateTime(calendarFrame.viewDate, "MMMM yyyy")
 
                     color: Palette.fg
 
@@ -185,9 +171,7 @@ BasePopup {
 
                     text: "󰅂"
 
-                    color: navRightHover.containsMouse
-                        ? Palette.fg
-                        : Palette.dim
+                    color: navRightHover.containsMouse ? Palette.fg : Palette.dim
 
                     font.family: Palette.font
                     font.pixelSize: Palette.px14
@@ -201,7 +185,7 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            calendarFrame.stepMonth(1)
+                            calendarFrame.stepMonth(1);
                         }
                     }
                 }
@@ -212,10 +196,7 @@ BasePopup {
 
                 horizontalAlignment: Text.AlignHCenter
 
-                text: Qt.formatDateTime(
-                    clock.date,
-                    "dddd, dd MMMM yyyy"
-                )
+                text: Qt.formatDateTime(clock.date, "dddd, dd MMMM yyyy")
 
                 color: Palette.dim
 
@@ -262,25 +243,16 @@ BasePopup {
                         width: parent.width / 7
                         height: 26
 
-                        color: modelData.day > 0 &&
-                            calendarFrame.isToday(modelData.day)
-                            ? Palette.accent
-                            : "transparent"
+                        color: modelData.day > 0 && calendarFrame.isToday(modelData.day) ? Palette.accent : "transparent"
 
                         Text {
                             anchors.centerIn: parent
 
-                            text: modelData.day === 0
-                                ? ""
-                                : modelData.day
+                            text: modelData.day === 0 ? "" : modelData.day
 
-                            color: modelData.day > 0 &&
-                                calendarFrame.isToday(modelData.day)
-                                ? Palette.onAccent
-                                : Palette.dim
+                            color: modelData.day > 0 && calendarFrame.isToday(modelData.day) ? Palette.onAccent : Palette.dim
 
-                            font.family:
-                                Palette.font
+                            font.family: Palette.font
                             font.pixelSize: Palette.px12
                         }
                     }

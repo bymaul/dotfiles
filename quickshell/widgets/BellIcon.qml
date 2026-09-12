@@ -2,8 +2,6 @@ import QtQuick
 import "../services" as Services
 import "../Palette.js" as Palette
 
-// Notification bell: opens the control panel (history lives there).
-// Accent + dot while unread items wait, dim otherwise.
 Item {
     id: bell
 

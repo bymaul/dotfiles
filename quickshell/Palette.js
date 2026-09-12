@@ -18,7 +18,6 @@ var px12 = 12;
 var px13 = 13;
 var px14 = 14;
 
-// Shared popup geometry: anchored top-right under the bar.
 var popupWidth = 340;
 var popupMargin = 10;
 var popupTopGap = 6;
@@ -27,6 +26,4 @@ var popupSpacing = 8;
 var rowHeight = 36;
 var listRowHeight = 40;
 
-// Toast width follows context: full popupWidth when parked below an
-// open popup (edges align), narrower toastWidth when floating alone.
 var toastWidth = 300;

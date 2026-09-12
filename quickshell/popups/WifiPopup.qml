@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
@@ -17,65 +16,60 @@ BasePopup {
 
     onVisibleChanged: {
         if (visible)
-            wifiList.currentIndex = 0
+            wifiList.currentIndex = 0;
     }
 
     function stepSelection(dir: int): void {
         if (wifiList.count === 0)
-            return
-
-        wifiList.currentIndex = Math.max(0,
-            Math.min(wifiList.count - 1, wifiList.currentIndex + dir))
-        wifiList.positionViewAtIndex(wifiList.currentIndex, ListView.Contain)
+            return;
+        wifiList.currentIndex = Math.max(0, Math.min(wifiList.count - 1, wifiList.currentIndex + dir));
+        wifiList.positionViewAtIndex(wifiList.currentIndex, ListView.Contain);
     }
 
     function selectedNetwork(): var {
-        const nets = bar.wifiDevice?.networks.values ?? []
+        const nets = bar.wifiDevice?.networks.values ?? [];
 
         if (wifiList.currentIndex < 0 || wifiList.currentIndex >= nets.length)
-            return null
+            return null;
 
-        return nets[wifiList.currentIndex]
+        return nets[wifiList.currentIndex];
     }
 
     function activateNetwork(network): void {
         if (!network)
-            return
-
+            return;
         if (network.connected) {
-            network.disconnect()
-            return
+            network.disconnect();
+            return;
         }
 
         if (network.known) {
-            network.connect()
-            return
+            network.connect();
+            return;
         }
 
-        bar.showPasswordDialog(network)
+        bar.showPasswordDialog(network);
     }
 
     function forgetSelected(): void {
-        const net = wifiPopup.selectedNetwork()
+        const net = wifiPopup.selectedNetwork();
 
         if (net && net.known && !net.connected)
-            net.forget()
+            net.forget();
     }
 
     function toggleScan(): void {
         if (!bar.wifiDevice)
-            return
-
-        bar.wifiDevice.scannerEnabled = !bar.wifiDevice.scannerEnabled
+            return;
+        bar.wifiDevice.scannerEnabled = !bar.wifiDevice.scannerEnabled;
 
         if (bar.wifiDevice.scannerEnabled)
-            scanTimeout.restart()
+            scanTimeout.restart();
         else
-            scanTimeout.stop()
+            scanTimeout.stop();
     }
 
-    // Continuous scanning drains battery: a manual scan gets one
-    // 15s pass, then the radio goes quiet again.
+    // Manual scans auto-stop after 15s (battery).
     Timer {
         id: scanTimeout
 
@@ -84,16 +78,14 @@ BasePopup {
 
         onTriggered: {
             if (bar.wifiDevice)
-                bar.wifiDevice.scannerEnabled = false
+                bar.wifiDevice.scannerEnabled = false;
         }
     }
 
     function toggleWifiEnabled(): void {
-        Networking.wifiEnabled = !Networking.wifiEnabled
+        Networking.wifiEnabled = !Networking.wifiEnabled;
     }
 
-    // Letter shortcuts stay scoped to the open popup so they never
-    // leak into typing elsewhere.
     Shortcut {
         sequence: "j"
         enabled: wifiPopup.visible
@@ -170,23 +162,11 @@ BasePopup {
 
                     width: parent.width - 20
 
-                    text: bar.connectedWifi
-                        ? "󰤨 " + bar.connectedWifi.name
-                        : bar.wifiDevice?.networks.values.find(
-                            n => n.state ===
-                                ConnectionState.Connecting
-                        )
-                            ? "󰤭 Connecting..."
-                            : Networking.wifiEnabled
-                                ? "󰤭 Not connected"
-                                : "󰤯 Wi-Fi off"
+                    text: bar.connectedWifi ? "󰤨 " + bar.connectedWifi.name : bar.wifiDevice?.networks.values.find(n => n.state === ConnectionState.Connecting) ? "󰤭 Connecting..." : Networking.wifiEnabled ? "󰤭 Not connected" : "󰤯 Wi-Fi off"
 
-                    color: bar.connectedWifi
-                        ? Palette.fg
-                        : Palette.dim
+                    color: bar.connectedWifi ? Palette.fg : Palette.dim
 
-                    font.family:
-                        Palette.font
+                    font.family: Palette.font
 
                     font.pixelSize: Palette.px12
 
@@ -205,23 +185,17 @@ BasePopup {
 
                     radius: 0
 
-                    color: enableHover.containsMouse
-                        ? Palette.hoverBg : Palette.surface
+                    color: enableHover.containsMouse ? Palette.hoverBg : Palette.surface
                     border.width: 0
 
                     Text {
                         anchors.centerIn: parent
 
-                        text: Networking.wifiEnabled
-                            ? "󰖪  Disable"
-                            : "󰖩  Enable"
+                        text: Networking.wifiEnabled ? "󰖪  Disable" : "󰖩  Enable"
 
-                        color: Networking.wifiEnabled
-                            ? Palette.dim
-                            : Palette.accent
+                        color: Networking.wifiEnabled ? Palette.dim : Palette.accent
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px12
                     }
@@ -235,8 +209,7 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            Networking.wifiEnabled =
-                                !Networking.wifiEnabled
+                            Networking.wifiEnabled = !Networking.wifiEnabled;
                         }
                     }
                 }
@@ -247,21 +220,17 @@ BasePopup {
 
                     radius: 0
 
-                    color: scanHover.containsMouse
-                        ? Palette.hoverBg : Palette.surface
+                    color: scanHover.containsMouse ? Palette.hoverBg : Palette.surface
                     border.width: 0
 
                     Text {
                         anchors.centerIn: parent
 
-                        text: bar.wifiDevice?.scannerEnabled
-                            ? "󰑓  Scanning..."
-                            : "󰑐  Scan"
+                        text: bar.wifiDevice?.scannerEnabled ? "󰑓  Scanning..." : "󰑐  Scan"
 
                         color: Palette.dim
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px12
                     }
@@ -275,7 +244,7 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            wifiPopup.toggleScan()
+                            wifiPopup.toggleScan();
                         }
                     }
                 }
@@ -289,35 +258,29 @@ BasePopup {
 
                 clip: true
 
-                model: bar.wifiDevice
-                    ? bar.wifiDevice.networks
-                    : null
+                model: bar.wifiDevice ? bar.wifiDevice.networks : null
 
                 spacing: 4
 
                 onCountChanged: {
                     if (currentIndex >= count)
-                        currentIndex = Math.max(0, count - 1)
+                        currentIndex = Math.max(0, count - 1);
                 }
 
                 delegate: Rectangle {
                     required property var modelData
                     required property int index
 
-                    readonly property bool selected:
-                        wifiList.currentIndex === index
+                    readonly property bool selected: wifiList.currentIndex === index
 
                     width: wifiList.width
                     height: Palette.listRowHeight
 
                     radius: 0
 
-                    color: selected ? Palette.accent
-                        : rowHover.containsMouse ? Palette.hoverBg
-                        : (modelData.connected ? Palette.activeBg : "transparent")
+                    color: selected ? Palette.accent : rowHover.containsMouse ? Palette.hoverBg : (modelData.connected ? Palette.activeBg : "transparent")
                     border.width: selected ? 1 : 0
-                    border.color: selected ? Palette.accent
-                        : modelData.connected ? Palette.accent : Palette.dim
+                    border.color: selected ? Palette.accent : modelData.connected ? Palette.accent : Palette.dim
 
                     MouseArea {
                         id: rowHover
@@ -328,7 +291,7 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            wifiPopup.activateNetwork(modelData)
+                            wifiPopup.activateNetwork(modelData);
                         }
                     }
 
@@ -342,44 +305,38 @@ BasePopup {
                         spacing: 8
 
                         Text {
-                            anchors.verticalCenter:
-                                parent.verticalCenter
+                            anchors.verticalCenter: parent.verticalCenter
 
                             width: 18
 
                             text: {
-                                const s = modelData.signalStrength
-                                if (s >= -50) return "󰤨"
-                                if (s >= -67) return "󰤥"
-                                if (s >= -75) return "󰤢"
-                                return "󰤯"
+                                const s = modelData.signalStrength;
+                                if (s >= -50)
+                                    return "󰤨";
+                                if (s >= -67)
+                                    return "󰤥";
+                                if (s >= -75)
+                                    return "󰤢";
+                                return "󰤯";
                             }
 
-                            color: selected ? Palette.onAccent
-                                : modelData.connected ? Palette.accent
-                                : rowHover.containsMouse ? Palette.fg : Palette.dim
+                            color: selected ? Palette.onAccent : modelData.connected ? Palette.accent : rowHover.containsMouse ? Palette.fg : Palette.dim
 
-                            font.family:
-                                Palette.font
+                            font.family: Palette.font
 
                             font.pixelSize: Palette.px13
                         }
 
                         Text {
-                            anchors.verticalCenter:
-                                parent.verticalCenter
+                            anchors.verticalCenter: parent.verticalCenter
 
                             width: parent.width - 82
 
-                            text: modelData.name ||
-                                "Hidden network"
+                            text: modelData.name || "Hidden network"
 
-                            color: selected ? Palette.onAccent
-                                : (modelData.connected || rowHover.containsMouse)
-                                ? Palette.fg : Palette.dim
+                            color: selected ? Palette.onAccent : (modelData.connected || rowHover.containsMouse) ? Palette.fg : Palette.dim
 
-                            font.family:
-                                Palette.font
+                            font.family: Palette.font
 
                             font.pixelSize: Palette.px12
 
@@ -387,67 +344,51 @@ BasePopup {
                         }
 
                         Text {
-                            anchors.verticalCenter:
-                                parent.verticalCenter
+                            anchors.verticalCenter: parent.verticalCenter
 
                             width: 16
 
                             text: "󰌾"
 
-                            color: selected ? Palette.onAccent
-                                : rowHover.containsMouse ? Palette.fg : Palette.dim
+                            color: selected ? Palette.onAccent : rowHover.containsMouse ? Palette.fg : Palette.dim
 
-                            font.family:
-                                Palette.font
+                            font.family: Palette.font
 
                             font.pixelSize: Palette.px12
 
-                            visible:
-                                modelData.security !==
-                                    WifiSecurityType.Open &&
-                                modelData.security !==
-                                    WifiSecurityType.Unknown
+                            visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
                         }
 
                         Text {
-                            anchors.verticalCenter:
-                                parent.verticalCenter
+                            anchors.verticalCenter: parent.verticalCenter
 
                             width: 24
 
-                            horizontalAlignment:
-                                Text.AlignHCenter
+                            horizontalAlignment: Text.AlignHCenter
 
                             text: "󰅖"
 
-                            color: selected ? Palette.onAccent
-                                : forgetHover.containsMouse
-                                ? Palette.fg
-                                : Palette.dim
+                            color: selected ? Palette.onAccent : forgetHover.containsMouse ? Palette.fg : Palette.dim
 
-                            font.family:
-                                Palette.font
+                            font.family: Palette.font
 
                             font.pixelSize: Palette.px13
 
-                            visible:
-                                modelData.known &&
-                                !modelData.connected
+                            visible: modelData.known && !modelData.connected
 
-                    MouseArea {
-                        id: forgetHover
+                            MouseArea {
+                                id: forgetHover
 
-                        anchors.fill: parent
+                                anchors.fill: parent
 
-                        hoverEnabled: true
-                        cursorShape:
-                            Qt.PointingHandCursor
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
 
-                        onClicked: mouse => {
-                            mouse.accepted = true
-                            modelData.forget()
-                        }
-                    }
+                                onClicked: mouse => {
+                                    mouse.accepted = true;
+                                    modelData.forget();
+                                }
+                            }
                         }
                     }
                 }

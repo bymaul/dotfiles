@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
@@ -11,8 +10,6 @@ BasePopup {
 
     implicitWidth: 280
 
-    // Error line adds ~22px only when shown; otherwise the dialog
-    // would keep a permanent blank gap at the bottom.
     implicitHeight: passwordDialog.authError !== "" ? 172 : 150
 
     Shortcut {
@@ -20,9 +17,8 @@ BasePopup {
         onActivated: bar.closePopups()
     }
 
-    // 0 = Cancel, 1 = Connect. h/l only reach these when the
-    // password field is unfocused (it consumes keys for cursor
-    // movement while focused); Enter always connects from the field.
+    // h/l are unreachable while the field has focus (it consumes
+    // keys for cursor movement); Enter always connects.
     property int selectedButton: 1
 
     Shortcut {
@@ -57,84 +53,82 @@ BasePopup {
 
     onVisibleChanged: {
         if (visible) {
-            selectedButton = 1
-            pendingNetwork = null
-            wifiPassword.forceActiveFocus()
+            selectedButton = 1;
+            pendingNetwork = null;
+            wifiPassword.forceActiveFocus();
         }
     }
 
-    // Cleared on a new network or a fresh attempt - but NOT on open,
-    // since the failure handler reopens the dialog to SHOW the error.
+    // NOT cleared on open: the failure handler reopens the dialog
+    // to SHOW the error.
     onNetworkChanged: authError = ""
 
     function cancelDialog(): void {
-        passwordDialog.visible = false
-        passwordDialog.authError = ""
-        wifiPassword.text = ""
+        passwordDialog.visible = false;
+        passwordDialog.authError = "";
+        wifiPassword.text = "";
     }
 
     function activateSelectedButton(): void {
         if (selectedButton === 0)
-            passwordDialog.cancelDialog()
+            passwordDialog.cancelDialog();
         else
-            passwordDialog.doConnect()
+            passwordDialog.doConnect();
     }
 
     function resolveNetwork(): var {
-        // The model may rebuild objects (e.g. after a forget), so
-        // re-resolve by name instead of trusting a stored reference.
-        const name = passwordDialog.network?.name
+        // The model may rebuild objects, so re-resolve by name
+        // instead of trusting the stored reference.
+        const name = passwordDialog.network?.name;
 
         if (!name || !bar.wifiDevice)
-            return passwordDialog.network
+            return passwordDialog.network;
 
-        return bar.wifiDevice.networks.values.find(
-            n => n.name === name
-        ) ?? passwordDialog.network
+        return bar.wifiDevice.networks.values.find(n => n.name === name) ?? passwordDialog.network;
     }
 
     function doConnect(): void {
-        const net = passwordDialog.resolveNetwork()
+        const net = passwordDialog.resolveNetwork();
 
         if (!net)
-            return
+            return;
+        passwordDialog.authError = "";
+        passwordDialog.pendingNetwork = net;
+        net.connectWithPsk(wifiPassword.text);
 
-        passwordDialog.authError = ""
-        passwordDialog.pendingNetwork = net
-        net.connectWithPsk(wifiPassword.text)
+        passwordDialog.visible = false;
+        bar.closePasswordAndControl();
 
-        passwordDialog.visible = false
-        bar.closePasswordAndControl()
-
-        wifiPassword.text = ""
+        wifiPassword.text = "";
     }
 
-    // A failed attempt drops the junk profile NM saved for it and
-    // reopens the dialog with the reason instead of vanishing
-    // silently. Row-click connects on known networks set no pending
-    // ref, so this only fires for password attempts (which always
-    // start from an unknown network, making forget() safe here).
+    // Failure drops the junk profile NM saved and reopens with the
+    // reason. Only password attempts reach here (row clicks set no
+    // pending ref), so forget() is safe.
     Connections {
         target: passwordDialog.pendingNetwork
+        enabled: passwordDialog.pendingNetwork !== null
+
+        // Success must release the ref too, or a later unrelated
+        // failure from this network reopens the dialog bogusly.
+        function onConnectedChanged() {
+            if (passwordDialog.pendingNetwork?.connected)
+                passwordDialog.pendingNetwork = null;
+        }
 
         function onConnectionFailed(reason) {
-            const net = passwordDialog.pendingNetwork
+            const net = passwordDialog.pendingNetwork;
 
-            passwordDialog.pendingNetwork = null
+            passwordDialog.pendingNetwork = null;
 
             if (net && net.known && !net.connected)
-                net.forget()
+                net.forget();
 
-            passwordDialog.network = net
+            passwordDialog.network = net;
 
-            passwordDialog.authError =
-                (reason === ConnectionFailReason.NoSecrets ||
-                    reason === ConnectionFailReason.WifiAuthTimeout)
-                ? "Wrong password, try again"
-                : "Connection failed (" +
-                    ConnectionFailReason.toString(reason) + ")"
+            passwordDialog.authError = (reason === ConnectionFailReason.NoSecrets || reason === ConnectionFailReason.WifiAuthTimeout) ? "Wrong password, try again" : "Connection failed (" + ConnectionFailReason.toString(reason) + ")";
 
-            passwordDialog.visible = true
+            passwordDialog.visible = true;
         }
     }
 
@@ -157,14 +151,11 @@ BasePopup {
 
             Text {
                 width: parent.width
-                text: "󰌾  " +
-                    (passwordDialog.network?.name ??
-                     "Wi-Fi password")
+                text: "󰌾  " + (passwordDialog.network?.name ?? "Wi-Fi password")
 
                 color: Palette.fg
 
-                font.family:
-                    Palette.font
+                font.family: Palette.font
 
                 font.pixelSize: Palette.px12
                 elide: Text.ElideRight
@@ -180,8 +171,7 @@ BasePopup {
 
                 color: Palette.danger
 
-                font.family:
-                    Palette.font
+                font.family: Palette.font
 
                 font.pixelSize: Palette.px12
 
@@ -207,24 +197,21 @@ BasePopup {
                         rightMargin: 10
                     }
 
-                    verticalAlignment:
-                        TextInput.AlignVCenter
+                    verticalAlignment: TextInput.AlignVCenter
 
                     color: Palette.fg
 
-                    echoMode:
-                        TextInput.Password
+                    echoMode: TextInput.Password
 
-                    font.family:
-                        Palette.font
+                    font.family: Palette.font
 
                     font.pixelSize: Palette.px12
 
                     Keys.onReturnPressed: {
-                        passwordDialog.doConnect()
+                        passwordDialog.doConnect();
                     }
                     Keys.onEnterPressed: {
-                        passwordDialog.doConnect()
+                        passwordDialog.doConnect();
                     }
                 }
             }
@@ -242,8 +229,7 @@ BasePopup {
                     color: Palette.surface
 
                     border.width: passwordDialog.selectedButton === 0 ? 1 : 0
-                    border.color: passwordDialog.selectedButton === 0
-                        ? Palette.fg : Palette.dim
+                    border.color: passwordDialog.selectedButton === 0 ? Palette.fg : Palette.dim
 
                     Text {
                         anchors.centerIn: parent
@@ -252,8 +238,7 @@ BasePopup {
 
                         color: Palette.fg
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px12
                     }
@@ -277,8 +262,7 @@ BasePopup {
                     color: Palette.accent
 
                     border.width: 1
-                    border.color: passwordDialog.selectedButton === 1
-                        ? Palette.fg : Palette.accent
+                    border.color: passwordDialog.selectedButton === 1 ? Palette.fg : Palette.accent
 
                     Text {
                         anchors.centerIn: parent
@@ -287,8 +271,7 @@ BasePopup {
 
                         color: Palette.onAccent
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px12
                     }

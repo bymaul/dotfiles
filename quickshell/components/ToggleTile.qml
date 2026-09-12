@@ -8,11 +8,8 @@ Rectangle {
     required property string label
     required property bool active
 
-    // Unavailable hardware (no mic, no bt adapter): rendered flat and
-    // non-interactive instead of a silent dead-end.
     property bool enabled: true
 
-    // Keyboard selection ring (control panel nav).
     property bool selected: false
 
     signal tileClicked
@@ -21,10 +18,7 @@ Rectangle {
     height: 40
     radius: 0
 
-    color: !tile.enabled ? "transparent"
-        : tile.selected ? Palette.accent
-        : tile.active ? Palette.activeBg
-        : tileHover.containsMouse ? Palette.hoverBg : Palette.surface
+    color: !tile.enabled ? "transparent" : tile.selected ? Palette.accent : tile.active ? Palette.activeBg : tileHover.containsMouse ? Palette.hoverBg : Palette.surface
     border.width: tile.selected ? 1 : 0
     border.color: Palette.accent
     opacity: tile.enabled ? 1 : 0.45
@@ -39,10 +33,7 @@ Rectangle {
 
             text: tile.glyph
 
-            color: !tile.enabled ? Palette.dim
-                : tile.selected ? Palette.onAccent
-                : tile.active ? Palette.accent
-                : tileHover.containsMouse ? Palette.fg : Palette.dim
+            color: !tile.enabled ? Palette.dim : tile.selected ? Palette.onAccent : tile.active ? Palette.accent : tileHover.containsMouse ? Palette.fg : Palette.dim
 
             font.family: Palette.font
             font.pixelSize: Palette.px14
@@ -53,9 +44,7 @@ Rectangle {
 
             text: tile.label
 
-            color: !tile.enabled ? Palette.dim
-                : tile.selected ? Palette.onAccent
-                : (tile.active || tileHover.containsMouse) ? Palette.fg : Palette.dim
+            color: !tile.enabled ? Palette.dim : tile.selected ? Palette.onAccent : (tile.active || tileHover.containsMouse) ? Palette.fg : Palette.dim
 
             font.family: Palette.font
             font.pixelSize: Palette.px10

@@ -15,8 +15,12 @@ Item {
 
         spacing: 12
 
-        WifiIcon { bar: networkGroup.bar }
-        BluetoothIcon { bar: networkGroup.bar }
+        WifiIcon {
+            bar: networkGroup.bar
+        }
+        BluetoothIcon {
+            bar: networkGroup.bar
+        }
         VolumeIcon {
             id: groupVolume
 

@@ -1,0 +1,5 @@
+singleton LaunchHistory 1.0 LaunchHistory.qml
+singleton Media 1.0 Media.qml
+singleton Modes 1.0 Modes.qml
+singleton Notifs 1.0 Notifs.qml
+singleton RunMode 1.0 RunMode.qml

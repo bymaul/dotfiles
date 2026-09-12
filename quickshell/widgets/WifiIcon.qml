@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import Quickshell.Networking
 import "../Palette.js" as Palette
 
@@ -12,24 +11,23 @@ Item {
     Text {
         id: wifiIcon
 
-        property bool connected:
-            bar.connectedWifi !== null
+        property bool connected: bar.connectedWifi !== null
 
         text: {
             if (!Networking.wifiEnabled)
-                return "󰤭"
+                return "󰤭";
 
             if (!connected)
-                return "󰤯"
+                return "󰤯";
 
-            return "󰤨"
+            return "󰤨";
         }
 
         color: {
             if (!Networking.wifiEnabled || !connected)
-                return Palette.dim
+                return Palette.dim;
 
-            return Palette.fg
+            return Palette.fg;
         }
 
         font.family: Palette.font

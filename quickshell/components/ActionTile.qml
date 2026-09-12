@@ -13,8 +13,7 @@ Rectangle {
     height: 40
     radius: 0
 
-    readonly property bool highlighted:
-        tileHover.containsMouse
+    readonly property bool highlighted: tileHover.containsMouse
 
     color: tileHover.containsMouse ? Palette.hoverBg : Palette.surface
     border.width: 0

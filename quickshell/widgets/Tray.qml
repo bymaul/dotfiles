@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import Quickshell.Services.SystemTray
 
 Row {
@@ -30,15 +29,13 @@ Row {
             MouseArea {
                 anchors.fill: parent
 
-                acceptedButtons:
-                    Qt.LeftButton |
-                    Qt.RightButton
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                 onClicked: mouse => {
                     if (mouse.button === Qt.LeftButton)
-                        modelData.activate()
+                        modelData.activate();
                     else
-                        modelData.secondaryActivate()
+                        modelData.secondaryActivate();
                 }
             }
         }

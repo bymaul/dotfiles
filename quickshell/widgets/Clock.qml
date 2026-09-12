@@ -16,9 +16,9 @@ Item {
         anchors.centerIn: parent
 
         text: {
-            const d = clockSource ? clockSource.date : null
+            const d = clockSource ? clockSource.date : null;
 
-            return d ? Qt.formatDateTime(d, "HH:mm") : ""
+            return d ? Qt.formatDateTime(d, "HH:mm") : "";
         }
 
         color: Palette.fg
@@ -33,7 +33,7 @@ Item {
         cursorShape: Qt.PointingHandCursor
 
         onClicked: {
-            bar.toggleCalendar()
+            bar.toggleCalendar();
         }
     }
 }

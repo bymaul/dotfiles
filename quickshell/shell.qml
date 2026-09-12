@@ -41,93 +41,90 @@ ShellRoot {
         WlrLayershell.namespace: "qs-bar"
 
         function openExclusive(target): void {
-            const open = !target.visible
+            const open = !target.visible;
 
-            calendarPopup.visible = false
-            controlPanelPopup.visible = false
-            wifiPopup.visible = false
-            bluetoothPopup.visible = false
-            powerPopup.visible = false
-            passwordDialog.visible = false
-            launcherPopup.visible = false
-            clipboardPopup.visible = false
+            calendarPopup.visible = false;
+            controlPanelPopup.visible = false;
+            wifiPopup.visible = false;
+            bluetoothPopup.visible = false;
+            powerPopup.visible = false;
+            passwordDialog.visible = false;
+            launcherPopup.visible = false;
+            clipboardPopup.visible = false;
 
-            target.visible = open
+            target.visible = open;
         }
 
-        function toggleCalendar(): void { openExclusive(calendarPopup) }
-        function toggleControl(): void { openExclusive(controlPanelPopup) }
-        function toggleWifi(): void { openExclusive(wifiPopup) }
-        function toggleBluetooth(): void { openExclusive(bluetoothPopup) }
-        function togglePower(): void { openExclusive(powerPopup) }
+        function toggleCalendar(): void {
+            openExclusive(calendarPopup);
+        }
+        function toggleControl(): void {
+            openExclusive(controlPanelPopup);
+        }
+        function toggleWifi(): void {
+            openExclusive(wifiPopup);
+        }
+        function toggleBluetooth(): void {
+            openExclusive(bluetoothPopup);
+        }
+        function togglePower(): void {
+            openExclusive(powerPopup);
+        }
 
         function toggleLauncher(): void {
-            openExclusive(launcherPopup)
+            openExclusive(launcherPopup);
         }
 
         function toggleClipboard(): void {
-            openExclusive(clipboardPopup)
+            openExclusive(clipboardPopup);
         }
 
-        // Bottom edge of the open right-side popup in TOAST-margin
-        // space, 0 when none is open. At most one popup is visible
-        // via openExclusive; the toast stack parks below it and
-        // never hides behind it.
         property int rightPopupBottom: {
-            const top = Palette.popupTopGap
-            const popups = [
-                controlPanelPopup,
-                wifiPopup, bluetoothPopup, powerPopup
-            ]
-            let bottom = 0
+            const top = Palette.popupTopGap;
+            const popups = [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup];
+            let bottom = 0;
 
             for (const p of popups) {
                 if (p.visible)
-                    bottom = Math.max(bottom, top + p.height)
+                    bottom = Math.max(bottom, top + p.height);
             }
 
-            return bottom
+            return bottom;
         }
 
         function closePopups(): void {
-            calendarPopup.visible = false
-            controlPanelPopup.visible = false
-            wifiPopup.visible = false
-            bluetoothPopup.visible = false
-            powerPopup.visible = false
-            passwordDialog.visible = false
-            launcherPopup.visible = false
-            clipboardPopup.visible = false
+            calendarPopup.visible = false;
+            controlPanelPopup.visible = false;
+            wifiPopup.visible = false;
+            bluetoothPopup.visible = false;
+            powerPopup.visible = false;
+            passwordDialog.visible = false;
+            launcherPopup.visible = false;
+            clipboardPopup.visible = false;
         }
 
         function showPasswordDialog(network): void {
-            // The dialog grabs keyboard focus, so it must own it alone:
-            // a second grabber underneath steals typed passwords.
-            wifiPopup.visible = false
-            passwordDialog.network = network
-            passwordDialog.visible = true
+            // The dialog must own keyboard focus alone, or a grabber
+            // underneath steals typed passwords.
+            wifiPopup.visible = false;
+            passwordDialog.network = network;
+            passwordDialog.visible = true;
         }
 
         function closePasswordAndControl(): void {
-            passwordDialog.visible = false
-            controlPanelPopup.visible = false
+            passwordDialog.visible = false;
+            controlPanelPopup.visible = false;
         }
 
-        // Shared grab for the control panel (history cards live in
-        // the same window, so there is exactly one focus target) plus
-        // the toast stack (clicks on toasts must not clear the grab).
-        // (Same deferred-activation rule as elsewhere: asserting
-        // active in the show frame leaves the grab dead.)
+        // One grab for panel + history + toasts, so toast clicks
+        // never close the panel. Deferred activation (see BasePopup).
         HyprlandFocusGrab {
             id: panelGrab
 
             windows: [controlPanelPopup, historyPanel, toastStack]
 
-            // A clear also fires when these windows hide for other
-            // reasons (e.g. opening wifi from a panel tile hides the
-            // panel first): close ONLY our own windows, never the
-            // newly opened popup. Equivalent for real outside clicks,
-            // since exclusivity leaves nothing else open.
+            // A clear also fires on non-click hides, so close ONLY
+            // our own windows, never a newly opened popup.
             onCleared: controlPanelPopup.visible = false
         }
 
@@ -140,21 +137,24 @@ ShellRoot {
         }
 
         function revealHistory(i: int): void {
-            historyPanel.revealAt(i)
+            historyPanel.revealAt(i);
         }
 
-        // Remote control (debugging): qs
-        // ipc call bar closePopups | toggleControl | panelStep -1
+        // Remote control: qs ipc call bar closePopups | toggleControl
         IpcHandler {
             target: "bar"
 
-            function closePopups(): void { bar.closePopups() }
-            function toggleControl(): void { bar.toggleControl() }
+            function closePopups(): void {
+                bar.closePopups();
+            }
+            function toggleControl(): void {
+                bar.toggleControl();
+            }
             function panelStep(dir: int): void {
-                controlPanelPopup.stepVertical(dir)
+                controlPanelPopup.stepVertical(dir);
             }
             function panelActivate(): void {
-                controlPanelPopup.activateSelected()
+                controlPanelPopup.activateSelected();
             }
         }
 
@@ -173,43 +173,50 @@ ShellRoot {
             triggeredOnStart: true
 
             onTriggered: {
-                cpuProbe.running = true
-                memProbe.running = true
+                cpuProbe.running = true;
+                memProbe.running = true;
             }
         }
 
         Process {
             id: cpuProbe
 
-            command: [
-                "sh",
-                "-c",
-                "grep '^cpu ' /proc/stat"
-            ]
+            command: ["sh", "-c", "grep '^cpu ' /proc/stat"]
 
             stdout: StdioCollector {
                 onStreamFinished: {
-                    const nums = text.trim().split(/\s+/)
+                    const nums = text.trim().split(/\s+/);
 
-                    let total = 0
+                    // Bad reads must not poison the totals (NaN sticks).
+                    if (nums.length < 6 || nums[0] !== "cpu")
+                        return;
+                    let total = 0;
 
-                    for (let i = 1; i < nums.length; i++)
-                        total += parseInt(nums[i])
+                    for (let i = 1; i < nums.length; i++) {
+                        const v = parseInt(nums[i]);
 
-                    const idle =
-                        parseInt(nums[4]) + parseInt(nums[5])
-
-                    if (bar.cpuTotal > 0) {
-                        const dTotal = total - bar.cpuTotal
-                        const dIdle = idle - bar.cpuIdle
-
-                        if (dTotal > 0)
-                            bar.cpuUsage =
-                                Math.round((dTotal - dIdle) / dTotal * 100)
+                        if (isNaN(v))
+                            return;
+                        total += v;
                     }
 
-                    bar.cpuTotal = total
-                    bar.cpuIdle = idle
+                    const idleUser = parseInt(nums[4]);
+                    const idleNice = parseInt(nums[5]);
+
+                    if (isNaN(idleUser) || isNaN(idleNice))
+                        return;
+                    const idle = idleUser + idleNice;
+
+                    if (bar.cpuTotal > 0) {
+                        const dTotal = total - bar.cpuTotal;
+                        const dIdle = idle - bar.cpuIdle;
+
+                        if (dTotal > 0)
+                            bar.cpuUsage = Math.round((dTotal - dIdle) / dTotal * 100);
+                    }
+
+                    bar.cpuTotal = total;
+                    bar.cpuIdle = idle;
                 }
             }
         }
@@ -217,55 +224,63 @@ ShellRoot {
         Process {
             id: memProbe
 
-            command: [
-                "sh",
-                "-c",
-                "grep -E '^(MemTotal|MemAvailable):' /proc/meminfo"
-            ]
+            command: ["sh", "-c", "grep -E '^(MemTotal|MemAvailable):' /proc/meminfo"]
 
             stdout: StdioCollector {
                 onStreamFinished: {
-                    const totalMatch =
-                        text.match(/MemTotal:\s+(\d+)/)
-                    const availMatch =
-                        text.match(/MemAvailable:\s+(\d+)/)
+                    const totalMatch = text.match(/MemTotal:\s+(\d+)/);
+                    const availMatch = text.match(/MemAvailable:\s+(\d+)/);
 
                     if (totalMatch && availMatch) {
-                        bar.memUsed = (
-                            parseInt(totalMatch[1]) -
-                            parseInt(availMatch[1])
-                        ) / 1024 / 1024
+                        const totalKb = parseInt(totalMatch[1]);
+                        const availKb = parseInt(availMatch[1]);
+
+                        if (isNaN(totalKb) || isNaN(availKb))
+                            return;
+                        bar.memUsed = (totalKb - availKb) / 1024 / 1024;
                     }
                 }
             }
         }
 
         property var wifiDevice: {
-            const devices = Networking.devices.values
+            const devices = Networking.devices.values;
 
-            return devices.find(
-                device => device.type === DeviceType.Wifi
-            ) ?? null
+            return devices.find(device => device.type === DeviceType.Wifi) ?? null;
+        }
+
+        // One-shot startup check: helpers we shell out to. Missing
+        // ones fail silently elsewhere, so toast them once here.
+        Process {
+            id: depCheck
+
+            command: ["sh", "-c", "for b in cliphist wl-copy hyprctl jq brightnessctl notify-send; do command -v \"$b\" >/dev/null || printf '%s\\n' \"$b\"; done"]
+
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    const missing = text.trim().split("\n").filter(s => s !== "");
+
+                    if (missing.length === 0)
+                        return;
+
+                    // No notify-send, no toast path; don't bother.
+                    if (missing.includes("notify-send"))
+                        return;
+                    Quickshell.execDetached(["notify-send", "-a", "quickshell", "-t", "8000", "-i", "dialog-warning-symbolic", "Missing helper binaries", missing.join(", ")]);
+                }
+            }
+
+            Component.onCompleted: depCheck.running = true
         }
 
         property var connectedWifi: {
             if (!wifiDevice)
-                return null
+                return null;
 
-            return wifiDevice.networks.values.find(
-                network => network.connected
-            ) ?? null
+            return wifiDevice.networks.values.find(network => network.connected) ?? null;
         }
 
-        // ========================================================
-        // LEFT: WORKSPACES
-        // ========================================================
-
         Workspaces {}
-
-        // ========================================================
-        // CLOCK
-        // ========================================================
 
         SystemClock {
             id: systemClock
@@ -277,10 +292,6 @@ ShellRoot {
             bar: bar
             clockSource: systemClock
         }
-
-        // ========================================================
-        // RIGHT SIDE
-        // ========================================================
 
         Row {
             id: systemStatus
@@ -300,13 +311,13 @@ ShellRoot {
                 bar: bar
             }
             BatteryIcon {}
-            BellIcon { bar: bar }
-            PowerIcon { bar: bar }
+            BellIcon {
+                bar: bar
+            }
+            PowerIcon {
+                bar: bar
+            }
         }
-
-        // ========================================================
-        // POPUPS
-        // ========================================================
 
         CalendarPopup {
             id: calendarPopup
@@ -462,9 +473,6 @@ ShellRoot {
         }
     }
 
-    // Wallpaper (replaces swaybg): fullscreen background layer,
-    // replicated per screen by quickshell. Same namespace the old
-    // setup used, so layer behavior is unchanged.
     PanelWindow {
         anchors {
             top: true
@@ -483,15 +491,14 @@ ShellRoot {
         Image {
             anchors.fill: parent
 
-            source: "file://" + Quickshell.env("HOME") +
-                "/dotfiles/wallpapers/wallpaper.jpg"
+            source: "file://" + Quickshell.env("HOME") + "/dotfiles/wallpapers/wallpaper.jpg"
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             cache: false
         }
     }
 
-    // Top-level window: PanelWindows cannot nest inside the bar.
+    // PanelWindows cannot nest inside the bar: keep this top-level.
     ToastStack {
         id: toastStack
     }

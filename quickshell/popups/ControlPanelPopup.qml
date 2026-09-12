@@ -12,18 +12,13 @@ BasePopup {
 
     required property var volumeControl
 
-    // Covered by the bar-level grab (see shell.qml), which whitelists
-    // both this panel and the history companion: a grab owned here
-    // would read clicks on the companion as outside clicks and close
-    // everything.
+    // Bar-level grab covers this window (see shell.qml): an owned
+    // grab would read companion clicks as outside clicks.
     useGrab: false
 
     implicitWidth: Palette.popupWidth
 
-    // History renders in the companion NotificationHistoryPopup
-    // below, so the panel itself stays fixed height.
-    implicitHeight: (Services.Media.brightnessAvailable ? 212 : 168) +
-        (Services.Notifs.history.length > 0 ? 12 : 0)
+    implicitHeight: (Services.Media.brightnessAvailable ? 212 : 168) + (Services.Notifs.history.length > 0 ? 12 : 0)
 
     Shortcut {
         sequence: "Escape"
@@ -32,202 +27,170 @@ BasePopup {
 
     onVisibleChanged: {
         if (visible) {
-            selectedIndex = 0
-
-            // A newly opened panel maps above anything already on
-            // screen: retire live cards into history first, or
-            // long-lived toasts end up buried under the new window.
-            Services.Notifs.hideAllToasts()
+            selectedIndex = 0;
+            Services.Notifs.hideAllToasts();
         }
 
-        // While open, history is on screen: live cards would only
-        // ghost under it, so the server holds new arrivals for
-        // history instead of popping them. On close, whatever
-        // arrived pops retroactively.
-        Services.Notifs.suppressToasts = visible
+        // While open, arrivals stay history-only; on close the
+        // backlog pops retroactively.
+        Services.Notifs.suppressToasts = visible;
 
         if (!visible)
-            Services.Notifs.flushPending()
+            Services.Notifs.flushPending();
     }
 
-    // ---- keyboard navigation ----
-    // items: [brightness?] + [volume] + 6 tiles (wifi, bt, mic,
-    // caffeine, dnd, power) + history rows (0..n)
+    // Nav items: [brightness?] + [volume] + 6 tiles + history rows.
     property int selectedIndex: 0
 
     function volumeIdx(): int {
-        return Services.Media.brightnessAvailable ? 1 : 0
+        return Services.Media.brightnessAvailable ? 1 : 0;
     }
 
     function firstTileIdx(): int {
-        return controlPanel.volumeIdx() + 1
+        return controlPanel.volumeIdx() + 1;
     }
 
     function firstHistIdx(): int {
-        return controlPanel.firstTileIdx() + 6
+        return controlPanel.firstTileIdx() + 6;
     }
 
     function itemCount(): int {
-        return controlPanel.firstHistIdx() + Services.Notifs.history.length
+        return controlPanel.firstHistIdx() + Services.Notifs.history.length;
     }
 
     function clampSelection(): void {
-        selectedIndex = Math.max(0,
-            Math.min(controlPanel.itemCount() - 1, selectedIndex))
+        selectedIndex = Math.max(0, Math.min(controlPanel.itemCount() - 1, selectedIndex));
     }
 
-    // History can shrink under us (clear/dismiss from the companion
-    // window or a sync replace): keep the cursor in range so Enter
-    // can't address a stale row.
+    // History can shrink under us: keep the cursor in range.
     Connections {
         target: Services.Notifs
 
         function onHistoryChanged() {
-            controlPanel.clampSelection()
-            controlPanel.revealSelection()
+            controlPanel.clampSelection();
+            controlPanel.revealSelection();
         }
     }
 
     function revealSelection(): void {
-        // Rows render in the companion window; ask the bar to scroll
-        // it (cross-file ids are invisible here).
         if (controlPanel.selectedKind() === "history")
-            bar.revealHistory(controlPanel.selectedHistItem())
+            bar.revealHistory(controlPanel.selectedHistItem());
     }
 
     function stepSelection(dir: int): void {
-        selectedIndex += dir
-        controlPanel.clampSelection()
-        controlPanel.revealSelection()
+        selectedIndex += dir;
+        controlPanel.clampSelection();
+        controlPanel.revealSelection();
     }
 
-    // Grid is 3 columns: vertical moves jump rows (±3) on tiles,
-    // single steps on sliders. Leaving the grid upward lands on
-    // the last slider; Down from the tiles enters the history list
-    // and clamping handles the bottom edge.
+    // Tiles form a 3-column grid: vertical moves jump rows.
     function stepVertical(dir: int): void {
         if (controlPanel.selectedKind() !== "tile") {
-            controlPanel.stepSelection(dir)
-            return
+            controlPanel.stepSelection(dir);
+            return;
         }
 
-        const target = selectedIndex + dir * 3
+        const target = selectedIndex + dir * 3;
 
         if (target < controlPanel.firstTileIdx())
-            selectedIndex = controlPanel.volumeIdx()
+            selectedIndex = controlPanel.volumeIdx();
         else
-            selectedIndex = target
+            selectedIndex = target;
 
-        controlPanel.clampSelection()
-        controlPanel.revealSelection()
+        controlPanel.clampSelection();
+        controlPanel.revealSelection();
     }
 
     function selectedKind(): string {
         if (Services.Media.brightnessAvailable && selectedIndex === 0)
-            return "brightness"
+            return "brightness";
 
         if (selectedIndex === controlPanel.volumeIdx())
-            return "volume"
+            return "volume";
 
         if (selectedIndex >= controlPanel.firstHistIdx())
-            return "history"
+            return "history";
 
-        return "tile"
+        return "tile";
     }
 
     function selectedTile(): int {
-        return selectedIndex - controlPanel.firstTileIdx()
+        return selectedIndex - controlPanel.firstTileIdx();
     }
 
     function selectedHistItem(): int {
-        return selectedIndex - controlPanel.firstHistIdx()
+        return selectedIndex - controlPanel.firstHistIdx();
     }
 
     function adjustVolume(delta: real): void {
-        const audio = volumeControl.sink?.audio
+        const audio = volumeControl.sink?.audio;
 
         if (audio)
-            audio.volume = Math.max(0, Math.min(1.5, audio.volume + delta))
+            audio.volume = Math.max(0, Math.min(1.5, audio.volume + delta));
     }
 
     function toggleVolumeMute(): void {
-        const audio = volumeControl.sink?.audio
+        const audio = volumeControl.sink?.audio;
 
         if (audio)
-            audio.muted = !audio.muted
+            audio.muted = !audio.muted;
     }
 
     function toggleMicMute(): void {
-        const audio = controlPanel.micSource?.audio
+        const audio = controlPanel.micSource?.audio;
 
         if (audio)
-            audio.muted = !audio.muted
+            audio.muted = !audio.muted;
     }
 
     function adjustSelected(dir: int): void {
-        const kind = controlPanel.selectedKind()
+        const kind = controlPanel.selectedKind();
 
         if (kind === "brightness")
-            Services.Media.setBrightness(Services.Media.brightness + dir * 5, true)
+            Services.Media.setBrightness(Services.Media.brightness + dir * 5, true);
         else if (kind === "volume")
-            controlPanel.adjustVolume(dir * 0.05)
+            controlPanel.adjustVolume(dir * 0.05);
         else
-            controlPanel.stepSelection(dir)
+            controlPanel.stepSelection(dir);
     }
 
     function activateSelected(): void {
-        const kind = controlPanel.selectedKind()
+        const kind = controlPanel.selectedKind();
 
         if (kind === "volume") {
-            controlPanel.toggleVolumeMute()
-            return
+            controlPanel.toggleVolumeMute();
+            return;
         }
 
         if (kind === "brightness")
-            return
-
-        // History rows: Enter removes the entry.
+            return;
         if (kind === "history") {
-            Services.Notifs.dismissHistoryAt(controlPanel.selectedHistItem())
-            controlPanel.clampSelection()
-            return
+            Services.Notifs.dismissHistoryAt(controlPanel.selectedHistItem());
+            controlPanel.clampSelection();
+            return;
         }
 
-        const tileActions = [
-            () => bar.toggleWifi(),
-            () => bar.toggleBluetooth(),
-            () => controlPanel.toggleMicMute(),
-            () => Services.Modes.toggleCaffeine(),
-            () => Services.Modes.toggleDnd(),
-            () => bar.togglePower()
-        ]
+        const tileActions = [() => bar.toggleWifi(), () => bar.toggleBluetooth(), () => controlPanel.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.togglePower()];
 
-        tileActions[controlPanel.selectedTile()]()
+        tileActions[controlPanel.selectedTile()]();
     }
 
-    // Runs the selected history row's primary action button
-    // (default id, else first). Rows without actions do nothing;
-    // Enter stays the dismiss key.
     function invokeSelectedAction(): void {
         if (controlPanel.selectedKind() !== "history")
-            return
-
-        const item = Services.Notifs.history[controlPanel.selectedHistItem()] ?? null
-        const live = item?.live ?? null
-        const actions = live?.actions ?? []
+            return;
+        const item = Services.Notifs.history[controlPanel.selectedHistItem()] ?? null;
+        const live = item?.live ?? null;
+        const actions = live?.actions ?? [];
 
         if (!live || actions.length === 0)
-            return
+            return;
+        const def = actions.find(a => a.identifier === "default") ?? actions[0];
 
-        const def = actions.find(a => a.identifier === "default") ?? actions[0]
-
-        Services.Notifs.activateAction(live, def)
-        controlPanel.clampSelection()
-        bar.closePopups()
+        Services.Notifs.activateAction(live, def);
+        controlPanel.clampSelection();
+        bar.closePopups();
     }
 
-    // Letter shortcuts stay scoped to the open panel so they never
-    // leak into typing elsewhere.
     Shortcut {
         sequence: "j"
         enabled: controlPanel.visible
@@ -270,14 +233,12 @@ BasePopup {
     }
     Shortcut {
         sequence: "c"
-        enabled: controlPanel.visible &&
-            Services.Notifs.history.length > 0
+        enabled: controlPanel.visible && Services.Notifs.history.length > 0
         onActivated: Services.Notifs.clearHistory()
     }
     Shortcut {
         sequence: "o"
-        enabled: controlPanel.visible &&
-            Services.Notifs.history.length > 0
+        enabled: controlPanel.visible && Services.Notifs.history.length > 0
         onActivated: controlPanel.invokeSelectedAction()
     }
 
@@ -316,8 +277,7 @@ BasePopup {
 
                 color: Palette.surface
                 border.width: controlPanel.selectedIndex === 0 ? 1 : 0
-                border.color: controlPanel.selectedIndex === 0
-                    ? Palette.accent : Palette.dim
+                border.color: controlPanel.selectedIndex === 0 ? Palette.accent : Palette.dim
 
                 Row {
                     anchors {
@@ -337,8 +297,7 @@ BasePopup {
 
                         color: Palette.fg
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px14
                     }
@@ -351,7 +310,7 @@ BasePopup {
                         value: Services.Media.brightness / 100
 
                         onSliderMoved: value => {
-                            Services.Media.setBrightness(value * 100, true)
+                            Services.Media.setBrightness(value * 100, true);
                         }
                     }
 
@@ -366,8 +325,7 @@ BasePopup {
 
                         color: Palette.dim
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px12
                     }
@@ -382,8 +340,7 @@ BasePopup {
 
                 color: Palette.surface
                 border.width: controlPanel.selectedIndex === controlPanel.volumeIdx() ? 1 : 0
-                border.color: controlPanel.selectedIndex === controlPanel.volumeIdx()
-                    ? Palette.accent : Palette.dim
+                border.color: controlPanel.selectedIndex === controlPanel.volumeIdx() ? Palette.accent : Palette.dim
 
                 Row {
                     anchors {
@@ -399,14 +356,11 @@ BasePopup {
 
                         width: 24
 
-                        text: volumeControl.sink?.audio?.muted
-                            ? "󰝟"
-                            : "󰕾"
+                        text: volumeControl.sink?.audio?.muted ? "󰝟" : "󰕾"
 
                         color: Palette.fg
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px14
 
@@ -414,7 +368,7 @@ BasePopup {
                             anchors.fill: parent
 
                             onClicked: {
-                                controlPanel.toggleVolumeMute()
+                                controlPanel.toggleVolumeMute();
                             }
                         }
                     }
@@ -426,15 +380,13 @@ BasePopup {
 
                         maximum: 1.5
 
-                        value:
-                            volumeControl.sink?.audio?.volume ?? 0
+                        value: volumeControl.sink?.audio?.volume ?? 0
 
                         onSliderMoved: value => {
-                            const audio =
-                                volumeControl.sink?.audio
+                            const audio = volumeControl.sink?.audio;
 
                             if (audio)
-                                audio.volume = value
+                                audio.volume = value;
                         }
                     }
 
@@ -445,14 +397,11 @@ BasePopup {
 
                         horizontalAlignment: Text.AlignRight
 
-                        text: Math.round(
-                            (volumeControl.sink?.audio?.volume ?? 0)
-                            * 100) + "%"
+                        text: Math.round((volumeControl.sink?.audio?.volume ?? 0) * 100) + "%"
 
                         color: Palette.dim
 
-                        font.family:
-                            Palette.font
+                        font.family: Palette.font
 
                         font.pixelSize: Palette.px12
                     }
@@ -467,9 +416,7 @@ BasePopup {
                 width: parent.width
 
                 ToggleTile {
-                    glyph: Networking.wifiEnabled
-                        ? (bar.connectedWifi ? "󰤨" : "󰤭")
-                        : "󰤯"
+                    glyph: Networking.wifiEnabled ? (bar.connectedWifi ? "󰤨" : "󰤭") : "󰤯"
 
                     label: "Wi-Fi"
 
@@ -478,46 +425,39 @@ BasePopup {
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 0
 
                     onTileClicked: {
-                        bar.toggleWifi()
+                        bar.toggleWifi();
                     }
                 }
 
                 ToggleTile {
-                    glyph:
-                        Bluetooth.defaultAdapter?.enabled
-                        ? "󰂯" : "󰂲"
+                    glyph: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
 
                     label: "Bluetooth"
 
-                    active:
-                        Bluetooth.defaultAdapter?.enabled ??
-                        false
+                    active: Bluetooth.defaultAdapter?.enabled ?? false
 
                     enabled: Bluetooth.defaultAdapter != null
 
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 1
 
                     onTileClicked: {
-                        bar.toggleBluetooth()
+                        bar.toggleBluetooth();
                     }
                 }
 
                 ToggleTile {
-                    glyph:
-                        controlPanel.micSource?.audio?.muted
-                        ? "󰍭" : "󰍬"
+                    glyph: controlPanel.micSource?.audio?.muted ? "󰍭" : "󰍬"
 
                     label: "Mic"
 
-                    active: !(controlPanel.micSource?.audio?.muted ??
-                        false)
+                    active: !(controlPanel.micSource?.audio?.muted ?? false)
 
                     enabled: controlPanel.micSource?.audio != null
 
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 2
 
                     onTileClicked: {
-                        controlPanel.toggleMicMute()
+                        controlPanel.toggleMicMute();
                     }
                 }
 
@@ -531,7 +471,7 @@ BasePopup {
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 3
 
                     onTileClicked: {
-                        Services.Modes.toggleCaffeine()
+                        Services.Modes.toggleCaffeine();
                     }
                 }
 
@@ -545,7 +485,7 @@ BasePopup {
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 4
 
                     onTileClicked: {
-                        Services.Modes.toggleDnd()
+                        Services.Modes.toggleDnd();
                     }
                 }
 
@@ -559,7 +499,7 @@ BasePopup {
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 5
 
                     onTileClicked: {
-                        bar.togglePower()
+                        bar.togglePower();
                     }
                 }
             }
@@ -569,9 +509,7 @@ BasePopup {
 
                 horizontalAlignment: Text.AlignHCenter
 
-                text: Services.Notifs.history.length > 0
-                    ? "jk move · hl adjust · ↵ activate\nm mute · c clear · o open"
-                    : "jk move · hl adjust · ↵ activate · m mute"
+                text: Services.Notifs.history.length > 0 ? "jk move · hl adjust · ↵ activate\nm mute · c clear · o open" : "jk move · hl adjust · ↵ activate · m mute"
 
                 wrapMode: Text.WordWrap
 

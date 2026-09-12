@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Bluetooth
 import "../Palette.js" as Palette
 
@@ -17,63 +16,56 @@ BasePopup {
 
     onVisibleChanged: {
         if (visible)
-            btList.currentIndex = 0
+            btList.currentIndex = 0;
     }
 
     function stepSelection(dir: int): void {
         if (btList.count === 0)
-            return
-
-        btList.currentIndex = Math.max(0,
-            Math.min(btList.count - 1, btList.currentIndex + dir))
-        btList.positionViewAtIndex(btList.currentIndex, ListView.Contain)
+            return;
+        btList.currentIndex = Math.max(0, Math.min(btList.count - 1, btList.currentIndex + dir));
+        btList.positionViewAtIndex(btList.currentIndex, ListView.Contain);
     }
 
     function selectedDevice(): var {
-        const devs = Bluetooth.defaultAdapter?.devices.values ?? []
+        const devs = Bluetooth.defaultAdapter?.devices.values ?? [];
 
         if (btList.currentIndex < 0 || btList.currentIndex >= devs.length)
-            return null
+            return null;
 
-        return devs[btList.currentIndex]
+        return devs[btList.currentIndex];
     }
 
     function activateDevice(device): void {
         if (!device || device.pairing)
-            return
-
+            return;
         if (device.connected) {
-            device.disconnect()
-            return
+            device.disconnect();
+            return;
         }
 
         if (device.paired) {
-            device.connect()
-            return
+            device.connect();
+            return;
         }
 
-        device.pair()
+        device.pair();
     }
 
     function toggleAdapter(): void {
         if (Bluetooth.defaultAdapter)
-            Bluetooth.defaultAdapter.enabled =
-                !Bluetooth.defaultAdapter.enabled
+            Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled;
     }
 
-    // Discovery left running drains battery like wifi scanning:
-    // a manual scan gets one 15s pass, then the radio goes quiet.
+    // Manual discovery auto-stops after 15s (battery).
     function toggleScan(): void {
         if (!Bluetooth.defaultAdapter)
-            return
-
-        Bluetooth.defaultAdapter.discovering =
-            !Bluetooth.defaultAdapter.discovering
+            return;
+        Bluetooth.defaultAdapter.discovering = !Bluetooth.defaultAdapter.discovering;
 
         if (Bluetooth.defaultAdapter.discovering)
-            scanTimeout.restart()
+            scanTimeout.restart();
         else
-            scanTimeout.stop()
+            scanTimeout.stop();
     }
 
     Timer {
@@ -84,26 +76,24 @@ BasePopup {
 
         onTriggered: {
             if (Bluetooth.defaultAdapter)
-                Bluetooth.defaultAdapter.discovering = false
+                Bluetooth.defaultAdapter.discovering = false;
         }
     }
 
     function forgetSelected(): void {
-        const dev = bluetoothPopup.selectedDevice()
+        const dev = bluetoothPopup.selectedDevice();
 
         if (dev && dev.paired && !dev.connected)
-            dev.forget()
+            dev.forget();
     }
 
     function toggleTrust(): void {
-        const dev = bluetoothPopup.selectedDevice()
+        const dev = bluetoothPopup.selectedDevice();
 
         if (dev)
-            dev.trusted = !dev.trusted
+            dev.trusted = !dev.trusted;
     }
 
-    // Letter shortcuts stay scoped to the open popup so they never
-    // leak into typing elsewhere.
     Shortcut {
         sequence: "j"
         enabled: bluetoothPopup.visible
@@ -178,20 +168,15 @@ BasePopup {
 
                     radius: 0
 
-                    color: enableHover.containsMouse
-                        ? Palette.hoverBg : Palette.surface
+                    color: enableHover.containsMouse ? Palette.hoverBg : Palette.surface
                     border.width: 0
 
                     Text {
                         anchors.centerIn: parent
 
-                        text: Bluetooth.defaultAdapter?.enabled
-                            ? "󰂲  Disable"
-                            : "󰂯  Enable"
+                        text: Bluetooth.defaultAdapter?.enabled ? "󰂲  Disable" : "󰂯  Enable"
 
-                        color: Bluetooth.defaultAdapter?.enabled
-                            ? Palette.dim
-                            : Palette.accent
+                        color: Bluetooth.defaultAdapter?.enabled ? Palette.dim : Palette.accent
 
                         font.family: Palette.font
                         font.pixelSize: Palette.px12
@@ -206,7 +191,7 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            bluetoothPopup.toggleAdapter()
+                            bluetoothPopup.toggleAdapter();
                         }
                     }
                 }
@@ -217,16 +202,13 @@ BasePopup {
 
                     radius: 0
 
-                    color: scanHover.containsMouse
-                        ? Palette.hoverBg : Palette.surface
+                    color: scanHover.containsMouse ? Palette.hoverBg : Palette.surface
                     border.width: 0
 
                     Text {
                         anchors.centerIn: parent
 
-                        text: Bluetooth.defaultAdapter?.discovering
-                            ? "󰑓  Scanning..."
-                            : "󰑐  Scan"
+                        text: Bluetooth.defaultAdapter?.discovering ? "󰑓  Scanning..." : "󰑐  Scan"
 
                         color: Palette.dim
 
@@ -243,7 +225,7 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
 
                         onClicked: {
-                            bluetoothPopup.toggleScan()
+                            bluetoothPopup.toggleScan();
                         }
                     }
                 }
@@ -260,37 +242,30 @@ BasePopup {
 
                     clip: true
 
-                    model: Bluetooth.defaultAdapter
-                        ? Bluetooth.defaultAdapter.devices
-                        : null
+                    model: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.devices : null
 
                     spacing: 4
 
                     onCountChanged: {
                         if (currentIndex >= count)
-                            currentIndex = Math.max(0, count - 1)
+                            currentIndex = Math.max(0, count - 1);
                     }
 
                     delegate: Rectangle {
                         required property var modelData
                         required property int index
 
-                        readonly property bool selected:
-                            btList.currentIndex === index
-                        readonly property bool connected: modelData.state ===
-                            BluetoothDeviceState.Connected
+                        readonly property bool selected: btList.currentIndex === index
+                        readonly property bool connected: modelData.state === BluetoothDeviceState.Connected
 
                         width: btList.width
                         height: Palette.listRowHeight
 
                         radius: 0
 
-                        color: selected ? Palette.accent
-                            : btRowHover.containsMouse ? Palette.hoverBg
-                            : (connected ? Palette.activeBg : "transparent")
+                        color: selected ? Palette.accent : btRowHover.containsMouse ? Palette.hoverBg : (connected ? Palette.activeBg : "transparent")
                         border.width: selected ? 1 : 0
-                        border.color: selected ? Palette.accent
-                            : connected ? Palette.accent : Palette.dim
+                        border.color: selected ? Palette.accent : connected ? Palette.accent : Palette.dim
 
                         Row {
                             anchors {
@@ -301,29 +276,22 @@ BasePopup {
 
                             spacing: 8
 
-                                Text {
-                                    anchors.verticalCenter:
-                                        parent.verticalCenter
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
 
-                                    width: 18
+                                width: 18
 
-                                    text: modelData.connected
-                                    ? "󰂯"
-                                    : "󰂲"
+                                text: modelData.connected ? "󰂯" : "󰂲"
 
-                                color: selected ? Palette.onAccent
-                                    : modelData.connected ? Palette.accent
-                                    : btRowHover.containsMouse ? Palette.fg : Palette.dim
+                                color: selected ? Palette.onAccent : modelData.connected ? Palette.accent : btRowHover.containsMouse ? Palette.fg : Palette.dim
 
-                                font.family:
-                                    Palette.font
+                                font.family: Palette.font
 
                                 font.pixelSize: Palette.px13
                             }
 
                             Column {
-                                anchors.verticalCenter:
-                                    parent.verticalCenter
+                                anchors.verticalCenter: parent.verticalCenter
 
                                 width: parent.width - 58
 
@@ -332,15 +300,11 @@ BasePopup {
                                 Text {
                                     width: parent.width
 
-                                    text: modelData.name ||
-                                        "Unknown device"
+                                    text: modelData.name || "Unknown device"
 
-                                    color: selected ? Palette.onAccent
-                                        : (modelData.connected || btRowHover.containsMouse)
-                                        ? Palette.fg : Palette.dim
+                                    color: selected ? Palette.onAccent : (modelData.connected || btRowHover.containsMouse) ? Palette.fg : Palette.dim
 
-                                    font.family:
-                                        Palette.font
+                                    font.family: Palette.font
 
                                     font.pixelSize: Palette.px12
 
@@ -351,77 +315,64 @@ BasePopup {
                                     width: parent.width
 
                                     text: {
-                                        let s
+                                        let s;
 
-                                        if (modelData.state ===
-                                                BluetoothDeviceState.Connected)
-                                            s = "Connected"
-                                        else if (modelData.state ===
-                                                BluetoothDeviceState.Connecting)
-                                            s = "Connecting..."
-                                        else if (modelData.state ===
-                                                BluetoothDeviceState.Disconnecting)
-                                            s = "Disconnecting..."
+                                        if (modelData.state === BluetoothDeviceState.Connected)
+                                            s = "Connected";
+                                        else if (modelData.state === BluetoothDeviceState.Connecting)
+                                            s = "Connecting...";
+                                        else if (modelData.state === BluetoothDeviceState.Disconnecting)
+                                            s = "Disconnecting...";
                                         else if (modelData.pairing)
-                                            s = "Pairing..."
+                                            s = "Pairing...";
                                         else
-                                            s = "Available"
+                                            s = "Available";
 
                                         if (modelData.trusted && !modelData.connected)
-                                            s += " · Trusted"
+                                            s += " · Trusted";
 
                                         if (modelData.address !== "")
-                                            s += " · " + modelData.address
+                                            s += " · " + modelData.address;
 
-                                        return s
+                                        return s;
                                     }
 
-                                    color: selected ? Palette.onAccent
-                                        : btRowHover.containsMouse ? Palette.fg : Palette.dim
+                                    color: selected ? Palette.onAccent : btRowHover.containsMouse ? Palette.fg : Palette.dim
 
-                                    font.family:
-                                        Palette.font
+                                    font.family: Palette.font
 
                                     font.pixelSize: Palette.px10
                                 }
                             }
 
-                                Text {
-                                    anchors.verticalCenter:
-                                        parent.verticalCenter
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
 
-                                    width: 24
+                                width: 24
 
-                                    horizontalAlignment:
-                                        Text.AlignHCenter
+                                horizontalAlignment: Text.AlignHCenter
 
-                                    text: "󰅖"
+                                text: "󰅖"
 
-                                    color: selected ? Palette.onAccent
-                                        : forgetHover.containsMouse
-                                        ? Palette.fg : Palette.dim
+                                color: selected ? Palette.onAccent : forgetHover.containsMouse ? Palette.fg : Palette.dim
 
-                                    font.family:
-                                        Palette.font
+                                font.family: Palette.font
 
-                                    font.pixelSize: Palette.px13
+                                font.pixelSize: Palette.px13
 
-                                    visible:
-                                        modelData.paired &&
-                                        !modelData.connected
+                                visible: modelData.paired && !modelData.connected
 
-                                    MouseArea {
-                                        id: forgetHover
+                                MouseArea {
+                                    id: forgetHover
 
-                                        anchors.fill: parent
+                                    anchors.fill: parent
 
-                                        hoverEnabled: true
-                                        cursorShape:
-                                            Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
 
-                                        onClicked: modelData.forget()
-                                    }
+                                    onClicked: modelData.forget()
                                 }
+                            }
                         }
 
                         MouseArea {
@@ -433,7 +384,7 @@ BasePopup {
                             cursorShape: Qt.PointingHandCursor
 
                             onClicked: {
-                                bluetoothPopup.activateDevice(modelData)
+                                bluetoothPopup.activateDevice(modelData);
                             }
                         }
                     }
@@ -442,15 +393,13 @@ BasePopup {
                 Text {
                     anchors.centerIn: parent
 
-                    visible: !(Bluetooth.defaultAdapter?.enabled
-                        ?? true)
+                    visible: !(Bluetooth.defaultAdapter?.enabled ?? true)
 
                     text: "󰂲  Bluetooth is off"
 
                     color: Palette.dim
 
-                    font.family:
-                        Palette.font
+                    font.family: Palette.font
 
                     font.pixelSize: Palette.px12
                 }

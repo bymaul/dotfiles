@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import "../components"
 import "../Palette.js" as Palette
 
@@ -8,42 +7,40 @@ BasePopup {
     id: powerPopup
 
     implicitWidth: Palette.popupWidth
-    implicitHeight: 16 + powerGrid.height +
-        Palette.popupSpacing + hintText.implicitHeight
+    implicitHeight: 16 + powerGrid.height + Palette.popupSpacing + hintText.implicitHeight
 
     function execPower(cmd: var) {
-        bar.closePopups()
-        Quickshell.execDetached(cmd)
+        bar.closePopups();
+        Quickshell.execDetached(cmd);
     }
 
     function powerOff(): void {
-        powerPopup.execPower(["systemctl", "poweroff"])
+        powerPopup.execPower(["systemctl", "poweroff"]);
     }
 
     function reboot(): void {
-        powerPopup.execPower(["systemctl", "reboot"])
+        powerPopup.execPower(["systemctl", "reboot"]);
     }
 
     function suspend(): void {
-        powerPopup.execPower(["systemctl", "suspend"])
+        powerPopup.execPower(["systemctl", "suspend"]);
     }
 
     function hibernate(): void {
-        powerPopup.execPower(["systemctl", "hibernate"])
+        powerPopup.execPower(["systemctl", "hibernate"]);
     }
 
     function lock(): void {
-        powerPopup.execPower(["hyprlock"])
+        powerPopup.execPower(["hyprlock"]);
     }
 
     function logout(): void {
-        powerPopup.execPower(["hyprctl", "dispatch", "hl.dsp.exit()"])
+        powerPopup.execPower(["hyprctl", "dispatch", "hl.dsp.exit()"]);
     }
 
-    // Single-key actions (Super+Shift+Q opens menu, press key).
-    // Scoped to the open menu: without the guard these would fire
-    // while typing anywhere once any popup holds focus (notably the
-    // Wi-Fi password field, where s/r/u/h/l/e are ordinary letters).
+    // Scoped to the open menu: unguarded, these would fire while
+    // typing anywhere a popup holds focus (e.g. s/r/u/h/l/e in the
+    // Wi-Fi password field).
     Shortcut {
         sequence: "s"
         enabled: powerPopup.visible
