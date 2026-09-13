@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import "../Palette.js" as Palette
 
@@ -240,7 +241,7 @@ BasePopup {
 
         const req = "hl.dsp.send_shortcut({ mods = \"" + mods + "\", key = \"V\"" + windowArg + " })";
 
-        Quickshell.execDetached(["hyprctl", "dispatch", req]);
+        Hyprland.dispatch(req);
     }
 
     Process {

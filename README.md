@@ -29,7 +29,7 @@ the repo is never touched.
 
 - **Hyprland** >= 0.56 (Lua config), **quickshell**, **kitty**, **nemo**
 - **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **yazi**, **eza**, **bat**, **fd**, **btop**
-- **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **jq**, **hyprpolkitagent**
+- **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **cliphist**, **jq**, **hyprpolkitagent**
 - **Nerd Font**
 
 ## Two-repo sync

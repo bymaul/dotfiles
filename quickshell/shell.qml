@@ -9,6 +9,8 @@ import Quickshell.Wayland
 import Quickshell.Networking
 import "widgets"
 import "popups"
+import "lock"
+import "screenshot"
 import "services" as Services
 import "Palette.js" as Palette
 
@@ -87,6 +89,16 @@ ShellRoot {
 
         function toggleClipboard(): void {
             openExclusive(clipboardPopup);
+        }
+
+        function lockScreen(): void {
+            bar.closePopups();
+            lockContext.reset();
+            sessionLock.locked = true;
+        }
+
+        function screenshot(mode: string): void {
+            screenshotTool.capture(mode);
         }
 
         property int rightPopupBottom: {
@@ -193,6 +205,12 @@ ShellRoot {
             }
             function panelActivate(): void {
                 controlPanelPopup.activateSelected();
+            }
+            function lock(): void {
+                bar.lockScreen();
+            }
+            function screenshot(mode: string): void {
+                bar.screenshot(mode);
             }
         }
 
@@ -440,6 +458,34 @@ ShellRoot {
 
         GlobalShortcut {
             appid: "qs-bar"
+            name: "Lock Screen"
+            description: "Lock the session"
+            onPressed: bar.lockScreen()
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Screenshot Area"
+            description: "Screenshot a selected area"
+            onPressed: bar.screenshot("area")
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Screenshot Full"
+            description: "Screenshot the full screen"
+            onPressed: bar.screenshot("full")
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
+            name: "Screenshot Window"
+            description: "Screenshot the active window"
+            onPressed: bar.screenshot("window")
+        }
+
+        GlobalShortcut {
+            appid: "qs-bar"
             name: "Toggle Caffeine"
             description: "Toggle caffeine mode (block idle)"
             onPressed: Services.Modes.toggleCaffeine()
@@ -541,8 +587,33 @@ ShellRoot {
         }
     }
 
+    // Session lock (replaces hyprlock): PAM auth, one surface
+    // per screen. Unlocking releases the lock; never quit while
+    // locked or the compositor keeps a solid, inoperable screen.
+    LockContext {
+        id: lockContext
+
+        onUnlocked: sessionLock.locked = false
+    }
+
+    WlSessionLock {
+        id: sessionLock
+
+        WlSessionLockSurface {
+            LockSurface {
+                anchors.fill: parent
+
+                context: lockContext
+            }
+        }
+    }
+
     // PanelWindows cannot nest inside the bar: keep this top-level.
     ToastStack {
         id: toastStack
+    }
+
+    Screenshot {
+        id: screenshotTool
     }
 }

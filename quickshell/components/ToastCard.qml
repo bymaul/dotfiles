@@ -32,12 +32,12 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
 
+        // Clicking always dismisses; file toasts additionally open.
         onClicked: {
             if (Services.Notifs.filepathOf(card.notification) !== "")
                 Quickshell.execDetached(["xdg-open", Services.Notifs.filepathOf(card.notification)]);
-            else
-                Services.Notifs.hideToast(card.notification);
 
+            Services.Notifs.hideToast(card.notification);
             Services.Notifs.forgetLive(card.notification);
         }
     }

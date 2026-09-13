@@ -29,25 +29,25 @@ Singleton {
         const pct = Math.round((audio?.volume ?? 0) * 100);
 
         if (muted) {
-            Quickshell.execDetached(["notify-send", "-a", "volume", "-t", "1500", "-i", "audio-volume-muted-symbolic", "-h", "string:x-canonical-private-synchronous:volume", "Muted", "Volume " + pct + "%"]);
+            Notifs.notify({app: "volume", summary: "Muted", body: "Volume " + pct + "%", icon: "audio-volume-muted-symbolic", syncId: "volume", timeout: 1500});
             return;
         }
 
         const icon = pct <= 33 ? "audio-volume-low-symbolic" : pct <= 66 ? "audio-volume-medium-symbolic" : "audio-volume-high-symbolic";
 
-        Quickshell.execDetached(["notify-send", "-a", "volume", "-t", "1500", "-i", icon, "-h", "int:value:" + pct, "-h", "string:x-canonical-private-synchronous:volume", pct + "%", "Volume"]);
+        Notifs.notify({app: "volume", summary: pct + "%", body: "Volume", icon: icon, value: pct, syncId: "volume", timeout: 1500});
     }
 
     function micToast(): void {
         const muted = media.source?.audio?.muted ?? false;
 
-        Quickshell.execDetached(["notify-send", "-a", "volume", "-t", "1500", "-i", muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic", "-h", "string:x-canonical-private-synchronous:volume", muted ? "Mic Muted" : "Mic"]);
+        Notifs.notify({app: "volume", summary: muted ? "Mic Muted" : "Mic", body: "Mic", icon: muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic", timeout: 1500});
     }
 
     function brightnessToast(): void {
         const pct = Math.round(media.brightness);
 
-        Quickshell.execDetached(["notify-send", "-a", "brightness", "-t", "1500", "-i", "display-brightness-symbolic", "-h", "int:value:" + pct, "-h", "string:x-canonical-private-synchronous:brightness", pct + "%", "Brightness"]);
+        Notifs.notify({app: "brightness", summary: pct + "%", body: "Brightness", icon: "display-brightness-symbolic", value: pct, syncId: "brightness", timeout: 1500});
     }
 
     function volumeUp(): void {
@@ -105,7 +105,7 @@ Singleton {
 
         if (!player)
             return;
-        Quickshell.execDetached(["notify-send", "-a", "media", "-t", "1500", "-i", "audio-x-generic-symbolic", "-h", "string:x-canonical-private-synchronous:media", player.trackTitle || "Unknown title", player.trackArtist || ""]);
+        Notifs.notify({app: "media", summary: player.trackTitle || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic", timeout: 1500});
     }
 
     // MPRIS is async: wait a beat so the toast reports the new

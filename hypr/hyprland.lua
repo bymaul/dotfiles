@@ -19,8 +19,6 @@ hl.monitor({
 local terminal = "kitty"
 local fileManager = "nemo"
 
-local dotfiles = os.getenv("DOTFILES") or os.getenv("HOME") .. "/dotfiles"
-
 -------------------
 ---- AUTOSTART ----
 -------------------
@@ -215,10 +213,6 @@ end
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
--- Cycle used workspaces (Windows-style)
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd(dotfiles .. "/bin/ws-cycle next"))
-hl.bind(secondMod .. " + Tab", hl.dsp.exec_cmd(dotfiles .. "/bin/ws-cycle prev"))
-
 -- Move/resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
@@ -227,14 +221,15 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind(secondMod .. " + Q", hl.dsp.global("qs-bar:Toggle Power Menu"))
 hl.bind(secondMod .. " + C", hl.dsp.global("qs-bar:Toggle Caffeine"))
 hl.bind(secondMod .. " + D", hl.dsp.global("qs-bar:Toggle DND"))
-hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"), { locked = true })
+hl.bind(mainMod .. " + CTRL + L", hl.dsp.global("qs-bar:Lock Screen"), { locked = true })
 
 -- Screenshots
 -- saves to ~/Pictures/Screenshots, copies to the live clipboard, notifies.
 -- the image watcher stores clipboard history.
-hl.bind("Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot area"))
-hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot full"))
-hl.bind(secondMod .. " + Print", hl.dsp.exec_cmd(dotfiles .. "/bin/screenshot window"))
+-- Screenshots (in-shell capture, clipboard + toast handled by quickshell)
+hl.bind("Print", hl.dsp.global("qs-bar:Screenshot Area"))
+hl.bind(mainMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Full"))
+hl.bind(secondMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Window"))
 
 -- Laptop multimedia keys (handled + displayed by quickshell)
 hl.bind("XF86AudioRaiseVolume", hl.dsp.global("qs-bar:Volume Up"), { locked = true, repeating = true })
@@ -287,6 +282,25 @@ hl.layer_rule({
 	match = { namespace = "qs-notifications" },
 	blur = true,
 	ignore_alpha = 0.1,
+	-- Toasts must pop instantly: the stack surface maps fresh on
+	-- every first toast, and a fade there reads as
+	-- translucent/slow loading.
+	no_anim = true,
+})
+
+-- Screenshot picker vs toasts: both live on the Overlay layer, so
+-- pin the stacking explicitly. Higher order renders on top: toasts
+-- always stay visible (and clickable) above the area picker.
+hl.layer_rule({
+	name = "qs-picker-order",
+	match = { namespace = "qs-screenshot-picker" },
+	order = 10,
+})
+
+hl.layer_rule({
+	name = "qs-notifications-order",
+	match = { namespace = "qs-notifications" },
+	order = 20,
 })
 
 

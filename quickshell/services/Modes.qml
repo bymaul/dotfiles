@@ -16,7 +16,7 @@ Singleton {
     }
 
     function caffeineToast(): void {
-        Quickshell.execDetached(["notify-send", "-a", "caffeine", "-t", "1500", "-h", "string:x-canonical-private-synchronous:caffeine", modes.caffeineActive ? "Caffeine on" : "Caffeine off"]);
+        Notifs.notify({app: "caffeine", summary: modes.caffeineActive ? "Caffeine on" : "Caffeine off", syncId: "caffeine", timeout: 1500});
     }
 
     Process {
@@ -42,7 +42,7 @@ Singleton {
     }
 
     function dndToast(): void {
-        Quickshell.execDetached(["notify-send", "-a", "dnd", "-t", "1500", "-h", "string:x-canonical-private-synchronous:dnd", modes.dndActive ? "DND on" : "DND off"]);
+        Notifs.notify({app: "dnd", summary: modes.dndActive ? "DND on" : "DND off", syncId: "dnd", timeout: 1500});
     }
 
     // Locks survive a crash; reap on startup so a fresh session
