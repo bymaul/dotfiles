@@ -1,20 +1,17 @@
 import QtQuick
 import Quickshell.Bluetooth
+import "../components"
 import "../Palette.js" as Palette
-
-Text {
-
+Item {
     required property var bar
-    text: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
-
-    color: Bluetooth.defaultAdapter?.enabled ? Palette.fg : Palette.dim
-
-    font.family: Palette.font
-    font.pixelSize: Palette.px13
-
-    MouseArea {
-        anchors.fill: parent
-
+    implicitWidth: icon.width
+    implicitHeight: icon.height
+    width: icon.width
+    height: icon.height
+    BarIcon {
+        id: icon
+        glyph: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
+        glyphColor: Bluetooth.defaultAdapter?.enabled ? Palette.fg : Palette.dim
         onClicked: bar.toggleControl()
     }
 }

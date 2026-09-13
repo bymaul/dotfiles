@@ -1,31 +1,23 @@
 import QtQuick
-
+import "../Palette.js" as Palette
 Item {
-    id: systemGroup
-
+    id: root
     required property var bar
-
     anchors.verticalCenter: parent.verticalCenter
-
-    width: content.width
-    height: content.height
-
-    property alias volumeControl: networkGroup.volumeControl
-
+    implicitWidth: row.width
+    implicitHeight: row.height
+    width: row.width
+    height: row.height
     Row {
-        id: content
-
-        spacing: 12
-
+        id: row
+        spacing: Palette.groupSpacing
         CaffeineIcon {}
         DndIcon {}
         MemCpu {
-            bar: systemGroup.bar
+            bar: root.bar
         }
         NetworkGroup {
-            id: networkGroup
-
-            bar: systemGroup.bar
+            bar: root.bar
         }
     }
 }

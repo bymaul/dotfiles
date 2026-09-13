@@ -1,71 +1,48 @@
 import QtQuick
 import "../Palette.js" as Palette
-
 Item {
-    id: slider
-
+    id: root
     required property real value
     property real minimum: 0
     property real maximum: 1
-
     signal sliderMoved(real newValue)
-
     height: 24
-
-    readonly property real fraction: Math.max(0, Math.min(1, (slider.value - slider.minimum) / (slider.maximum - slider.minimum)))
-
+    readonly property real fraction: {
+        const range = root.maximum - root.minimum;
+        return range <= 0 ? 0 : Palette.clamp01((root.value - root.minimum) / range);
+    }
+    function setFromMouse(mouse: var): void {
+        root.sliderMoved(root.minimum + Palette.clamp01(mouse.x / root.width) * (root.maximum - root.minimum));
+    }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
-
-        width: slider.width
+        width: root.width
         height: 3
-
-        radius: 0
-
         color: Palette.onAccent
     }
-
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
-
-        width: slider.width * slider.fraction
+        width: root.width * root.fraction
         height: 3
-
-        radius: 0
-
         color: Palette.accent
     }
-
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
-
-        x: slider.width * slider.fraction - 2
-
+        x: root.width * root.fraction - 2
         width: 4
         height: 14
-
-        radius: 0
-
         color: Palette.fg
     }
-
     MouseArea {
         anchors.fill: parent
-
-        function adjust(mouse: var): void {
-            slider.sliderMoved(slider.minimum + Math.max(0, Math.min(1, mouse.x / slider.width)) * (slider.maximum - slider.minimum));
-        }
-
-        onPressed: mouse => adjust(mouse)
+        onPressed: mouse => root.setFromMouse(mouse)
         onPositionChanged: mouse => {
             if (pressed)
-                adjust(mouse);
+                root.setFromMouse(mouse);
         }
-
         onWheel: event => {
-            const step = (event.angleDelta.y > 0 ? 0.05 : -0.05) * (slider.maximum - slider.minimum);
-
-            slider.sliderMoved(Math.max(slider.minimum, Math.min(slider.maximum, slider.value + step)));
+            const step = (event.angleDelta.y > 0 ? 0.05 : -0.05) * (root.maximum - root.minimum);
+            root.sliderMoved(Palette.clamp(root.value + step, root.minimum, root.maximum));
         }
     }
 }

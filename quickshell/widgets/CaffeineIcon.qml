@@ -1,29 +1,17 @@
 import QtQuick
 import "../services" as Services
+import "../components"
 import "../Palette.js" as Palette
-
 Item {
     visible: Services.Modes.caffeineActive
-
-    width: caffeineText.width
-    height: caffeineText.height
-
-    Text {
-        id: caffeineText
-
-        text: ""
-
-        color: Palette.fg
-
-        font.family: Palette.font
-        font.pixelSize: Palette.px13
-
-        MouseArea {
-            anchors.fill: parent
-
-            cursorShape: Qt.PointingHandCursor
-
-            onClicked: Services.Modes.toggleCaffeine()
-        }
+    implicitWidth: icon.width
+    implicitHeight: icon.height
+    width: icon.width
+    height: icon.height
+    BarIcon {
+        id: icon
+        glyph: "󰅶"
+        glyphColor: Palette.accent
+        onClicked: Services.Modes.toggleCaffeine()
     }
 }

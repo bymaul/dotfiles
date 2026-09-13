@@ -3,328 +3,183 @@ import Quickshell
 import "../components"
 import "../services" as Services
 import "../Palette.js" as Palette
-
 BasePopup {
-    id: historyPanel
-
+    id: root
     required property var panel
-
-    // Covered by the bar-level grab alongside the control panel.
     useGrab: false
-
-    extraTop: panel.height + 8
-
+    extraTop: panel.height + Palette.popupSpacing
     implicitWidth: Palette.popupWidth
-
     readonly property int listCap: Math.max(96, Math.round(Screen.height / 2) - 32 - 8)
-
-    implicitHeight: 32 + (Services.Notifs.history.length > 0 ? 8 + Math.min(historyPanel.listCap, histList.contentHeight) : 0)
-
+    implicitHeight: Palette.rowHeight + (Services.Notifs.history.length > 0 ? Palette.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0)
     visible: panel.visible && Services.Notifs.history.length > 0
-
     function revealAt(i: int): void {
-        histList.positionViewAtIndex(i, ListView.Contain);
+        historyList.positionViewAtIndex(i, ListView.Contain);
     }
-
     Shortcut {
         sequence: "Escape"
-        onActivated: bar.closePopups()
+        enabled: root.visible
+        onActivated: root.close()
     }
-
-    // Mirror set: keys reach only the focused window, so delegating
-    // here can't double-fire with the panel's own shortcuts.
-    Shortcut {
-        sequence: "j"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.stepVertical(1)
-    }
-    Shortcut {
-        sequence: "k"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.stepVertical(-1)
-    }
-    Shortcut {
-        sequence: "h"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.adjustSelected(-1)
-    }
-    Shortcut {
-        sequence: "l"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.adjustSelected(1)
-    }
-    Shortcut {
-        sequence: "Return"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.activateSelected()
-    }
-    Shortcut {
-        sequence: "Enter"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.activateSelected()
-    }
-    Shortcut {
-        sequence: "Space"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.activateSelected()
-    }
-    Shortcut {
-        sequence: "m"
-        enabled: historyPanel.visible
-        onActivated: historyPanel.panel.toggleVolumeMute()
-    }
-    Shortcut {
-        sequence: "c"
-        enabled: historyPanel.visible && Services.Notifs.history.length > 0
-        onActivated: Services.Notifs.clearHistory()
-    }
-    Shortcut {
-        sequence: "o"
-        enabled: historyPanel.visible && Services.Notifs.history.length > 0
-        onActivated: historyPanel.panel.invokeSelectedAction()
-    }
-
+    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.panel.stepVertical(1) }
+    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.panel.stepVertical(-1) }
+    Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.panel.adjustSelected(-1) }
+    Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.panel.adjustSelected(1) }
+    Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.panel.activateSelected() }
+    Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.panel.activateSelected() }
+    Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.panel.activateSelected() }
+    Shortcut { sequence: "m"; enabled: root.visible; onActivated: root.panel.toggleVolumeMute() }
+    Shortcut { sequence: "c"; enabled: root.visible && Services.Notifs.history.length > 0; onActivated: Services.Notifs.clearHistory() }
+    Shortcut { sequence: "o"; enabled: root.visible && Services.Notifs.history.length > 0; onActivated: root.panel.invokeSelectedAction() }
     Column {
         anchors {
             top: parent.top
             left: parent.left
             right: parent.right
         }
-
         spacing: Palette.popupSpacing
-
         Rectangle {
             width: parent.width
-            height: 32
-
-            radius: 0
-
+            height: Palette.rowHeight
             color: Palette.bg
-
-            border.width: 0
-
             Row {
                 anchors {
                     fill: parent
                     leftMargin: 10
                     rightMargin: 10
                 }
-
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-
                     width: parent.width - 60
-
                     text: "Notifications (" + Services.Notifs.history.length + ")"
-
                     color: Palette.dim
-
                     font.family: Palette.font
                     font.pixelSize: Palette.px12
-
                     elide: Text.ElideRight
                 }
-
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-
                     width: 60
-
                     horizontalAlignment: Text.AlignRight
-
                     text: "Clear"
-
-                    color: clearHover.containsMouse ? Palette.fg : Palette.dim
-
+                    color: clearArea.containsMouse ? Palette.fg : Palette.dim
                     font.family: Palette.font
                     font.pixelSize: Palette.px12
-
                     MouseArea {
-                        id: clearHover
-
+                        id: clearArea
                         anchors.fill: parent
-
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-
                         onClicked: Services.Notifs.clearHistory()
                     }
                 }
             }
         }
-
         Item {
             width: parent.width
-            height: Services.Notifs.history.length > 0 ? Math.min(historyPanel.listCap, histList.contentHeight) : 0
-
+            height: Services.Notifs.history.length > 0 ? Math.min(root.listCap, historyList.contentHeight) : 0
             visible: Services.Notifs.history.length > 0
-
             ListView {
-                id: histList
-
+                id: historyList
                 anchors.fill: parent
-
                 clip: true
-
                 model: Services.Notifs.history
-
-                spacing: 8
-
+                spacing: Palette.popupSpacing
                 delegate: Rectangle {
-                    id: histCard
-
+                    id: historyCard
                     required property var modelData
                     required property int index
-
-                    readonly property bool selected: historyPanel.panel.selectedIndex === historyPanel.panel.firstHistIdx() + index
-
+                    readonly property bool selected: root.panel.selectedIndex === root.panel.firstHistIdx() + index
                     readonly property string rawIcon: modelData.icon ?? ""
-
-                    width: histList.width
+                    width: historyList.width
                     height: content.height + 16
-
-                    radius: 0
-
-                    color: selected ? Palette.activeBg : histHover.containsMouse ? Palette.hoverBg : Palette.bg
-
+                    color: selected ? Palette.activeBg : cardArea.containsMouse ? Palette.hoverBg : Palette.bg
                     border.width: 1
                     border.color: modelData.critical ? Palette.danger : selected ? Palette.accent : Palette.dim
-
                     MouseArea {
-                        id: histHover
-
+                        id: cardArea
                         anchors.fill: parent
-
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-
                         onClicked: Services.Notifs.dismissHistoryAt(index)
                     }
-
                     Column {
                         id: content
-
                         anchors {
                             left: parent.left
                             right: parent.right
                             top: parent.top
                             margins: 8
                         }
-
                         spacing: 6
-
                         Row {
                             width: parent.width
                             spacing: 8
-
                             NotificationIcon {
-                                id: histIcon
-
-                                rawIcon: histCard.rawIcon
+                                id: historyIcon
+                                rawIcon: historyCard.rawIcon
                             }
-
                             Column {
-                                width: parent.width - (histIcon.hasIcon ? 32 : 0)
-
+                                width: parent.width - (historyIcon.hasIcon ? 32 : 0)
                                 spacing: 2
-
                                 Row {
                                     width: parent.width
                                     spacing: 8
-
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-
                                         width: parent.width - 52
-
                                         text: modelData.summary || modelData.app
-
                                         color: Palette.fg
-
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px12
-
                                         elide: Text.ElideRight
                                     }
-
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-
                                         width: 44
-
                                         horizontalAlignment: Text.AlignRight
-
                                         text: Qt.formatDateTime(modelData.time, "HH:mm")
-
                                         color: Palette.dim
-
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px10
                                     }
                                 }
-
                                 Text {
                                     width: parent.width
-
-                                    visible: text !== ""
-
-                                    text: modelData.body
-
+                                    visible: (modelData.body ?? "") !== ""
+                                    text: modelData.body ?? ""
                                     color: Palette.dim
-
                                     font.family: Palette.font
                                     font.pixelSize: Palette.px12
-
                                     textFormat: Text.RichText
                                     wrapMode: Text.WordWrap
                                 }
-
                                 Flow {
                                     width: parent.width
-
                                     visible: modelData.live !== null && modelData.live.actions.length > 0
-
                                     spacing: 6
-
                                     Repeater {
                                         model: modelData.live !== null ? modelData.live.actions : []
-
                                         delegate: Rectangle {
                                             required property var modelData
-
                                             width: actionLabel.width + 16
                                             height: 24
-
-                                            radius: 0
-
-                                            color: actionHover.containsMouse ? Palette.hoverBg : Palette.surface
-
-                                            border.width: 0
-
+                                            color: actionArea.containsMouse ? Palette.hoverBg : Palette.surface
                                             Text {
                                                 id: actionLabel
-
                                                 anchors.centerIn: parent
-
                                                 text: modelData.text
-
                                                 color: Palette.fg
-
                                                 font.family: Palette.font
                                                 font.pixelSize: Palette.px12
                                             }
-
                                             MouseArea {
-                                                id: actionHover
-
+                                                id: actionArea
                                                 anchors.fill: parent
-
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
-
                                                 onClicked: {
-                                                    Services.Notifs.activateAction(histCard.modelData.live, modelData);
-                                                    Services.Notifs.dismissHistoryAt(histCard.index);
+                                                    Services.Notifs.activateAction(historyCard.modelData.live, modelData);
+                                                    Services.Notifs.dismissHistoryAt(historyCard.index);
                                                     bar.closePopups();
                                                 }
                                             }

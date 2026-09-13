@@ -1,289 +1,139 @@
 import QtQuick
 import Quickshell
 import Quickshell.Networking
+import "../components"
 import "../Palette.js" as Palette
-
 BasePopup {
-    id: passwordDialog
-
+    id: root
     anchorMode: "center"
-
-    implicitWidth: 280
-
-    implicitHeight: passwordDialog.authError !== "" ? 172 : 150
-
+    implicitWidth: Palette.popupWidth
+    implicitHeight: root.authError !== "" ? 172 : 150
     Shortcut {
         sequence: "Escape"
-        onActivated: passwordDialog.close()
+        enabled: root.visible
+        onActivated: root.close()
     }
-
-    // h/l are unreachable while the field has focus (it consumes
-    // keys for cursor movement); Enter always connects.
     property int selectedButton: 1
-
-    Shortcut {
-        sequence: "h"
-        enabled: passwordDialog.visible && !wifiPassword.activeFocus
-        onActivated: passwordDialog.selectedButton = 0
-    }
-    Shortcut {
-        sequence: "l"
-        enabled: passwordDialog.visible && !wifiPassword.activeFocus
-        onActivated: passwordDialog.selectedButton = 1
-    }
-    Shortcut {
-        sequence: "Space"
-        enabled: passwordDialog.visible && !wifiPassword.activeFocus
-        onActivated: passwordDialog.activateSelectedButton()
-    }
-    Shortcut {
-        sequence: "Return"
-        enabled: passwordDialog.visible && !wifiPassword.activeFocus
-        onActivated: passwordDialog.activateSelectedButton()
-    }
-    Shortcut {
-        sequence: "Enter"
-        enabled: passwordDialog.visible && !wifiPassword.activeFocus
-        onActivated: passwordDialog.activateSelectedButton()
-    }
-
-    property var network: null
+    Shortcut { sequence: "h"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = 0 }
+    Shortcut { sequence: "l"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = 1 }
+    Shortcut { sequence: "Space"; enabled: root.visible && !field.activeFocus; onActivated: root.activateSelectedButton() }
+    Shortcut { sequence: "Return"; enabled: root.visible && !field.activeFocus; onActivated: root.activateSelectedButton() }
+    Shortcut { sequence: "Enter"; enabled: root.visible && !field.activeFocus; onActivated: root.activateSelectedButton() }
+    property var targetNetwork: null
     property string authError: ""
     property var pendingNetwork: null
-
     onVisibleChanged: {
         if (visible) {
             selectedButton = 1;
             pendingNetwork = null;
-            wifiPassword.forceActiveFocus();
+            field.forceActiveFocus();
         }
     }
-
-    // NOT cleared on open: the failure handler reopens the dialog
-    // to SHOW the error.
-    onNetworkChanged: authError = ""
-
+    onTargetNetworkChanged: authError = ""
     function cancelDialog(): void {
-        passwordDialog.close();
-        passwordDialog.authError = "";
-        wifiPassword.text = "";
+        root.close();
+        root.authError = "";
+        field.text = "";
     }
-
     function activateSelectedButton(): void {
         if (selectedButton === 0)
-            passwordDialog.cancelDialog();
+            root.cancelDialog();
         else
-            passwordDialog.doConnect();
+            root.doConnect();
     }
-
     function resolveNetwork(): var {
-        // The model may rebuild objects, so re-resolve by name
-        // instead of trusting the stored reference.
-        const name = passwordDialog.network?.name;
-
+        const name = root.targetNetwork?.name;
         if (!name || !bar.wifiDevice)
-            return passwordDialog.network;
-
-        return bar.wifiDevice.networks.values.find(n => n.name === name) ?? passwordDialog.network;
+            return root.targetNetwork;
+        return bar.wifiDevice.networks.values.find(n => n.name === name) ?? root.targetNetwork;
     }
-
     function doConnect(): void {
-        const net = passwordDialog.resolveNetwork();
-
+        const net = root.resolveNetwork();
         if (!net)
             return;
-        passwordDialog.authError = "";
-        passwordDialog.pendingNetwork = net;
-        net.connectWithPsk(wifiPassword.text);
-
-        passwordDialog.visible = false;
+        root.authError = "";
+        root.pendingNetwork = net;
+        net.connectWithPsk(field.text);
+        root.visible = false;
         bar.closePasswordAndControl();
-
-        wifiPassword.text = "";
+        field.text = "";
     }
-
-    // Failure drops the junk profile NM saved and reopens with the
-    // reason. Only password attempts reach here (row clicks set no
-    // pending ref), so forget() is safe.
     Connections {
-        target: passwordDialog.pendingNetwork
-        enabled: passwordDialog.pendingNetwork !== null
-
-        // Success must release the ref too, or a later unrelated
-        // failure from this network reopens the dialog bogusly.
+        target: root.pendingNetwork
+        enabled: root.pendingNetwork !== null
         function onConnectedChanged() {
-            if (passwordDialog.pendingNetwork?.connected)
-                passwordDialog.pendingNetwork = null;
+            if (root.pendingNetwork?.connected)
+                root.pendingNetwork = null;
         }
-
         function onConnectionFailed(reason) {
-            const net = passwordDialog.pendingNetwork;
-
-            passwordDialog.pendingNetwork = null;
-
+            const net = root.pendingNetwork;
+            root.pendingNetwork = null;
             if (net && net.known && !net.connected)
                 net.forget();
-
-            passwordDialog.network = net;
-
-            passwordDialog.authError = (reason === ConnectionFailReason.NoSecrets || reason === ConnectionFailReason.WifiAuthTimeout) ? "Wrong password, try again" : "Connection failed (" + ConnectionFailReason.toString(reason) + ")";
-
-            passwordDialog.visible = true;
+            root.targetNetwork = net;
+            root.authError = (reason === ConnectionFailReason.NoSecrets || reason === ConnectionFailReason.WifiAuthTimeout) ? "Wrong password, try again" : "Connection failed (" + ConnectionFailReason.toString(reason) + ")";
+            root.visible = true;
         }
     }
-
-    Rectangle {
-        anchors.fill: parent
-
-        radius: 0
-
-        color: Palette.bg
-
-        border.width: 0
-
-        Column {
-            anchors {
-                fill: parent
-                margins: Palette.popupPadding
-            }
-
-            spacing: Palette.popupSpacing
-
-            Text {
-                width: parent.width
-                text: "󰌾  " + (passwordDialog.network?.name ?? "Wi-Fi password")
-
+    PopupCard {
+        Text {
+            width: parent.width
+            text: "󰌾  " + (root.targetNetwork?.name ?? "Wi-Fi password")
+            color: Palette.fg
+            font.family: Palette.font
+            font.pixelSize: Palette.px12
+            elide: Text.ElideRight
+        }
+        Text {
+            width: parent.width
+            visible: root.authError !== ""
+            height: visible ? implicitHeight : 0
+            text: root.authError
+            color: Palette.danger
+            font.family: Palette.font
+            font.pixelSize: Palette.px12
+            wrapMode: Text.Wrap
+        }
+        Rectangle {
+            width: parent.width
+            height: Palette.rowHeight
+            color: Palette.surface
+            border.width: 1
+            border.color: Palette.border
+            TextInput {
+                id: field
+                anchors {
+                    fill: parent
+                    leftMargin: 10
+                    rightMargin: 10
+                }
+                verticalAlignment: TextInput.AlignVCenter
                 color: Palette.fg
-
+                echoMode: TextInput.Password
                 font.family: Palette.font
-
                 font.pixelSize: Palette.px12
-                elide: Text.ElideRight
+                Keys.onReturnPressed: root.doConnect()
+                Keys.onEnterPressed: root.doConnect()
             }
-
-            Text {
-                width: parent.width
-
-                visible: passwordDialog.authError !== ""
-                height: visible ? implicitHeight : 0
-
-                text: passwordDialog.authError
-
-                color: Palette.danger
-
-                font.family: Palette.font
-
-                font.pixelSize: Palette.px12
-
-                wrapMode: Text.Wrap
-            }
-
-            Rectangle {
-                width: parent.width
-                height: Palette.rowHeight
-
-                radius: 0
-
-                color: Palette.surface
-                border.width: 1
-                border.color: Palette.border
-
-                TextInput {
-                    id: wifiPassword
-
-                    anchors {
-                        fill: parent
-                        leftMargin: 10
-                        rightMargin: 10
-                    }
-
-                    verticalAlignment: TextInput.AlignVCenter
-
-                    color: Palette.fg
-
-                    echoMode: TextInput.Password
-
-                    font.family: Palette.font
-
-                    font.pixelSize: Palette.px12
-
-                    Keys.onReturnPressed: {
-                        passwordDialog.doConnect();
-                    }
-                    Keys.onEnterPressed: {
-                        passwordDialog.doConnect();
-                    }
+        }
+        Row {
+            width: parent.width
+            spacing: Palette.popupSpacing
+            PopupButton {
+                label: "Cancel"
+                selected: root.selectedButton === 0
+                onClicked: {
+                    root.selectedButton = 0;
+                    root.cancelDialog();
                 }
             }
-
-            Row {
-                width: parent.width
-                spacing: 8
-
-                Rectangle {
-                    width: (parent.width - 8) / 2
-                    height: 32
-
-                    radius: 0
-
-                    color: Palette.surface
-
-                    border.width: passwordDialog.selectedButton === 0 ? 1 : 0
-                    border.color: passwordDialog.selectedButton === 0 ? Palette.fg : Palette.dim
-
-                    Text {
-                        anchors.centerIn: parent
-
-                        text: "Cancel"
-
-                        color: Palette.fg
-
-                        font.family: Palette.font
-
-                        font.pixelSize: Palette.px12
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: passwordDialog.cancelDialog()
-                    }
-                }
-
-                Rectangle {
-                    width: (parent.width - 8) / 2
-                    height: 32
-
-                    radius: 0
-
-                    color: Palette.accent
-
-                    border.width: 1
-                    border.color: passwordDialog.selectedButton === 1 ? Palette.fg : Palette.accent
-
-                    Text {
-                        anchors.centerIn: parent
-
-                        text: "Connect"
-
-                        color: Palette.onAccent
-
-                        font.family: Palette.font
-
-                        font.pixelSize: Palette.px12
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-
-                        onClicked: passwordDialog.doConnect()
-                    }
+            PopupButton {
+                label: "Connect"
+                accent: true
+                selected: root.selectedButton === 1
+                onClicked: {
+                    root.selectedButton = 1;
+                    root.doConnect();
                 }
             }
         }

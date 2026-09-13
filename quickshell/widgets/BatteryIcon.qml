@@ -1,35 +1,23 @@
 import QtQuick
 import Quickshell.Services.UPower
 import "../Palette.js" as Palette
-
 Item {
-    id: battery
-
-    visible: battery.laptopBattery != null
-
+    id: root
+    visible: root.laptopBattery != null
     anchors.verticalCenter: parent.verticalCenter
-
-    width: batteryText.width
-    height: batteryText.height
-
+    implicitWidth: label.width
+    implicitHeight: label.height
+    width: label.width
+    height: label.height
     property var laptopBattery: UPower.devices.values.find(device => device.isLaptopBattery)
-
+    readonly property real level: root.laptopBattery?.percentage ?? 0
+    readonly property bool charging: root.laptopBattery?.state === UPowerDeviceState.Charging
     Text {
-        id: batteryText
-
-        property real level: battery.laptopBattery?.percentage ?? 0
-
-        property bool charging: battery.laptopBattery?.state === UPowerDeviceState.Charging
-
+        id: label
         text: {
-            if (!battery.laptopBattery)
-                return "󰂑 --%";
-
-            const p = level * 100;
-
-            let icon;
-
-            if (charging)
+            const p = root.level * 100;
+            let icon = "󰂎";
+            if (root.charging)
                 icon = "󰂄";
             else if (p >= 90)
                 icon = "󰁹";
@@ -41,27 +29,16 @@ Item {
                 icon = "󰁼";
             else if (p >= 10)
                 icon = "󰁺";
-            else
-                icon = "󰂎";
-
             return `${icon} ${Math.round(p)}%`;
         }
-
         color: {
-            if (!battery.laptopBattery)
-                return Palette.fg;
-
-            const p = level * 100;
-
+            const p = root.level * 100;
             if (p < 10)
                 return Palette.danger;
-
             if (p < 20)
                 return Palette.warn;
-
             return Palette.fg;
         }
-
         font.family: Palette.font
         font.pixelSize: Palette.px13
     }

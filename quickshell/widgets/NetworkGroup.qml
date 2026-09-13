@@ -1,38 +1,28 @@
 import QtQuick
-
+import "../Palette.js" as Palette
 Item {
-    id: networkGroup
-
+    id: root
     required property var bar
-
-    width: icons.width
-    height: icons.height
-
-    property alias volumeControl: groupVolume
-
+    implicitWidth: row.width
+    implicitHeight: row.height
+    width: row.width
+    height: row.height
     Row {
-        id: icons
-
-        spacing: 12
-
+        id: row
+        spacing: Palette.groupSpacing
         WifiIcon {
-            bar: networkGroup.bar
+            bar: root.bar
         }
         BluetoothIcon {
-            bar: networkGroup.bar
+            bar: root.bar
         }
         VolumeIcon {
-            id: groupVolume
-
-            bar: networkGroup.bar
+            bar: root.bar
         }
     }
-
     MouseArea {
         anchors.fill: parent
-
         cursorShape: Qt.PointingHandCursor
-
         onClicked: bar.toggleControl()
     }
 }
