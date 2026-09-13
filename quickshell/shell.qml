@@ -40,7 +40,7 @@ ShellRoot {
 
         WlrLayershell.namespace: "qs-bar"
 
-        function openExclusive(target): void {
+        function openExclusive(target, returnTo = null): void {
             const open = !target.visible;
 
             calendarPopup.visible = false;
@@ -52,6 +52,7 @@ ShellRoot {
             launcherPopup.visible = false;
             clipboardPopup.visible = false;
 
+            target.returnTo = open ? returnTo : null;
             target.visible = open;
         }
 
@@ -64,11 +65,20 @@ ShellRoot {
         function toggleWifi(): void {
             openExclusive(wifiPopup);
         }
+        function openWifiFromPanel(): void {
+            openExclusive(wifiPopup, controlPanelPopup);
+        }
         function toggleBluetooth(): void {
             openExclusive(bluetoothPopup);
         }
+        function openBluetoothFromPanel(): void {
+            openExclusive(bluetoothPopup, controlPanelPopup);
+        }
         function togglePower(): void {
             openExclusive(powerPopup);
+        }
+        function openPowerFromPanel(): void {
+            openExclusive(powerPopup, controlPanelPopup);
         }
 
         function toggleLauncher(): void {
@@ -105,13 +115,17 @@ ShellRoot {
 
         function showPasswordDialog(network): void {
             // The dialog must own keyboard focus alone, or a grabber
-            // underneath steals typed passwords.
+            // underneath steals typed passwords. Chained onto wifi's
+            // own breadcrumb so cancel drills back through it.
+            passwordDialog.returnTo = wifiPopup;
             wifiPopup.visible = false;
             passwordDialog.network = network;
             passwordDialog.visible = true;
         }
 
         function closePasswordAndControl(): void {
+            passwordDialog.returnTo = null;
+            wifiPopup.returnTo = null;
             passwordDialog.visible = false;
             controlPanelPopup.visible = false;
         }

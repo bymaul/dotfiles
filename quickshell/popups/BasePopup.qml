@@ -15,6 +15,19 @@ PopupWindow {
     property int extraTop: 0
     property bool useGrab: true
 
+    // Breadcrumb for drill-in navigation (panel -> wifi): close()
+    // returns here instead of landing on the desktop. Cleared on use.
+    property var returnTo: null
+
+    function close(): void {
+        const back = base.returnTo;
+        base.returnTo = null;
+        base.visible = false;
+
+        if (back)
+            back.visible = true;
+    }
+
     anchor.window: bar
 
     anchor.rect.x: base.anchorMode === "center" ? bar.width / 2 - width / 2 : bar.width - width - Palette.popupMargin
@@ -39,7 +52,7 @@ PopupWindow {
 
         // Never bind active to visible: asserting it in the show
         // frame leaves the grab dead; the timer below defers it.
-        onCleared: base.visible = false
+        onCleared: base.close()
     }
 
     Timer {

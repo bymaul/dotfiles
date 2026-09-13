@@ -11,7 +11,7 @@ BasePopup {
 
     Shortcut {
         sequence: "Escape"
-        onActivated: bar.closePopups()
+        onActivated: wifiPopup.close()
     }
 
     onVisibleChanged: {
@@ -311,13 +311,13 @@ BasePopup {
 
                             text: {
                                 const s = modelData.signalStrength;
-                                if (s >= -50)
+                                if (s >= 0.75)
                                     return "󰤨";
-                                if (s >= -67)
+                                if (s >= 0.5)
                                     return "󰤥";
-                                if (s >= -75)
+                                if (s >= 0.25)
                                     return "󰤢";
-                                return "󰤯";
+                                return "󰤟";
                             }
 
                             color: selected ? Palette.onAccent : modelData.connected ? Palette.accent : rowHover.containsMouse ? Palette.fg : Palette.dim

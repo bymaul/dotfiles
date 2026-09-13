@@ -23,8 +23,8 @@ Singleton {
         notifs.readCount = notifs.history.length;
     }
 
-    // Snapshots keep the live object for action buttons, except
-    // DND-suppressed ones, which arrive already dead (live: null).
+    // Snapshots keep the live object for action buttons, including
+    // DND-suppressed ones (tracked, just never popped).
     property var history: []
 
     property int readCount: 0
@@ -111,7 +111,7 @@ Singleton {
             critical: n.urgency === NotificationUrgency.Critical,
             time: new Date(),
             syncId: n.hints ? n.hints["x-canonical-private-synchronous"] : undefined,
-            live: Modes.dndActive ? null : n
+            live: n
         };
     }
 
@@ -156,18 +156,19 @@ Singleton {
                 notifs.history = next.slice(0, 30);
             }
 
-            // DND drops popups, except our own mode toggles, which
-            // must confirm both directions.
-            if (Modes.dndActive && notification.appName !== "dnd" && notification.appName !== "caffeine") {
-                notification.tracked = false;
-                return;
-            }
-
             notification.tracked = true;
             notification.closed.connect(() => {
                 notifs.toasts = notifs.toasts.filter(t => t !== notification);
                 notifs.pending = notifs.pending.filter(t => t !== notification);
             });
+
+            // DND drops popups, except our own feedback, which must
+            // confirm: mode toggles both directions, screenshots with
+            // their Open/Copy actions. The snapshot above still lands
+            // in the center either way.
+            if (Modes.dndActive && notification.appName !== "dnd" && notification.appName !== "caffeine" && notification.appName !== "screenshot") {
+                return;
+            }
 
             if (notifs.suppressToasts) {
                 if (syncId === undefined || notification.actions.length > 0) {

@@ -14,7 +14,7 @@ BasePopup {
 
     Shortcut {
         sequence: "Escape"
-        onActivated: bar.closePopups()
+        onActivated: passwordDialog.close()
     }
 
     // h/l are unreachable while the field has focus (it consumes
@@ -64,7 +64,7 @@ BasePopup {
     onNetworkChanged: authError = ""
 
     function cancelDialog(): void {
-        passwordDialog.visible = false;
+        passwordDialog.close();
         passwordDialog.authError = "";
         wifiPassword.text = "";
     }

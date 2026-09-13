@@ -74,7 +74,7 @@ BasePopup {
 
     Shortcut {
         sequence: "Escape"
-        onActivated: bar.closePopups()
+        onActivated: powerPopup.close()
     }
 
     Rectangle {

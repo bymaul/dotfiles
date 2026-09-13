@@ -170,7 +170,7 @@ BasePopup {
             return;
         }
 
-        const tileActions = [() => bar.toggleWifi(), () => bar.toggleBluetooth(), () => controlPanel.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.togglePower()];
+        const tileActions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => controlPanel.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openPowerFromPanel()];
 
         tileActions[controlPanel.selectedTile()]();
     }
@@ -425,7 +425,7 @@ BasePopup {
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 0
 
                     onTileClicked: {
-                        bar.toggleWifi();
+                        bar.openWifiFromPanel();
                     }
                 }
 
@@ -441,7 +441,7 @@ BasePopup {
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 1
 
                     onTileClicked: {
-                        bar.toggleBluetooth();
+                        bar.openBluetoothFromPanel();
                     }
                 }
 
@@ -499,7 +499,7 @@ BasePopup {
                     selected: controlPanel.selectedIndex === controlPanel.firstTileIdx() + 5
 
                     onTileClicked: {
-                        bar.togglePower();
+                        bar.openPowerFromPanel();
                     }
                 }
             }

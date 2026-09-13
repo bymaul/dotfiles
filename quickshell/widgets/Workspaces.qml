@@ -49,8 +49,8 @@ Row {
             readonly property var ws: workspaceById(modelData)
             readonly property bool isFocused: ws ? ws.focused : Hyprland.focusedWorkspace?.id === modelData
 
-            width: 30
-            height: 24
+            width: 25
+            height: 25
 
             Rectangle {
                 anchors.fill: parent

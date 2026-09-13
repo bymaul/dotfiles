@@ -12,6 +12,17 @@ Item {
         id: wifiIcon
 
         property bool connected: bar.connectedWifi !== null
+        property real signal: connected ? bar.connectedWifi.signalStrength : 0
+
+        readonly property string strengthIcon: {
+            if (signal >= 0.75)
+                return "󰤨";
+            if (signal >= 0.5)
+                return "󰤥";
+            if (signal >= 0.25)
+                return "󰤢";
+            return "󰤟";
+        }
 
         text: {
             if (!Networking.wifiEnabled)
@@ -20,7 +31,7 @@ Item {
             if (!connected)
                 return "󰤯";
 
-            return "󰤨";
+            return strengthIcon;
         }
 
         color: {

@@ -17,7 +17,7 @@ BasePopup {
             if (clipboardPopup.wipeConfirm)
                 clipboardPopup.wipeConfirm = false;
             else
-                bar.closePopups();
+                clipboardPopup.close();
         }
     }
 

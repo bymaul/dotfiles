@@ -185,7 +185,7 @@ BasePopup {
 
                     radius: 0
 
-                    color: selected ? Palette.accent : histHover.containsMouse ? Palette.hoverBg : Palette.bg
+                    color: selected ? Palette.activeBg : histHover.containsMouse ? Palette.hoverBg : Palette.bg
 
                     border.width: 1
                     border.color: modelData.critical ? Palette.danger : selected ? Palette.accent : Palette.dim
@@ -239,7 +239,7 @@ BasePopup {
 
                                         text: modelData.summary || modelData.app
 
-                                        color: selected ? Palette.onAccent : Palette.fg
+                                        color: Palette.fg
 
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px12
@@ -256,7 +256,7 @@ BasePopup {
 
                                         text: Qt.formatDateTime(modelData.time, "HH:mm")
 
-                                        color: selected ? Palette.onAccent : Palette.dim
+                                        color: Palette.dim
 
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px10
@@ -270,7 +270,7 @@ BasePopup {
 
                                     text: modelData.body
 
-                                    color: selected ? Palette.onAccent : Palette.dim
+                                    color: Palette.dim
 
                                     font.family: Palette.font
                                     font.pixelSize: Palette.px12

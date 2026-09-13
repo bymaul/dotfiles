@@ -11,7 +11,7 @@ BasePopup {
 
     Shortcut {
         sequence: "Escape"
-        onActivated: bar.closePopups()
+        onActivated: bluetoothPopup.close()
     }
 
     onVisibleChanged: {
