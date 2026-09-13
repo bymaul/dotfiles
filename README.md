@@ -28,9 +28,8 @@ the repo is never touched.
 ## Requirements
 
 - **Hyprland** >= 0.56 (Lua config), **quickshell**, **kitty**, **nemo**
-- **swaybg** (wallpaper, `pacman -S swaybg`)
 - **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **yazi**, **eza**, **bat**, **fd**, **btop**
-- **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **playerctl**, **jq**, **polkit-kde-agent**
+- **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **grim**, **slurp**, **cliphist**, **jq**, **hyprpolkitagent**
 - **Nerd Font**
 
 ## Two-repo sync
