@@ -12,15 +12,23 @@ Row {
 
     spacing: 4
 
-    // Fixed slots 1..3 plus the focused one past them; the strip
-    // never grows otherwise (higher workspaces via Super+N).
+    // Fixed slots 1..3 plus every workspace that currently exists
+    // (occupied or persistent) plus the focused one; the strip only
+    // ever shows real workspaces, never guesses.
     readonly property var slotIds: {
+        const ids = new Set([1, 2, 3]);
+
+        for (const ws of Hyprland.workspaces.values) {
+            if (ws.id > 0)
+                ids.add(ws.id);
+        }
+
         const focused = Hyprland.focusedWorkspace?.id ?? 1;
 
-        if (typeof focused === "number" && focused > 3)
-            return [1, 2, 3, focused];
+        if (typeof focused === "number" && focused > 0)
+            ids.add(focused);
 
-        return [1, 2, 3];
+        return [...ids].sort((a, b) => a - b);
     }
 
     function workspaceById(id: int): var {
@@ -47,7 +55,7 @@ Row {
             required property var modelData
 
             readonly property var ws: workspaceById(modelData)
-            readonly property bool isFocused: ws ? ws.focused : Hyprland.focusedWorkspace?.id === modelData
+            readonly property bool isFocused: modelData === (Hyprland.focusedWorkspace?.id ?? -1)
 
             width: 25
             height: 25
