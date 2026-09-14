@@ -46,7 +46,6 @@ vim.pack.add {
   gh "mason-org/mason-lspconfig.nvim",
   gh "WhoIsSethDaniel/mason-tool-installer.nvim",
   gh "dmtrKovalenko/fff",
-  gh "vinitkumar/fff-plus.nvim",
 }
 
 for _, plug in ipairs(vim.pack.get()) do
