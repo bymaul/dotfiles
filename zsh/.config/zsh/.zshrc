@@ -30,7 +30,7 @@ zstyle ':completion:*' menu select
 
 # --- Integrations ---
 eval "$(zoxide init zsh)"
-eval "$(fnm env --use-on-cd --shell zsh)"
+eval "$(mise activate zsh)"
 
 # --- Config modules ---
 source "$ZDOTDIR/aliases.zsh"
