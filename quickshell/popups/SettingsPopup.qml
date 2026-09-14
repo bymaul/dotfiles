@@ -8,7 +8,7 @@ import "../Palette.js" as Palette
 // or `qs ipc call bar settings`. Applies live; monitor results toast.
 BasePopup {
     id: root
-    implicitWidth: 400
+    implicitWidth: Palette.settingsWidth
     implicitHeight: 16 + tabRow.height + Palette.popupSpacing + root.contentHeight() + Palette.popupSpacing + hint.implicitHeight
     property int tab: 0
 

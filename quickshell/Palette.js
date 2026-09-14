@@ -18,6 +18,7 @@ const px12 = 12;
 const px13 = 13;
 const px14 = 14;
 const popupWidth = 340;
+const settingsWidth = 400;
 const popupMargin = 10;
 const popupTopGap = 6;
 const popupPadding = 8;

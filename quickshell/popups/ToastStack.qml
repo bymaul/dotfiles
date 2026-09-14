@@ -6,15 +6,16 @@ import "../services" as Services
 import "../Palette.js" as Palette
 PanelWindow {
     id: root
+    required property var bar
     anchors {
         top: true
         right: true
     }
-    margins.top: root.parked ? bar.rightPopupBottom + Palette.popupSpacing : Palette.popupTopGap
+    margins.top: root.parked ? root.bar.rightPopupBottom + Palette.popupSpacing : Palette.popupTopGap
     margins.right: Palette.popupMargin
     exclusiveZone: 0
-    readonly property bool parked: bar.rightPopupBottom > 0
-    readonly property int stackWidth: root.parked ? Palette.popupWidth : Palette.toastWidth
+    readonly property bool parked: root.bar.rightPopupBottom > 0
+    readonly property int stackWidth: root.parked ? root.bar.rightPopupWidth : Palette.toastWidth
     implicitWidth: root.stackWidth
     implicitHeight: column.height
     visible: Services.Notifs.toasts.length > 0

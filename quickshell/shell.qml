@@ -94,13 +94,22 @@ ShellRoot {
         }
         property int rightPopupBottom: {
             const top = Palette.popupTopGap;
-            const popups = [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup];
+            const popups = [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, historyPanel];
             let bottom = 0;
             for (const p of popups) {
                 if (p.visible)
-                    bottom = Math.max(bottom, top + p.height);
+                    bottom = Math.max(bottom, top + (p.extraTop ?? 0) + p.height);
             }
             return bottom;
+        }
+        property int rightPopupWidth: {
+            const popups = [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, historyPanel];
+            let w = 0;
+            for (const p of popups) {
+                if (p.visible)
+                    w = Math.max(w, p.width);
+            }
+            return w > 0 ? w : Palette.popupWidth;
         }
         function closePopups(): void {
             hideAll(exclusivePopups);
@@ -358,6 +367,7 @@ ShellRoot {
     }
     ToastStack {
         id: toastStack
+        bar: bar
     }
     Screenshot {
         id: screenshotTool

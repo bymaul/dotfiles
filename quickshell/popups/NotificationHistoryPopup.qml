@@ -12,13 +12,21 @@ BasePopup {
     readonly property int listCap: Math.max(96, Math.round(Screen.height / 2) - 32 - 8)
     implicitHeight: Palette.rowHeight + (Services.Notifs.history.length > 0 ? Palette.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0)
     visible: panel.visible && Services.Notifs.history.length > 0
+    // History visibility is derived from the panel. It must never set
+    // visible directly (that breaks the binding and history stops showing).
+    function close(): void {
+        panel.close();
+    }
     function revealAt(i: int): void {
         historyList.positionViewAtIndex(i, ListView.Contain);
     }
+    // Shortcuts are window-scoped, and focus can land in either the panel
+    // or this window, so both need the same keymap forwarding to the panel.
+    // Escape closes the panel (never this window directly).
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
-        onActivated: root.close()
+        onActivated: root.panel.close()
     }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.panel.stepVertical(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.panel.stepVertical(-1) }
