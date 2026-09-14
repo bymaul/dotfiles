@@ -36,6 +36,7 @@ PKGS=(
     "dir nvim .config/nvim"
     "dir opencode .config/opencode"
     "tree starship .config"
+    "dir mise .config/mise"
     "dir yazi .config/yazi"
     "tree zsh ."
     "dir tmux .config/tmux"
@@ -256,7 +257,7 @@ fi
 log "checking requirements"
 missing=0
 for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
-           yazi eza bat fd btop wl-copy wl-paste cliphist jq \
+           yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
            brightnessctl notify-send pipewire fastfetch; do
     if ! command -v "$bin" >/dev/null 2>&1; then
         printf '  \033[1;31m%s\033[0m missing\n' "$bin"
