@@ -8,9 +8,10 @@ Rectangle {
     property bool available: true
     property bool selected: false
     property bool accentButton: false
+    property bool wide: false
     property int columns: 3
     signal clicked
-    width: (parent.width - 8) / columns
+    width: root.wide ? parent.width : (parent.width - 8) / columns
     height: Palette.tileHeight
     color: !root.available ? "transparent" : root.accentButton ? Palette.accent : root.selected ? Palette.accent : root.active ? Palette.activeBg : hover.containsMouse ? Palette.hoverBg : Palette.surface
     border.width: root.selected ? 1 : 0

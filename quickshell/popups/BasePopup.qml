@@ -8,7 +8,12 @@ PopupWindow {
     property string anchorMode: "right"
     property int extraTop: 0
     property bool useGrab: true
+    property bool preventClose: false
     property var returnTo: null
+    function regrab(): void {
+        if (!grab.active && base.visible)
+            grab.active = true;
+    }
     function close(): void {
         const back = base.returnTo;
         base.returnTo = null;
@@ -28,7 +33,12 @@ PopupWindow {
     HyprlandFocusGrab {
         id: grab
         windows: [base]
-        onCleared: base.close()
+        onCleared: {
+            if (base.preventClose)
+                base.regrab();
+            else
+                base.close();
+        }
     }
     Timer {
         id: grabTimer
@@ -44,6 +54,16 @@ PopupWindow {
                 grab.active = false;
                 grabTimer.restart();
             }
+        }
+    }
+    // A monitor mode/scale change destroys and recreates this window's
+    // surface, which clears the focus grab. Re-assert it once the new
+    // surface connects so keyboard focus is restored.
+    Connections {
+        target: base
+        function onWindowConnected(): void {
+            if (base.visible && base.useGrab && base.preventClose)
+                base.regrab();
         }
     }
 }

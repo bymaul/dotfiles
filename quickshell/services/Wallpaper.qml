@@ -18,6 +18,16 @@ Singleton {
         probe.command = ["test", "-f", root.candidates[root.probeIndex]];
         probe.running = true;
     }
+    // Called by Settings: explicit pick wins, empty resets to auto-probe.
+    function applyOverride(path: string): void {
+        if (path === "") {
+            root.probeIndex = 0;
+            root.source = "";
+            root.probeNext();
+        } else {
+            root.source = "file://" + path;
+        }
+    }
     Process {
         id: probe
         onExited: exitCode => {

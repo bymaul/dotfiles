@@ -37,7 +37,7 @@ ShellRoot {
             color: Palette.border
         }
         WlrLayershell.namespace: "qs-bar"
-        readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, passwordDialog, launcherPopup, clipboardPopup]
+        readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, passwordDialog, launcherPopup, clipboardPopup]
         function hideAll(list): void {
             for (const p of list)
                 p.visible = false;
@@ -71,6 +71,12 @@ ShellRoot {
         }
         function openPowerFromPanel(): void {
             openExclusive(powerPopup, controlPanelPopup);
+        }
+        function openSettingsFromPanel(): void {
+            openExclusive(settingsPopup, controlPanelPopup);
+        }
+        function toggleSettings(): void {
+            openExclusive(settingsPopup);
         }
         function toggleLauncher(): void {
             openExclusive(launcherPopup);
@@ -143,29 +149,14 @@ ShellRoot {
         function revealHistory(i: int): void {
             historyPanel.revealAt(i);
         }
-
-        // Remote control: qs ipc call bar closePopups | toggleControl
-        IpcHandler {
-            target: "bar"
-            function closePopups(): void {
-                bar.closePopups();
-            }
-            function toggleControl(): void {
-                bar.toggleControl();
-            }
-            function panelStep(dir: int): void {
-                controlPanelPopup.stepVertical(dir);
-            }
-            function panelActivate(): void {
-                controlPanelPopup.activateSelected();
-            }
-            function lock(): void {
-                bar.lockScreen();
-            }
-            function screenshot(mode: string): void {
-                bar.screenshot(mode);
-            }
+        function panelStep(dir: int): void {
+            controlPanelPopup.stepVertical(dir);
         }
+        function panelActivate(): void {
+            controlPanelPopup.activateSelected();
+        }
+
+        // Remote control (qs ipc call bar ...) lives directly under ShellRoot.
         property var wifiDevice: {
             const devices = Networking.devices.values;
             return devices.find(device => device.type === DeviceType.Wifi) ?? null;
@@ -257,6 +248,11 @@ ShellRoot {
             bar: bar
         }
 
+        SettingsPopup {
+            id: settingsPopup
+            bar: bar
+        }
+
         PasswordDialog {
             id: passwordDialog
             bar: bar
@@ -276,6 +272,7 @@ ShellRoot {
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Control Panel"; description: "Open the control panel"; onPressed: bar.toggleControl() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Launcher"; description: "Open the application launcher"; onPressed: bar.toggleLauncher() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Clipboard"; description: "Open the clipboard history picker"; onPressed: bar.toggleClipboard() }
+        GlobalShortcut { appid: "qs-bar"; name: "Settings"; description: "Open settings"; onPressed: bar.toggleSettings() }
         GlobalShortcut { appid: "qs-bar"; name: "Lock Screen"; description: "Lock the session"; onPressed: bar.lockScreen() }
         GlobalShortcut { appid: "qs-bar"; name: "Screenshot Area"; description: "Screenshot a selected area"; onPressed: bar.screenshot("area") }
         GlobalShortcut { appid: "qs-bar"; name: "Screenshot Full"; description: "Screenshot the full screen"; onPressed: bar.screenshot("full") }
@@ -291,6 +288,35 @@ ShellRoot {
         GlobalShortcut { appid: "qs-bar"; name: "Media Previous"; description: "Previous media track"; onPressed: Services.Media.mediaPrev() }
         GlobalShortcut { appid: "qs-bar"; name: "Brightness Up"; description: "Raise the brightness"; onPressed: Services.Media.brightnessUp() }
         GlobalShortcut { appid: "qs-bar"; name: "Brightness Down"; description: "Lower the brightness"; onPressed: Services.Media.brightnessDown() }
+    }
+
+    // Remote control (qs ipc call bar ...). Lives directly under ShellRoot.
+    IpcHandler {
+        target: "bar"
+        function closePopups(): void {
+            bar.closePopups();
+        }
+        function toggleControl(): void {
+            bar.toggleControl();
+        }
+        function settings(): void {
+            bar.toggleSettings();
+        }
+            function settingsState(): string {
+                return JSON.stringify({monitors: Services.Settings.monitors, configs: Services.Settings.monitorConfigs, lastApply: Services.Settings.lastApplyMsg, monitorsReady: Services.Settings.monitorsReady, canDisableEdp: Services.Settings.monitors.length > 0 ? Services.Settings.canDisableMonitor(Services.Settings.monitors[0].name) : null});
+            }
+        function panelStep(dir: int): void {
+            bar.panelStep(dir);
+        }
+        function panelActivate(): void {
+            bar.panelActivate();
+        }
+        function lock(): void {
+            bar.lockScreen();
+        }
+        function screenshot(mode: string): void {
+            bar.screenshot(mode);
+        }
     }
 
     Variants {

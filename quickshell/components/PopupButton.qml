@@ -7,7 +7,8 @@ Rectangle {
     property bool accent: false
     property int columns: 2
     signal clicked
-    width: (parent.width - Palette.popupSpacing) / columns
+    // N buttons share the row exactly: total = columns * width + (columns - 1) * spacing.
+    width: (parent.width - (columns - 1) * Palette.popupSpacing) / columns
     height: Palette.rowHeight
     color: root.accent ? Palette.accent : hover.containsMouse ? Palette.hoverBg : Palette.surface
     border.width: root.selected ? 1 : 0

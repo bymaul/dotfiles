@@ -10,7 +10,7 @@ BasePopup {
     id: root
     useGrab: false
     implicitWidth: Palette.popupWidth
-    implicitHeight: (Services.Media.brightnessAvailable ? 212 : 168) + (root.mprisPlayer !== null ? Palette.rowHeight + Palette.popupSpacing : 0) + (Services.Notifs.history.length > 0 ? 12 : 0)
+    implicitHeight: (Services.Media.brightnessAvailable ? 258 : 214) + (root.mprisPlayer !== null ? Palette.rowHeight + Palette.popupSpacing : 0) + (Services.Notifs.history.length > 0 ? 12 : 0)
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
@@ -56,7 +56,7 @@ BasePopup {
         return root.volumeIdx() + 1;
     }
     function firstHistIdx(): int {
-        return root.firstTileIdx() + 6;
+        return root.firstTileIdx() + 7;
     }
     function itemCount(): int {
         return root.firstHistIdx() + Services.Notifs.history.length;
@@ -142,7 +142,7 @@ BasePopup {
             root.clampSelection();
             return;
         }
-        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openPowerFromPanel()];
+        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openPowerFromPanel(), () => bar.openSettingsFromPanel()];
         actions[root.selectedTile()]();
     }
     function invokeSelectedAction(): void {
@@ -363,6 +363,13 @@ BasePopup {
                 active: false
                 selected: root.selectedIndex === root.firstTileIdx() + 5
                 onTileClicked: bar.openPowerFromPanel()
+            }
+            ToggleTile {
+                glyph: ""
+                label: "Settings"
+                active: false
+                selected: root.selectedIndex === root.firstTileIdx() + 6
+                onTileClicked: bar.openSettingsFromPanel()
             }
         }
         HintText {

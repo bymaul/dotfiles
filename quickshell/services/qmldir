@@ -4,4 +4,5 @@ singleton Modes 1.0 Modes.qml
 singleton Notifs 1.0 Notifs.qml
 singleton Perf 1.0 Perf.qml
 singleton RunMode 1.0 RunMode.qml
+singleton Settings 1.0 Settings.qml
 singleton Wallpaper 1.0 Wallpaper.qml
