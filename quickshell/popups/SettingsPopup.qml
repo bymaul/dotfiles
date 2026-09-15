@@ -3,9 +3,6 @@ import "../components"
 import "../services" as Services
 import "../Palette.js" as Palette
 
-// Settings GUI: Appearance | Hyprland | System | Monitors tabs.
-// Opened from the control panel (returns there on close), via Super+comma,
-// or `qs ipc call bar settings`. Applies live; monitor results toast.
 BasePopup {
     id: root
     implicitWidth: Palette.settingsWidth
@@ -92,9 +89,6 @@ BasePopup {
     function clampSelection(): void {
         selectedIndex = Palette.clamp(selectedIndex, 0, Math.max(0, root.itemCount() - 1));
     }
-    // Single place keeping keyboard selection and list highlight in sync.
-    // ListView resets currentIndex to 0 whenever its model array is replaced,
-    // so this must run after wallpaper scans too, not just on keypress.
     function syncWallCursor(): void {
         root.clampSelection();
         if (root.tab === 0 && selectedIndex >= 1 && selectedIndex <= root.wpCount)
@@ -478,7 +472,7 @@ BasePopup {
                 width: parent.width
                 height: 22
                 verticalAlignment: Text.AlignVCenter
-                text: "Main display (bar + toasts)"
+                text: "Main display"
                 color: Palette.fg
                 font.family: Palette.font
                 font.pixelSize: Palette.px12

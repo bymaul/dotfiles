@@ -24,7 +24,6 @@ ShellRoot {
             right: true
         }
 
-        // Single bar on the configured main display ("auto" = default).
         property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
         screen: bar.mainScreen
 
@@ -205,7 +204,6 @@ ShellRoot {
             controlPanelPopup.activateSelected();
         }
 
-        // Remote control (qs ipc call bar ...) lives directly under ShellRoot.
         property var wifiDevice: {
             const devices = Networking.devices?.values ?? [];
             return devices.find(device => device.type === DeviceType.Wifi) ?? null;
@@ -340,7 +338,6 @@ ShellRoot {
         GlobalShortcut { appid: "qs-bar"; name: "Brightness Down"; description: "Lower the brightness"; onPressed: Services.Media.brightnessDown() }
     }
 
-    // Remote control (qs ipc call bar ...). Lives directly under ShellRoot.
     IpcHandler {
         target: "bar"
         function closePopups(): void {

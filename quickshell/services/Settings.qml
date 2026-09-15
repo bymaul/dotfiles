@@ -3,11 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Shell-owned settings: persisted to JSON, applied live.
-// Hyprland look/feel applies at runtime via `hyprctl eval` (the Lua config
-// rejects `hyprctl keyword`: "can't work with non-legacy parsers").
-// hyprland.lua keeps the defaults; this store is an overlay re-applied on
-// startup. Idle timeouts regenerate hypridle.conf + restart hypridle.
 Singleton {
     id: settings
 
@@ -112,8 +107,6 @@ Singleton {
     function hypr(key: string, value: string): void {
         Quickshell.execDetached(["hyprctl", "eval", settings.luaFor(key, value)]);
     }
-    // "general:gaps_in" + "5" -> hl.config({general = {gaps_in = 5}})
-    // "input:touchpad:natural_scroll" + "false" -> hl.config({input = {...}})
     function luaVal(v: string): string {
         if (v === "true" || v === "false")
             return v;
@@ -133,7 +126,6 @@ Singleton {
         return "hl.config({" + inner + "})";
     }
 
-    // Push the full overlay to a live compositor (called after load).
     function applyAll(): void {
         settings.hypr("decoration:blur:enabled", settings.blurEnabled ? "true" : "false");
         settings.applyTransparency();
@@ -143,9 +135,6 @@ Singleton {
         settings.hypr("input:touchpad:natural_scroll", settings.naturalScroll ? "true" : "false");
         Wallpaper.applyOverride(settings.wallpaperOverride);
     }
-    // First monitor scan completion AND settings load (whichever comes
-    // last): mark ready, then push stored configs once. Later scans only
-    // refresh the list; user actions apply live.
     function applyScannedMonitors(): void {
         if (!settings.monitorsReady || !settings.loaded || settings.monitorsApplied)
             return;
@@ -223,15 +212,10 @@ Singleton {
         const live = settings.monitorLive(name);
         return live ? live.disabled !== true : true;
     }
-    // The last enabled display must stay on - disabling it leaves the
-    // session with no output (and the stale config would re-disable it
-    // on every startup). Empty list = unknown, don't block.
     function enabledMonitors(): var {
         return settings.monitors.filter(m => m && settings.monitorEnabled(m.name));
     }
     function canDisableMonitor(name: string): bool {
-        // List not scanned yet (e.g. right after login): can't judge, allow.
-        // Startup applies run after the first scan, so they stay correct.
         if (!settings.monitorsReady)
             return true;
         const enabled = settings.enabledMonitors();
@@ -282,7 +266,6 @@ Singleton {
         const q = !!quiet;
         if (!settings.monitorEnabled(name)) {
             if (!settings.canDisableMonitor(name)) {
-                // Heal persisted state: never boot with zero displays.
                 settings.putMonitorCfg(name, {enabled: true});
                 settings.lastApplyMsg = name + " kept enabled (only display)";
                 settings.scheduleSave();
@@ -295,11 +278,6 @@ Singleton {
         const desc = name + " -> " + settings.monitorRes(name) + " x" + scale;
         settings.applyTracked(desc, 'hl.monitor({output = "' + name + '", mode = "' + settings.monitorRes(name) + '", position = "auto", scale = "' + scale + '"})', q);
     }
-    // Result-checked hyprctl eval with user feedback. Plain hypr() stays
-    // for look/input; monitor changes go through here. hyprctl exits 0
-    // even when it refuses work, so eval error text also counts as failure.
-    // Jobs run serially; toasts share one syncId so slider drags replace
-    // instead of flooding.
     function applyTracked(label: string, code: string, quiet: bool): void {
         settings.applyQueue = [...settings.applyQueue, {label: label, code: code, quiet: !!quiet}];
         settings.pumpApply();
@@ -345,11 +323,8 @@ Singleton {
         settings.scheduleSave();
     }
 
-    // Monitors, keyed by connector name (e.g. "eDP-1").
-    // Live list comes from `hyprctl monitors -j`; configs overlay it.
     property var monitors: []
     property var monitorConfigs: ({})
-    // Main display for the single bar + toasts ("auto" = compositor default).
     property string mainMonitor: "auto"
     function setMainMonitor(name: string): void {
         settings.mainMonitor = (typeof name === "string" && name !== "") ? name : "auto";
@@ -368,7 +343,6 @@ Singleton {
     property bool monitorsReady: false
     property bool monitorsApplied: false
 
-    // System (idle): update, rewrite hypridle.conf, restart daemon, persist
     function setDimTimeout(v: real): void {
         settings.dimTimeout = Math.round(Math.max(0, Math.min(600, v)));
         settings.writeIdleConf();
@@ -437,7 +411,6 @@ Singleton {
         idleWriter.running = true;
     }
 
-    // Persistence (same mkdir+printf pattern as LaunchHistory)
     property bool saveQueued: false
     function scheduleSave(): void {
         if (!settings.loaded)

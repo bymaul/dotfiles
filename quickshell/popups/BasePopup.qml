@@ -62,9 +62,6 @@ PopupWindow {
             }
         }
     }
-    // A monitor mode/scale change destroys and recreates this window's
-    // surface, which clears the focus grab. Re-assert it once the new
-    // surface connects so keyboard focus is restored.
     Connections {
         target: base
         function onWindowConnected(): void {

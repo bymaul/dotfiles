@@ -259,10 +259,44 @@ BasePopup {
         }
         return null;
     }
+    function asList(v): var {
+        if (v === null || v === undefined)
+            return [];
+        if (typeof v === "string")
+            return [v];
+        if (Array.isArray(v))
+            return v.slice();
+        if (typeof v.length === "number") {
+            const out = [];
+            for (let i = 0; i < v.length; ++i)
+                out.push(v[i]);
+            return out;
+        }
+        return [v];
+    }
+    function sanitizeExec(cmd: var): var {
+        const out = [];
+        for (const a of root.asList(cmd)) {
+            if (typeof a !== "string")
+                continue;
+            if (/^%(f|F|u|U|d|D|n|N|i|c|k|v|m)$/.test(a))
+                continue;
+            let b = a.replace(/%%/g, "%");
+            const attached = b.match(/^(.*)=%[a-zA-Z]$/);
+            if (attached)
+                b = attached[1] + "=";
+            if (b === "")
+                continue;
+            out.push(b);
+        }
+        return out;
+    }
     function runApp(entry: var): void {
         if (!entry || !entry.command)
             return;
-        const cmd = Array.isArray(entry.command) ? entry.command : [entry.command];
+        const cmd = root.sanitizeExec(entry.command);
+        if (cmd.length === 0)
+            return;
         root.run(entry.runInTerminal ? ["kitty"].concat(cmd) : cmd);
     }
     function run(cmd: var): void {

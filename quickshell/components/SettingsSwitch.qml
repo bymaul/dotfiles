@@ -1,7 +1,6 @@
 import QtQuick
 import "../Palette.js" as Palette
 
-// Small on/off pill. Width reserves room for the value label in SettingsRow.
 Item {
     id: root
     required property bool on
