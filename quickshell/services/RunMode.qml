@@ -1,0 +1,22 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+Singleton {
+    id: runMode
+    property var binaries: []
+    function refresh(): void {
+        if (!scanner.running)
+            scanner.running = true;
+    }
+    Process {
+        id: scanner
+        command: ["sh", "-c", "printf '%s' \"$PATH\" | tr ':' '\\n' | while read -r d; do [ -n \"$d\" ] && find \"$d\" -maxdepth 1 \\( -type f -o -type l \\) -perm /111 -printf '%f\\n' 2>/dev/null; done | sort -u"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const names = text.trim().split("\n").filter(n => n !== "");
+                runMode.binaries = names.map(n => ({name: n, ln: n.toLowerCase()}));
+            }
+        }
+    }
+}

@@ -4,7 +4,7 @@
 #   ./install.sh                   install (link packages, warn on missing deps)
 #   ./install.sh --remove [pkg...] unlink packages (default: all of them)
 #
-# Each app lives in its own flat package dir (e.g. waybar/ -> ~/.config/waybar).
+# Each app lives in its own flat package dir (e.g. kitty/ -> ~/.config/kitty).
 # Dedicated app dirs are folded into ONE symlink, so files added to the repo
 # later show up automatically. Shared parents (~/.config root, $HOME,
 # ~/.local/bin) get their entries linked individually. Unmanaged dirs
@@ -26,9 +26,7 @@ usage() {
 # "tree" link each entry into an existing shared target
 PKGS=(
     "dir hypr .config/hypr"
-    "dir waybar .config/waybar"
-    "dir mako .config/mako"
-    "dir rofi .config/rofi"
+    "dir quickshell .config/quickshell"
     "dir kitty .config/kitty"
     "dir bat .config/bat"
     "dir btop .config/btop"
@@ -38,7 +36,7 @@ PKGS=(
     "dir nvim .config/nvim"
     "dir opencode .config/opencode"
     "tree starship .config"
-    "dir wleave .config/wleave"
+    "dir mise .config/mise"
     "dir yazi .config/yazi"
     "tree zsh ."
     "dir tmux .config/tmux"
@@ -258,9 +256,9 @@ fi
 # requirements check (warn-only; full list in README)
 log "checking requirements"
 missing=0
-for bin in hyprctl waybar mako rofi kitty nvim tmux zsh starship lazygit \
-           yazi eza bat fd btop wl-copy wl-paste grim slurp cliphist jq \
-           playerctl brightnessctl notify-send pipewire swaybg fastfetch; do
+for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
+           yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
+           brightnessctl notify-send pipewire fastfetch; do
     if ! command -v "$bin" >/dev/null 2>&1; then
         printf '  \033[1;31m%s\033[0m missing\n' "$bin"
         missing=1

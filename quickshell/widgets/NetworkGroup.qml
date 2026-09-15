@@ -1,0 +1,28 @@
+import QtQuick
+import "../Palette.js" as Palette
+Item {
+    id: root
+    required property var bar
+    implicitWidth: row.width
+    implicitHeight: row.height
+    width: row.width
+    height: row.height
+    Row {
+        id: row
+        spacing: Palette.groupSpacing
+        WifiIcon {
+            bar: root.bar
+        }
+        BluetoothIcon {
+            bar: root.bar
+        }
+        VolumeIcon {
+            bar: root.bar
+        }
+    }
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onClicked: bar.toggleControl()
+    }
+}

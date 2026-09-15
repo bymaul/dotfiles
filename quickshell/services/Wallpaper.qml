@@ -1,0 +1,44 @@
+pragma Singleton
+import QtQuick
+import Quickshell
+import Quickshell.Io
+
+// Single-wallpaper resolver (no switcher by design).
+// Per-screen windows in shell.qml bind to `source`.
+Singleton {
+    id: root
+    property string source: ""
+    property int probeIndex: 0
+    readonly property string homeDir: Quickshell.env("HOME") ?? ""
+    readonly property var candidates: (root.homeDir !== "" ? [root.homeDir + "/dotfiles/wallpapers/wallpaper.jpg"] : []).concat([Quickshell.shellDir + "/wallpaper.jpg"])
+    function probeNext(): void {
+        if (root.probeIndex >= root.candidates.length) {
+            console.warn("[wallpaper] no wallpaper found, tried: " + root.candidates.join(", "));
+            return;
+        }
+        probe.command = ["test", "-r", root.candidates[root.probeIndex]];
+        probe.running = true;
+    }
+    // Called by Settings: explicit pick wins, empty resets to auto-probe.
+    function applyOverride(path: string): void {
+        if (path === "") {
+            root.probeIndex = 0;
+            root.source = "";
+            root.probeNext();
+        } else if (typeof path === "string" && path !== "") {
+            root.source = "file://" + path;
+        }
+    }
+    Process {
+        id: probe
+        onExited: exitCode => {
+            if (exitCode === 0)
+                root.source = "file://" + root.candidates[root.probeIndex];
+            else {
+                root.probeIndex++;
+                root.probeNext();
+            }
+        }
+        Component.onCompleted: root.probeNext()
+    }
+}

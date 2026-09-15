@@ -18,23 +18,16 @@ hl.monitor({
 
 local terminal = "kitty"
 local fileManager = "nemo"
-local menu = "rofi"
-local browser = "helium-browser"
-
-local dotfiles = os.getenv("DOTFILES") or os.getenv("HOME") .. "/dotfiles"
 
 -------------------
 ---- AUTOSTART ----
 -------------------
 
 hl.on("hyprland.start", function()
-	hl.exec_cmd("waybar")
+	hl.exec_cmd("qs")
 	hl.exec_cmd("hypridle")
-	hl.exec_cmd("mako")
 	hl.exec_cmd("wl-paste --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
-	-- wallpaper lives next to this repo; resolve via $DOTFILES (falls back to ~/dotfiles)
-	hl.exec_cmd("swaybg -i " .. dotfiles .. "/wallpapers/wallpaper.jpg -m fill")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
@@ -45,22 +38,18 @@ end)
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+hl.env("QS_ICON_THEME", "Adwaita")
 
 -----------------------
 ---- LOOK AND FEEL ----
 -----------------------
 
--- palette
-local bg = "0x141415"
-local fg = "0xcdcdcd"
-local fgDim = "0x606079"
-
 hl.config({
 	general = {
-		gaps_in = 5,
-		gaps_out = 10,
+		gaps_in = 3,
+		gaps_out = 6,
 
-		border_size = 2,
+		border_size = 1,
 
 		col = {
 			active_border = { colors = { "rgba(cdcdcdcc)", "rgba(606079cc)" }, angle = 45 },
@@ -84,7 +73,7 @@ hl.config({
 			enabled = true,
 			range = 10,
 			render_power = 2,
-			color = 0xee000000,
+			color = "0xee000000",
 		},
 
 		blur = {
@@ -190,19 +179,17 @@ local mainMod = "SUPER"
 local secondMod = "SUPER + SHIFT"
 
 -- Launch
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
+hl.bind(mainMod .. " + B", hl.dsp.global("qs-bar:Toggle Control Panel"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show drun"))
-hl.bind(secondMod .. " + Space", hl.dsp.exec_cmd(menu .. " -show run"))
+hl.bind(mainMod .. " + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
+hl.bind(mainMod .. " + comma", hl.dsp.global("qs-bar:Settings"))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
 -- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("/home/maul/.local/bin/clipboard-pick"))
-hl.bind(secondMod .. " + V", hl.dsp.exec_cmd("/home/maul/.local/bin/clipboard-pick delete"))
-hl.bind(secondMod .. " + BackSpace", hl.dsp.exec_cmd("/home/maul/.local/bin/clipboard-pick clear"))
+hl.bind(mainMod .. " + V", hl.dsp.global("qs-bar:Toggle Clipboard"))
 
 -- Move focus (vim)
 hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
@@ -227,69 +214,40 @@ end
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
--- Cycle used workspaces (Windows-style)
-hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("/home/maul/.local/bin/ws-cycle next"))
-hl.bind(secondMod .. " + Tab", hl.dsp.exec_cmd("/home/maul/.local/bin/ws-cycle prev"))
-
 -- Move/resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- System actions
-hl.bind(secondMod .. " + Q", hl.dsp.exec_cmd("wleave"))
-hl.bind(secondMod .. " + C", hl.dsp.exec_cmd("/home/maul/.local/bin/caffeine-toggle"))
-hl.bind(secondMod .. " + D", hl.dsp.exec_cmd("/home/maul/.local/bin/dnd-toggle"))
-hl.bind(mainMod .. " + CTRL + L", hl.dsp.exec_cmd("hyprlock"), { locked = true })
+hl.bind(secondMod .. " + Q", hl.dsp.global("qs-bar:Toggle Power Menu"))
+hl.bind(secondMod .. " + C", hl.dsp.global("qs-bar:Toggle Caffeine"))
+hl.bind(secondMod .. " + D", hl.dsp.global("qs-bar:Toggle DND"))
+hl.bind(mainMod .. " + CTRL + L", hl.dsp.global("qs-bar:Lock Screen"), { locked = true })
 
 -- Screenshots
 -- saves to ~/Pictures/Screenshots, copies to the live clipboard, notifies.
 -- the image watcher stores clipboard history.
-hl.bind("Print", hl.dsp.exec_cmd("/home/maul/.local/bin/screenshot area"))
-hl.bind(mainMod .. " + Print", hl.dsp.exec_cmd("/home/maul/.local/bin/screenshot full"))
+-- Screenshots (in-shell capture, clipboard + toast handled by quickshell)
+hl.bind("Print", hl.dsp.global("qs-bar:Screenshot Area"))
+hl.bind(mainMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Full"))
+hl.bind(secondMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Window"))
 
--- Laptop multimedia keys
-hl.bind(
-	"XF86AudioRaiseVolume",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume up"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86AudioLowerVolume",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume down"),
-	{ locked = true, repeating = true }
-)
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mute"), { locked = true, repeating = true })
-hl.bind(
-	"XF86AudioMicMute",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-volume mic"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86MonBrightnessUp",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness up"),
-	{ locked = true, repeating = true }
-)
-hl.bind(
-	"XF86MonBrightnessDown",
-	hl.dsp.exec_cmd("/home/maul/.local/bin/osd-brightness down"),
-	{ locked = true, repeating = true }
-)
+-- Laptop multimedia keys (handled + displayed by quickshell)
+hl.bind("XF86AudioRaiseVolume", hl.dsp.global("qs-bar:Volume Up"), { locked = true, repeating = true })
+hl.bind("XF86AudioLowerVolume", hl.dsp.global("qs-bar:Volume Down"), { locked = true, repeating = true })
+hl.bind("XF86AudioMute", hl.dsp.global("qs-bar:Volume Mute"), { locked = true, repeating = true })
+hl.bind("XF86AudioMicMute", hl.dsp.global("qs-bar:Mic Mute"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessUp", hl.dsp.global("qs-bar:Brightness Up"), { locked = true, repeating = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.global("qs-bar:Brightness Down"), { locked = true, repeating = true })
 
-hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.global("qs-bar:Media Next"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = true })
+hl.bind("XF86AudioPlay", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.global("qs-bar:Media Previous"), { locked = true })
 
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
 --------------------------------
-
-local suppressMaximizeRule = hl.window_rule({
-	name = "suppress-maximize-events",
-	match = { class = ".*" },
-
-	suppress_event = "maximize",
-})
 
 hl.window_rule({
 	name = "fix-xwayland-drags",
@@ -313,56 +271,35 @@ hl.window_rule({
 	opacity = "0.8 override 0.8 override",
 })
 
-hl.window_rule({
-	name = "rofi-float",
-	match = { class = "rofi" },
-
-	float = true,
-	border_size = 0,
-	rounding = 0,
-})
-
-hl.window_rule({
-	name = "wleave-float",
-	match = { class = "wleave" },
-
-	float = true,
-	border_size = 0,
-	rounding = 0,
-})
-
 hl.layer_rule({
-	name = "wleave-glass",
-	match = { namespace = "wleave" },
+	name = "qs-bar-glass",
+	match = { namespace = "qs-bar" },
 	blur = true,
 	ignore_alpha = 0.1,
 })
 
 hl.layer_rule({
-	name = "waybar-glass",
-	match = { namespace = "waybar" },
+	name = "qs-notifications-glass",
+	match = { namespace = "qs-notifications" },
 	blur = true,
 	ignore_alpha = 0.1,
+	-- Toasts must pop instantly: the stack surface maps fresh on
+	-- every first toast, and a fade there reads as
+	-- translucent/slow loading.
+	no_anim = true,
+})
+
+-- Screenshot picker vs toasts: both live on the Overlay layer, so
+-- pin the stacking explicitly. Higher order renders on top: toasts
+-- always stay visible (and clickable) above the area picker.
+hl.layer_rule({
+	name = "qs-picker-order",
+	match = { namespace = "qs-screenshot-picker" },
+	order = 10,
 })
 
 hl.layer_rule({
-	name = "mako-glass",
-	match = { namespace = "notifications" },
-	blur = true,
-	ignore_alpha = 0.1,
-})
-
-hl.window_rule({
-	name = "float-btop",
-	match = { class = "btop" },
-})
-
-hl.window_rule({
-	name = "float-bluetui",
-	match = { class = "bluetui" },
-})
-
-hl.window_rule({
-	name = "float-wifitui",
-	match = { class = "wifitui" },
+	name = "qs-notifications-order",
+	match = { namespace = "qs-notifications" },
+	order = 20,
 })
