@@ -184,6 +184,7 @@ ShellRoot {
                     const missing = text.trim().split("\n").filter(s => s !== "");
                     if (missing.length === 0)
                         return;
+                    console.warn("quickshell: missing helper binaries: " + missing.join(", "));
                     if (missing.includes("notify-send"))
                         return;
                     Quickshell.execDetached(["notify-send", "-a", "quickshell", "-t", "8000", "-i", "dialog-warning-symbolic", "Missing helper binaries", missing.join(", ")]);

@@ -20,8 +20,12 @@ Singleton {
     }
     function volumeToast(): void {
         const audio = media.sink?.audio;
-        const muted = audio?.muted ?? false;
-        const pct = Math.round((audio?.volume ?? 0) * 100);
+        if (!audio) {
+            media.osd({app: "volume", summary: "No audio device", body: "Volume unavailable", icon: "audio-volume-muted-symbolic", syncId: "volume"});
+            return;
+        }
+        const muted = audio.muted ?? false;
+        const pct = Math.round((audio.volume ?? 0) * 100);
         if (muted) {
             media.osd({app: "volume", summary: "Muted", body: "Volume " + pct + "%", icon: "audio-volume-muted-symbolic", syncId: "volume"});
             return;
@@ -30,10 +34,19 @@ Singleton {
         media.osd({app: "volume", summary: pct + "%", body: "Volume", icon: icon, value: pct, syncId: "volume"});
     }
     function micToast(): void {
-        const muted = media.source?.audio?.muted ?? false;
+        const audio = media.source?.audio;
+        if (!audio) {
+            media.osd({app: "volume", summary: "No mic device", body: "Mic unavailable", icon: "microphone-sensitivity-muted-symbolic"});
+            return;
+        }
+        const muted = audio.muted ?? false;
         media.osd({app: "volume", summary: muted ? "Mic Muted" : "Mic", body: "Mic", icon: muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"});
     }
     function brightnessToast(): void {
+        if (!media.brightnessAvailable) {
+            media.osd({app: "brightness", summary: "No display control", body: "Brightness unavailable", icon: "display-brightness-symbolic", syncId: "brightness"});
+            return;
+        }
         const pct = Math.round(media.brightness);
         media.osd({app: "brightness", summary: pct + "%", body: "Brightness", icon: "display-brightness-symbolic", value: pct, syncId: "brightness"});
     }

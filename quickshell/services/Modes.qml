@@ -7,9 +7,16 @@ Singleton {
     id: modes
     property bool caffeineActive: false
     property bool dndActive: false
+    function setCaffeine(on: bool): void {
+        modes.caffeineActive = on;
+        Notifs.notify({app: "caffeine", summary: on ? "Caffeine on" : "Caffeine off", syncId: "caffeine", timeout: Palette.osdTimeout});
+    }
     function toggleCaffeine(): void {
-        modes.caffeineActive = !modes.caffeineActive;
-        Notifs.notify({app: "caffeine", summary: modes.caffeineActive ? "Caffeine on" : "Caffeine off", syncId: "caffeine", timeout: Palette.osdTimeout});
+        if (!modes.caffeineActive) {
+            caffeineCheck.running = true;
+            return;
+        }
+        modes.setCaffeine(false);
     }
     function toggleDnd(): void {
         modes.dndActive = !modes.dndActive;
@@ -19,6 +26,16 @@ Singleton {
         id: inhibitProc
         command: ["systemd-inhibit", "--what=idle", "--who=Quickshell", "--why=Caffeine mode", "sleep", "infinity"]
         running: modes.caffeineActive
+    }
+    Process {
+        id: caffeineCheck
+        command: ["sh", "-c", "command -v systemd-inhibit >/dev/null"]
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                Notifs.notify({app: "caffeine", summary: "Caffeine unavailable", body: "systemd-inhibit not found", timeout: Palette.osdTimeout});
+            else
+                modes.setCaffeine(true);
+        }
     }
     Process {
         id: staleLockCleanup

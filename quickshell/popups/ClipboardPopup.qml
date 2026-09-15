@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import "../components"
+import "../services" as Services
 import "../Palette.js" as Palette
 BasePopup {
     id: root
@@ -115,12 +116,13 @@ BasePopup {
         Quickshell.execDetached(["cliphist", "wipe"]);
     }
     function copySelection(entry: var): void {
-        if (copyProbe.running)
+        if (!entry || copyProbe.running)
             return;
-        bar.closePopups();
+        root.pendingCopy = entry;
         copyProbe.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist decode | wl-copy', "qs", entry.line];
         copyProbe.running = true;
     }
+    property var pendingCopy: null
     Process {
         id: deleteProbe
         onExited: exitCode => {
@@ -138,8 +140,15 @@ BasePopup {
     Process {
         id: copyProbe
         onExited: exitCode => {
-            if (exitCode !== 0)
+            const entry = root.pendingCopy;
+            root.pendingCopy = null;
+            if (exitCode !== 0) {
+                Services.Notifs.notify({app: "clipboard", summary: "Copy failed", body: "cliphist decode or wl-copy failed", timeout: 5000});
                 return;
+            }
+            if (!entry)
+                return;
+            bar.closePopups();
             pasteTimer.start();
         }
     }

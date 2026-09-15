@@ -13,7 +13,8 @@ Singleton {
     property bool rewriting: false
     readonly property string historyFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
-        const base = xdg !== "" ? xdg : (Quickshell.env("HOME") ?? "") + "/.local/share";
+        const home = Quickshell.env("HOME") ?? "";
+        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
         return base + "/quickshell/launch-history.jsonl";
     }
     function lookup(key: string): var {
@@ -83,7 +84,7 @@ Singleton {
     }
     Process {
         id: reader
-        command: ["cat", launchHistory.historyFile]
+        command: ["sh", "-c", 'tail -n 2000 "$1" 2>/dev/null || cat "$1" 2>/dev/null', "qs", launchHistory.historyFile]
         stdout: StdioCollector {
             onStreamFinished: {
                 const counts = launchHistory.counts;

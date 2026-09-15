@@ -89,9 +89,19 @@ Singleton {
         if (obj.monitorConfigs && typeof obj.monitorConfigs === "object") {
             const clean = {};
             for (const name of Object.keys(obj.monitorConfigs)) {
+                if (typeof name !== "string" || name === "")
+                    continue;
                 const e = obj.monitorConfigs[name];
-                if (e && typeof e === "object")
-                    clean[name] = e;
+                if (!e || typeof e !== "object")
+                    continue;
+                const entry = {};
+                if (typeof e.enabled === "boolean")
+                    entry.enabled = e.enabled;
+                if (typeof e.scale === "number" && !isNaN(e.scale))
+                    entry.scale = Math.max(0.5, Math.min(3, e.scale));
+                if (typeof e.res === "string" && e.res !== "")
+                    entry.res = e.res.slice(0, 64);
+                clean[name] = entry;
             }
             settings.monitorConfigs = clean;
         }
@@ -258,9 +268,10 @@ Singleton {
     }
     function monitorSummary(name: string): string {
         const live = settings.monitorLive(name);
-        if (!live)
+        if (!live || typeof live.width !== "number" || typeof live.height !== "number")
             return name;
-        let s = name + "  " + live.width + "x" + live.height + "@" + live.refreshRate + "  x" + settings.monitorScale(name);
+        const rate = typeof live.refreshRate === "number" ? live.refreshRate : "?";
+        let s = name + "  " + live.width + "x" + live.height + "@" + rate + "  x" + settings.monitorScale(name);
         if (live.disabled === true)
             s += "  (disabled)";
         return s;
@@ -440,11 +451,21 @@ Singleton {
         command: ["cat", settings.settingsFile]
         stdout: StdioCollector {
             onStreamFinished: {
+                let parsed = null;
+                let corrupt = false;
                 try {
-                    settings.applyLoaded(JSON.parse(text));
-                } catch (_) {}
+                    parsed = JSON.parse(text);
+                } catch (_) {
+                    corrupt = text.trim() !== "";
+                }
+                if (corrupt) {
+                    console.warn("quickshell: settings.json corrupt, keeping defaults; backup at settings.json.corrupt-" + Date.now());
+                    Quickshell.execDetached(["sh", "-c", 'cp "$1" "$1.corrupt-$(date +%s)" 2>/dev/null', "qs", settings.settingsFile]);
+                } else {
+                    settings.applyLoaded(parsed);
+                }
                 settings.loaded = true;
-                if (text.trim() !== "")
+                if (!corrupt && text.trim() !== "")
                     settings.applyAll();
                 settings.applyScannedMonitors();
             }
@@ -501,7 +522,7 @@ Singleton {
         }
         onExited: exitCode => {
             const detail = (monErr.text + " " + monOut.text).trim();
-            const failed = exitCode !== 0 || /error/i.test(detail);
+            const failed = exitCode !== 0 || /error|failed|invalid|unknown|not found|no such/i.test(detail);
             if (!failed) {
                 settings.lastApplyMsg = monApply.jobLabel + " applied";
                 if (!monApply.jobQuiet)

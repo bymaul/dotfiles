@@ -9,13 +9,14 @@ Singleton {
     id: root
     property string source: ""
     property int probeIndex: 0
-    readonly property var candidates: [Quickshell.env("HOME") + "/dotfiles/wallpapers/wallpaper.jpg", Quickshell.shellDir + "/wallpaper.jpg"]
+    readonly property string homeDir: Quickshell.env("HOME") ?? ""
+    readonly property var candidates: (root.homeDir !== "" ? [root.homeDir + "/dotfiles/wallpapers/wallpaper.jpg"] : []).concat([Quickshell.shellDir + "/wallpaper.jpg"])
     function probeNext(): void {
         if (root.probeIndex >= root.candidates.length) {
             console.warn("[wallpaper] no wallpaper found, tried: " + root.candidates.join(", "));
             return;
         }
-        probe.command = ["test", "-f", root.candidates[root.probeIndex]];
+        probe.command = ["test", "-r", root.candidates[root.probeIndex]];
         probe.running = true;
     }
     // Called by Settings: explicit pick wins, empty resets to auto-probe.
@@ -24,7 +25,7 @@ Singleton {
             root.probeIndex = 0;
             root.source = "";
             root.probeNext();
-        } else {
+        } else if (typeof path === "string" && path !== "") {
             root.source = "file://" + path;
         }
     }

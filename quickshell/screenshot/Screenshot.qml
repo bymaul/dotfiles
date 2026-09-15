@@ -7,7 +7,7 @@ import "../services" as Services
 import "../Palette.js" as Palette
 Scope {
     id: root
-    readonly property string shotDir: Quickshell.env("HOME") + "/Pictures/Screenshots"
+    readonly property string shotDir: (Quickshell.env("HOME") ?? "/tmp") + "/Pictures/Screenshots"
     readonly property var targetScreen: {
         const want = Hyprland.focusedMonitor?.name ?? "";
         return Quickshell.screens.find(s => s.name === want) ?? Quickshell.screens[0] ?? null;
@@ -68,6 +68,7 @@ Scope {
             onStreamFinished: {
                 const m = text.trim().match(/(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)/);
                 if (!m) {
+                    Services.Notifs.notify({app: "screenshot", summary: "Window info unavailable", body: "Falling back to full screenshot", timeout: 3000});
                     root.captureScreen();
                     return;
                 }
@@ -111,6 +112,13 @@ Scope {
                     root.lastScale = src.width / w;
                 captureView.grabToImage(result => {
                     captureTimeout.stop();
+                    if (!result) {
+                        Services.Notifs.notify({app: "screenshot", summary: "Capture failed", body: "Empty frame", timeout: 5000});
+                        root.freezeForPicker = false;
+                        captureView.captureSource = null;
+                        captureWin.visible = false;
+                        return;
+                    }
                     if (root.freezeForPicker) {
                         root.freezeForPicker = false;
                         if (result.saveToFile(root.tmpFile)) {
@@ -158,6 +166,10 @@ Scope {
         id: copyProc
         property string file: ""
         command: ["sh", "-c", "wl-copy -t image/png < \"$1\"", "qs", copyProc.file]
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                Services.Notifs.notify({app: "screenshot", summary: "Clipboard copy failed", body: "wl-copy failed, file kept", timeout: 5000});
+        }
     }
     PanelWindow {
         id: picker
