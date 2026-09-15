@@ -266,6 +266,7 @@ BasePopup {
                 font.pixelSize: Palette.px13
                 onTextChanged: {
                     root.selMoved = false;
+                    resultList.currentIndex = -1;
                     root.refilter();
                 }
                 Keys.onUpPressed: root.stepSelection(-1)
