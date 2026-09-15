@@ -80,11 +80,27 @@ BasePopup {
         }
     }
     function stepSelection(dir: int): void {
+        root.flushRefilter();
         if (resultList.count === 0)
             return;
         resultList.currentIndex = Palette.clamp(resultList.currentIndex + dir, 0, resultList.count - 1);
         resultList.positionViewAtIndex(resultList.currentIndex, ListView.Contain);
         root.selMoved = true;
+    }
+    function flushRefilter(): void {
+        if (refilterTimer.running) {
+            refilterTimer.stop();
+            root.refilter();
+        }
+    }
+    Timer {
+        id: refilterTimer
+        interval: Palette.refilterDelay
+        repeat: false
+        onTriggered: {
+            if (root.visible)
+                root.refilter();
+        }
     }
     function refilter(): void {
         if (root.runMode)
@@ -92,9 +108,7 @@ BasePopup {
         else
             root.refilterApps(String(queryField.text ?? "").toLowerCase().trim());
     }
-    function matchScore(text: string, q: string): int {
-        const t = String(text ?? "").toLowerCase();
-        const query = String(q ?? "").toLowerCase();
+    function matchScoreLn(t: string, query: string): int {
         if (query === "")
             return 1;
         if (t === query)
@@ -104,6 +118,9 @@ BasePopup {
         if (t.includes(query))
             return 2;
         return 3;
+    }
+    function matchScore(text: string, q: string): int {
+        return root.matchScoreLn(String(text ?? "").toLowerCase(), String(q ?? "").toLowerCase());
     }
     function entryKey(e): string {
         if (!e)
@@ -115,7 +132,7 @@ BasePopup {
         return "bin:" + e.name;
     }
     function sortScored(out: var): void {
-        out.sort((a, b) => (a.score - b.score) || ((b.use ?? 0) - (a.use ?? 0)) || ((b.last ?? 0) - (a.last ?? 0)) || String(a.name ?? "").toLowerCase().localeCompare(String(b.name ?? "").toLowerCase()));
+        out.sort((a, b) => (a.score - b.score) || ((b.use ?? 0) - (a.use ?? 0)) || ((b.last ?? 0) - (a.last ?? 0)) || ((a.ln ?? "") < (b.ln ?? "") ? -1 : (a.ln ?? "") > (b.ln ?? "") ? 1 : 0));
     }
     function refilterApps(q: string): void {
         const apps = root.appsCache ?? [];
@@ -132,33 +149,38 @@ BasePopup {
                     break;
             }
             if (best < 3)
-                out.push({name: name, key: "app:" + (app.id ?? name), entry: app, score: best, use: Services.LaunchHistory.countFor("app:" + (app.id ?? "")), last: Services.LaunchHistory.lastFor("app:" + (app.id ?? ""))});
+                out.push({name: name, ln: String(name ?? "").toLowerCase(), key: "app:" + (app.id ?? name), entry: app, score: best, use: Services.LaunchHistory.countFor("app:" + (app.id ?? "")), last: Services.LaunchHistory.lastFor("app:" + (app.id ?? ""))});
         }
         root.sortScored(out);
         root.applyResults(out.slice(0, Palette.resultMax));
     }
     function refilterRun(q: string): void {
         const out = [];
-        for (const name of Services.RunMode.binaries ?? []) {
-            const score = root.matchScore(String(name ?? ""), q);
+        for (const b of Services.RunMode.binaries ?? []) {
+            const score = root.matchScoreLn(b.ln ?? "", q);
             if (score < 3)
-                out.push({name: name, key: "bin:" + name, score: score, use: Services.LaunchHistory.countFor("bin:" + name), last: Services.LaunchHistory.lastFor("bin:" + name)});
+                out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, score: score, use: Services.LaunchHistory.countFor("bin:" + b.name), last: Services.LaunchHistory.lastFor("bin:" + b.name)});
         }
         root.sortScored(out);
         for (const c of Services.LaunchHistory.recentCmds(root.runQuery, 5)) {
             if (!out.some(e => e.name === c.name))
-                out.push({name: c.name, key: c.key, score: 1, use: c.use, last: c.last, isCmd: true});
+                out.push({name: c.name, ln: c.name.toLowerCase(), key: c.key, score: 1, use: c.use, last: c.last, isCmd: true});
         }
         root.sortScored(out);
         root.applyResults(out.slice(0, Palette.resultMax));
     }
     function applyResults(out: var): void {
-        const keep = root.entryKey(root.entries[resultList.currentIndex]);
+        let idx = 0;
+        if (root.selMoved) {
+            const keep = root.entryKey(root.entries[resultList.currentIndex]);
+            if (keep !== "") {
+                const found = out.findIndex(e => root.entryKey(e) === keep);
+                if (found >= 0)
+                    idx = found;
+            }
+        }
         root.entries = out;
         if (out.length > 0) {
-            let idx = keep !== "" ? out.findIndex(e => root.entryKey(e) === keep) : -1;
-            if (idx < 0)
-                idx = 0;
             resultList.currentIndex = Math.min(idx, out.length - 1);
             resultList.positionViewAtIndex(resultList.currentIndex, ListView.Contain);
         } else {
@@ -166,6 +188,7 @@ BasePopup {
         }
     }
     function launch(): void {
+        root.flushRefilter();
         if (root.runMode) {
             const rest = String(queryField.text ?? "").trim().slice(1).trim();
             const sel = root.entries[resultList.currentIndex] ?? null;
@@ -266,8 +289,7 @@ BasePopup {
                 font.pixelSize: Palette.px13
                 onTextChanged: {
                     root.selMoved = false;
-                    resultList.currentIndex = -1;
-                    root.refilter();
+                    refilterTimer.restart();
                 }
                 Keys.onUpPressed: root.stepSelection(-1)
                 Keys.onDownPressed: root.stepSelection(1)

@@ -35,6 +35,7 @@ const resultMax = 100;
 const tileHeight = 40;
 const grabDelay = 100;
 const focusDelay = grabDelay + 50;
+const refilterDelay = 90;
 const scanTimeout = 15000;
 const toastTimeout = 5000;
 const osdTimeout = 1500;

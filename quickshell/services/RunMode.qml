@@ -14,7 +14,8 @@ Singleton {
         command: ["sh", "-c", "printf '%s' \"$PATH\" | tr ':' '\\n' | while read -r d; do [ -n \"$d\" ] && find \"$d\" -maxdepth 1 \\( -type f -o -type l \\) -perm /111 -printf '%f\\n' 2>/dev/null; done | sort -u"]
         stdout: StdioCollector {
             onStreamFinished: {
-                runMode.binaries = text.trim().split("\n").filter(n => n !== "");
+                const names = text.trim().split("\n").filter(n => n !== "");
+                runMode.binaries = names.map(n => ({name: n, ln: n.toLowerCase()}));
             }
         }
     }
