@@ -101,7 +101,6 @@ ShellRoot {
             const popups = [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, historyPanel];
             let bottom = 0;
             for (const p of popups) {
-                // Skip pre-layout frames (height 0) so toasts don't flicker.
                 if (p.visible && p.height > 0)
                     bottom = Math.max(bottom, top + (p.extraTop ?? 0) + p.height);
             }
@@ -119,8 +118,6 @@ ShellRoot {
         function closePopups(): void {
             hideAll(exclusivePopups);
         }
-        // Conventional modal behavior: new toasts queue while any popup
-        // with keyboard focus is open; they flush when the last one closes.
         function updateToastSuppress(): void {
             const anyOpen = controlPanelPopup.visible || launcherPopup.visible || clipboardPopup.visible || calendarPopup.visible || passwordDialog.visible;
             Services.Notifs.suppressToasts = anyOpen;

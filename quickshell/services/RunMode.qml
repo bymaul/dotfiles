@@ -6,7 +6,8 @@ Singleton {
     id: runMode
     property var binaries: []
     function refresh(): void {
-        scanner.running = true;
+        if (!scanner.running)
+            scanner.running = true;
     }
     Process {
         id: scanner

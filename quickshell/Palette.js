@@ -31,6 +31,7 @@ const barHeight = 34;
 const groupSpacing = 12;
 const listSpacing = 4;
 const listVisible = 10;
+const resultMax = 100;
 const tileHeight = 40;
 const grabDelay = 100;
 const focusDelay = grabDelay + 50;

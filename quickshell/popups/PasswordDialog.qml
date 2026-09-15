@@ -32,8 +32,6 @@ BasePopup {
             focusTimer.stop();
         }
     }
-    // The focus grab activates ~grabDelay after show; re-assert text-field
-    // focus after that so first keystrokes are never lost.
     Timer {
         id: focusTimer
         interval: Palette.focusDelay

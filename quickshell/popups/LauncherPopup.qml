@@ -24,6 +24,7 @@ BasePopup {
     Shortcut { sequence: "Ctrl+Y"; enabled: root.visible; onActivated: root.launch() }
     property var appsCache: null
     property var entries: []
+    property bool selMoved: false
     readonly property bool runMode: String(queryField.text ?? "").trim().startsWith(">")
     readonly property string runQuery: String(queryField.text ?? "").trim().slice(1).trim().toLowerCase()
     onVisibleChanged: {
@@ -32,6 +33,7 @@ BasePopup {
             Services.RunMode.refresh();
             Services.LaunchHistory.load();
             queryField.text = "";
+            root.selMoved = false;
             root.refilter();
             queryField.forceActiveFocus();
             focusTimer.restart();
@@ -39,8 +41,6 @@ BasePopup {
             focusTimer.stop();
         }
     }
-    // The focus grab activates ~grabDelay after show; re-assert text-field
-    // focus after that so first keystrokes are never lost.
     Timer {
         id: focusTimer
         interval: Palette.focusDelay
@@ -84,6 +84,7 @@ BasePopup {
             return;
         resultList.currentIndex = Palette.clamp(resultList.currentIndex + dir, 0, resultList.count - 1);
         resultList.positionViewAtIndex(resultList.currentIndex, ListView.Contain);
+        root.selMoved = true;
     }
     function refilter(): void {
         if (root.runMode)
@@ -104,8 +105,17 @@ BasePopup {
             return 2;
         return 3;
     }
+    function entryKey(e): string {
+        if (!e)
+            return "";
+        if (typeof e.key === "string" && e.key !== "")
+            return e.key;
+        if (e.entry)
+            return "app:" + (e.entry.id ?? e.name);
+        return "bin:" + e.name;
+    }
     function sortScored(out: var): void {
-        out.sort((a, b) => (a.score - b.score) || ((b.use ?? 0) - (a.use ?? 0)) || ((b.last ?? 0) - (a.last ?? 0)) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+        out.sort((a, b) => (a.score - b.score) || ((b.use ?? 0) - (a.use ?? 0)) || ((b.last ?? 0) - (a.last ?? 0)) || String(a.name ?? "").toLowerCase().localeCompare(String(b.name ?? "").toLowerCase()));
     }
     function refilterApps(q: string): void {
         const apps = root.appsCache ?? [];
@@ -122,36 +132,61 @@ BasePopup {
                     break;
             }
             if (best < 3)
-                out.push({name: name, entry: app, score: best, use: Services.LaunchHistory.countFor("app:" + (app.id ?? "")), last: Services.LaunchHistory.lastFor("app:" + (app.id ?? ""))});
+                out.push({name: name, key: "app:" + (app.id ?? name), entry: app, score: best, use: Services.LaunchHistory.countFor("app:" + (app.id ?? "")), last: Services.LaunchHistory.lastFor("app:" + (app.id ?? ""))});
         }
         root.sortScored(out);
-        root.applyResults(out);
+        root.applyResults(out.slice(0, Palette.resultMax));
     }
     function refilterRun(q: string): void {
         const out = [];
         for (const name of Services.RunMode.binaries ?? []) {
             const score = root.matchScore(String(name ?? ""), q);
             if (score < 3)
-                out.push({name: name, score: score, use: Services.LaunchHistory.countFor("bin:" + name), last: Services.LaunchHistory.lastFor("bin:" + name)});
+                out.push({name: name, key: "bin:" + name, score: score, use: Services.LaunchHistory.countFor("bin:" + name), last: Services.LaunchHistory.lastFor("bin:" + name)});
         }
         root.sortScored(out);
-        root.applyResults(out);
+        for (const c of Services.LaunchHistory.recentCmds(root.runQuery, 5)) {
+            if (!out.some(e => e.name === c.name))
+                out.push({name: c.name, key: c.key, score: 1, use: c.use, last: c.last, isCmd: true});
+        }
+        root.sortScored(out);
+        root.applyResults(out.slice(0, Palette.resultMax));
     }
     function applyResults(out: var): void {
+        const keep = root.entryKey(root.entries[resultList.currentIndex]);
         root.entries = out;
         if (out.length > 0) {
-            resultList.currentIndex = 0;
-            resultList.positionViewAtIndex(0, ListView.Contain);
+            let idx = keep !== "" ? out.findIndex(e => root.entryKey(e) === keep) : -1;
+            if (idx < 0)
+                idx = 0;
+            resultList.currentIndex = Math.min(idx, out.length - 1);
+            resultList.positionViewAtIndex(resultList.currentIndex, ListView.Contain);
         } else {
             resultList.currentIndex = -1;
         }
     }
     function launch(): void {
         if (root.runMode) {
-            const rest = queryField.text.trim().slice(1).trim();
+            const rest = String(queryField.text ?? "").trim().slice(1).trim();
+            const sel = root.entries[resultList.currentIndex] ?? null;
+            if (root.selMoved && sel) {
+                if (sel.isCmd) {
+                    Services.LaunchHistory.record(sel.key);
+                    root.run(["sh", "-c", sel.name]);
+                } else {
+                    Services.LaunchHistory.record("bin:" + sel.name);
+                    root.run([sel.name]);
+                }
+                return;
+            }
             if (rest === "") {
-                const picked = root.entries[resultList.currentIndex];
-                if (picked) {
+                const picked = sel;
+                if (!picked)
+                    return;
+                if (picked.isCmd) {
+                    Services.LaunchHistory.record(picked.key);
+                    root.run(["sh", "-c", picked.name]);
+                } else {
                     Services.LaunchHistory.record("bin:" + picked.name);
                     root.run([picked.name]);
                 }
@@ -177,15 +212,26 @@ BasePopup {
         if (/\s/.test(rest))
             return null;
         const q = String(rest ?? "").toLowerCase();
+        const apps = [];
         for (const app of root.appsCache ?? []) {
             if (!app)
                 continue;
+            apps.push(app);
             const rawCmd = Array.isArray(app.command) ? app.command : (typeof app.command === "string" ? [app.command] : []);
             const cmd = rawCmd.length > 0 ? rawCmd[0] : "";
             const base = String(cmd).split("/").pop().toLowerCase();
             if (base !== "" && base === q)
                 return app;
             if (String(app.name ?? "").toLowerCase() === q)
+                return app;
+        }
+        for (const app of apps) {
+            const rawCmd = Array.isArray(app.command) ? app.command : (typeof app.command === "string" ? [app.command] : []);
+            const cmd = rawCmd.length > 0 ? rawCmd[0] : "";
+            const base = String(cmd).split("/").pop().toLowerCase();
+            if (base !== "" && base.startsWith(q))
+                return app;
+            if (String(app.name ?? "").toLowerCase().startsWith(q))
                 return app;
         }
         return null;
@@ -218,7 +264,10 @@ BasePopup {
                 color: Palette.fg
                 font.family: Palette.font
                 font.pixelSize: Palette.px13
-                onTextChanged: root.refilter()
+                onTextChanged: {
+                    root.selMoved = false;
+                    root.refilter();
+                }
                 Keys.onUpPressed: root.stepSelection(-1)
                 Keys.onDownPressed: root.stepSelection(1)
                 Keys.onReturnPressed: root.launch()
@@ -252,6 +301,7 @@ BasePopup {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         resultList.currentIndex = index;
+                        root.selMoved = true;
                         root.launch();
                     }
                 }
@@ -262,7 +312,7 @@ BasePopup {
                         leftMargin: 10
                     }
                     width: parent.width - 20
-                    text: modelData.name
+                    text: (modelData.isCmd ? "> " : "") + modelData.name
                     color: selected ? Palette.onAccent : rowArea.containsMouse ? Palette.fg : Palette.dim
                     font.family: Palette.font
                     font.pixelSize: Palette.px12

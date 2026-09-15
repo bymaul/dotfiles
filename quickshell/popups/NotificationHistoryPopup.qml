@@ -12,8 +12,6 @@ BasePopup {
     readonly property int listCap: Math.max(96, Math.round(Screen.height / 2) - 32 - 8)
     implicitHeight: Palette.rowHeight + (Services.Notifs.history.length > 0 ? Palette.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0)
     visible: panel.visible && Services.Notifs.history.length > 0
-    // History visibility is derived from the panel. It must never set
-    // visible directly (that breaks the binding and history stops showing).
     function close(): void {
         panel.close();
     }
@@ -21,9 +19,6 @@ BasePopup {
         historyList.positionViewAtIndex(i, ListView.Contain);
     }
     onVisibleChanged: {
-        // Re-sync the window height after the first layout pass: delegate
-        // heights (wrapped text, action buttons) resolve after contentHeight
-        // is first measured, which would otherwise leave the popup short.
         if (visible)
             polishTimer.restart();
     }
@@ -36,9 +31,6 @@ BasePopup {
                 historyList.positionViewAtIndex(0, ListView.Beginning);
         }
     }
-    // Shortcuts are window-scoped, and focus can land in either the panel
-    // or this window, so both need the same keymap forwarding to the panel.
-    // Escape closes the panel (never this window directly).
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
@@ -106,9 +98,6 @@ BasePopup {
                 id: historyList
                 anchors.fill: parent
                 clip: true
-                // Instantiate all delegates up front so contentHeight is
-                // truthful on the first frame (the window height derives
-                // from it). Histories are capped at 30 small cards.
                 cacheBuffer: 10000
                 model: Services.Notifs.history
                 spacing: Palette.popupSpacing

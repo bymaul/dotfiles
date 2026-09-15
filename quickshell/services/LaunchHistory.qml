@@ -11,6 +11,7 @@ Singleton {
     property bool loaded: false
     property bool loading: false
     property bool rewriting: false
+    property bool rewriteQueued: false
     readonly property string historyFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
         const home = Quickshell.env("HOME") ?? "";
@@ -25,6 +26,24 @@ Singleton {
     }
     function lastFor(key: string): real {
         return launchHistory.lookup(key).t;
+    }
+    function recentCmds(prefix: string, limit: int): var {
+        const q = String(prefix ?? "").toLowerCase();
+        const out = [];
+        for (const k of Object.keys(launchHistory.counts)) {
+            if (!k.startsWith("cmd:"))
+                continue;
+            const cmd = k.slice(4);
+            if (cmd === "")
+                continue;
+            const lc = cmd.toLowerCase();
+            if (q !== "" && !lc.startsWith(q) && !lc.includes(q))
+                continue;
+            const e = launchHistory.counts[k];
+            out.push({name: cmd, key: k, use: e.c, last: e.t});
+        }
+        out.sort((a, b) => (b.last - a.last) || (b.use - a.use));
+        return out.slice(0, Math.max(0, limit));
     }
     function record(key: string): void {
         const e = launchHistory.lookup(key);
@@ -67,17 +86,28 @@ Singleton {
     function pumpWrites(): void {
         if (writer.running || launchHistory.rewriting || launchHistory.retryQueue.length === 0)
             return;
+        if (launchHistory.rewriteQueued) {
+            launchHistory.rewriteQueued = false;
+            launchHistory.writeFull();
+            return;
+        }
         launchHistory.activeBatch = launchHistory.retryQueue.slice(0, 50);
         launchHistory.retryQueue = launchHistory.retryQueue.slice(50);
         writer.command = launchHistory.writeCommand(launchHistory.activeBatch, true);
         writer.running = true;
     }
     function writeFull(): void {
+        if (writer.running || launchHistory.rewriting) {
+            launchHistory.rewriteQueued = true;
+            return;
+        }
         const lines = [];
         for (const k of Object.keys(launchHistory.counts)) {
             const e = launchHistory.counts[k];
             lines.push(JSON.stringify({k: k, c: e.c, t: e.t}));
         }
+        launchHistory.retryQueue = [];
+        launchHistory.activeBatch = [];
         launchHistory.rewriting = true;
         writer.command = launchHistory.writeCommand(lines, false);
         writer.running = true;
@@ -128,6 +158,11 @@ Singleton {
             }
             launchHistory.activeBatch = [];
             launchHistory.rewriting = false;
+            if (launchHistory.rewriteQueued) {
+                launchHistory.rewriteQueued = false;
+                launchHistory.writeFull();
+                return;
+            }
             launchHistory.pumpWrites();
         }
     }
