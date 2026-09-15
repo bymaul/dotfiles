@@ -18,6 +18,7 @@ Rectangle {
         const hit = [notification.image, notification.appIcon].find(s => typeof s === "string" && s !== "");
         return hit ?? "";
     }
+    readonly property var actionList: card.notification?.actions ?? []
     MouseArea {
         anchors.fill: parent
         onClicked: {
@@ -83,7 +84,6 @@ Rectangle {
                 color: Palette.accent
             }
         }
-    readonly property var actionList: card.notification?.actions ?? []
         Flow {
             width: parent.width
             visible: card.actionList.length > 0
