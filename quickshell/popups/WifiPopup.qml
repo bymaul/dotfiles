@@ -125,7 +125,7 @@ BasePopup {
                 width: wifiList.width
                 height: Palette.listRowHeight
                 color: selected ? Palette.accent : rowArea.containsMouse ? Palette.hoverBg : (modelData.connected ? Palette.activeBg : "transparent")
-                border.width: selected ? 1 : 0
+                border.width: selected ? 0 : 1
                 border.color: selected ? Palette.accent : modelData.connected ? Palette.accent : Palette.dim
                 MouseArea {
                     id: rowArea

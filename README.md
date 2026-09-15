@@ -8,7 +8,6 @@ Minimal Hyprland desktop config, managed with plain symlinks.
 
 ```sh
 git clone https://github.com/bymaul/dotfiles ~/dotfiles
-# install requirements (below), then:
 ~/dotfiles/install.sh
 ```
 
@@ -27,10 +26,34 @@ the repo is never touched.
 
 ## Requirements
 
-- **Hyprland** >= 0.56 (Lua config), **quickshell**, **kitty**, **nemo**
-- **nvim**, **tmux**, **zsh**, **starship**, **lazygit**, **yazi**, **eza**, **bat**, **fd**, **btop**
-- **pipewire**, **brightnessctl**, **libnotify**, **wl-clipboard**, **cliphist**, **jq**, **hyprpolkitagent**
+- **Hyprland** >= 0.56 (Lua config), **hypridle**, **hyprpolkitagent**, **quickshell**
+- **kitty**, **nemo**, **nvim**, **tmux**, **zsh**, **starship**, **lazygit**
+- **yazi**, **eza**, **bat**, **fd**, **btop**, **fastfetch**, **mise**
+- **pipewire**, **brightnessctl**, **upower**, **libnotify**, **wl-clipboard**, **cliphist**, **jq**
+- **systemd** (provides `loginctl` for lid/power handling, `systemd-inhibit` for caffeine)
+- **power-profiles-daemon** (optional: power-profile switching in the power menu)
 - **Nerd Font**
+
+## Power management
+
+Idle dim/lock/DPMS/suspend is owned by quickshell (Settings popup, System
+tab writes `hypridle.conf`). Battery warnings, critical-battery action and
+power profiles live in `quickshell/services/Power.qml` (status + profiles in
+the power menu). Lid close / power button actions are honored by
+systemd-logind:
+
+```sh
+qs-power-logind --apply
+```
+
+Reboot afterwards - logind only reads the drop-in at startup.
+
+Do not run `xfce4-power-manager` alongside this setup - it takes a logind
+block inhibitor for lid/power keys. Uninstall it:
+
+```sh
+sudo pacman -Rns xfce4-power-manager && pkill xfce4-power-manager
+```
 
 ## Two-repo sync
 

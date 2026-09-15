@@ -1,3 +1,4 @@
+
 //@ pragma IconTheme Adwaita
 
 import QtQuick
@@ -210,7 +211,7 @@ ShellRoot {
         }
         Process {
             id: depCheck
-            command: ["sh", "-c", "for b in cliphist wl-copy hyprctl jq brightnessctl notify-send systemd-inhibit hypridle; do command -v \"$b\" >/dev/null || printf '%s\\n' \"$b\"; done"]
+            command: ["sh", "-c", "for b in cliphist wl-copy hyprctl jq brightnessctl notify-send systemd-inhibit hypridle upower loginctl; do command -v \"$b\" >/dev/null || printf '%s\\n' \"$b\"; done"]
             stdout: StdioCollector {
                 onStreamFinished: {
                     const missing = text.trim().split("\n").filter(s => s !== "");
@@ -345,6 +346,9 @@ ShellRoot {
         }
         function toggleControl(): void {
             bar.toggleControl();
+        }
+        function togglePower(): void {
+            bar.togglePower();
         }
         function settings(): void {
             bar.toggleSettings();

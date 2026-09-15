@@ -24,7 +24,7 @@ Singleton {
     }
     Process {
         id: inhibitProc
-        command: ["systemd-inhibit", "--what=idle", "--who=Quickshell", "--why=Caffeine mode", "sleep", "infinity"]
+        command: ["systemd-inhibit", "--what=idle:sleep", "--who=Quickshell", "--why=Caffeine mode", "sleep", "infinity"]
         running: modes.caffeineActive
     }
     Process {

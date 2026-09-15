@@ -6,28 +6,30 @@ import Quickshell.Io
 Singleton {
     id: settings
 
-    // Appearance (shell-owned, applied by binding)
     property string wallpaperOverride: ""
     property var wallpapers: []
 
-    // Hyprland look (hyprctl eval keywords)
     property bool blurEnabled: true
     property bool transparentFx: true
     property bool animEnabled: true
 
-    // Hyprland input
     property real sensitivity: 0
     property real touchScroll: 0.8
     property bool naturalScroll: true
 
-    // Idle timeouts in seconds (0 = that step disabled)
     property int dimTimeout: 150
     property int lockTimeout: 300
     property int screenOffTimeout: 330
     property int suspendTimeout: 1800
 
+    property int lowBatteryPct: 20
+    property int criticalBatteryPct: 10
+    property string criticalBatteryAction: "suspend"
+    property string lidCloseAction: "suspend"
+    property string powerButtonAction: "menu"
+    property string powerProfileOnBattery: "keep"
+
     property bool loaded: false
-    // Last result-checked apply (shown in the Monitors page + via IPC).
     property string lastApplyMsg: ""
     property var applyQueue: []
 
@@ -49,6 +51,9 @@ Singleton {
     function pickStr(v, d): string {
         return typeof v === "string" ? v : d;
     }
+    function pickOpt(v, d, opts): string {
+        return typeof v === "string" && opts.includes(v) ? v : d;
+    }
 
     function snapshot(): var {
         return {
@@ -63,6 +68,12 @@ Singleton {
             lockTimeout: settings.lockTimeout,
             screenOffTimeout: settings.screenOffTimeout,
             suspendTimeout: settings.suspendTimeout,
+            lowBatteryPct: settings.lowBatteryPct,
+            criticalBatteryPct: settings.criticalBatteryPct,
+            criticalBatteryAction: settings.criticalBatteryAction,
+            lidCloseAction: settings.lidCloseAction,
+            powerButtonAction: settings.powerButtonAction,
+            powerProfileOnBattery: settings.powerProfileOnBattery,
             mainMonitor: settings.mainMonitor,
             monitorConfigs: settings.monitorConfigs
         };
@@ -82,6 +93,12 @@ Singleton {
         settings.lockTimeout = Math.round(settings.num(obj.lockTimeout, 300, 0, 3600));
         settings.screenOffTimeout = Math.round(settings.num(obj.screenOffTimeout, 330, 0, 3600));
         settings.suspendTimeout = Math.round(settings.num(obj.suspendTimeout, 1800, 0, 7200));
+        settings.lowBatteryPct = Math.round(settings.num(obj.lowBatteryPct, 20, 5, 50));
+        settings.criticalBatteryPct = Math.min(Math.round(settings.num(obj.criticalBatteryPct, 10, 3, 30)), settings.lowBatteryPct);
+        settings.criticalBatteryAction = settings.pickOpt(obj.criticalBatteryAction, "suspend", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
+        settings.lidCloseAction = settings.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
+        settings.powerButtonAction = settings.pickOpt(obj.powerButtonAction, "menu", ["menu", "suspend", "lock", "poweroff", "ignore"]);
+        settings.powerProfileOnBattery = settings.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
         settings.mainMonitor = settings.pickStr(obj.mainMonitor, "auto");
         if (obj.monitorConfigs && typeof obj.monitorConfigs === "object") {
             const clean = {};
@@ -143,7 +160,6 @@ Singleton {
             settings.applyMonitor(name, true);
     }
 
-    // Appearance
     function setWallpaper(path: string): void {
         settings.wallpaperOverride = path;
         Wallpaper.applyOverride(path);
@@ -153,7 +169,6 @@ Singleton {
         wallpaperScan.running = true;
     }
 
-    // Hyprland setters: update, apply live, persist
     function setBlurEnabled(on: bool): void {
         settings.blurEnabled = on;
         settings.hypr("decoration:blur:enabled", on ? "true" : "false");
@@ -191,7 +206,6 @@ Singleton {
         settings.scheduleSave();
     }
 
-    // Monitors: enumerate via hyprctl, apply via `hyprctl keyword monitor`
     function refreshMonitors(): void {
         monitorScan.running = true;
     }
@@ -362,6 +376,57 @@ Singleton {
         settings.suspendTimeout = Math.round(Math.max(0, Math.min(7200, v)));
         settings.writeIdleConf();
         settings.scheduleSave();
+    }
+    function setLowBatteryPct(v: real): void {
+        settings.lowBatteryPct = Math.round(Math.max(5, Math.min(50, v)));
+        if (settings.criticalBatteryPct > settings.lowBatteryPct)
+            settings.criticalBatteryPct = settings.lowBatteryPct;
+        settings.scheduleSave();
+    }
+    function setCriticalBatteryPct(v: real): void {
+        settings.criticalBatteryPct = Math.min(Math.round(Math.max(3, Math.min(30, v))), settings.lowBatteryPct);
+        settings.scheduleSave();
+    }
+    function setCriticalBatteryAction(v: string): void {
+        if (!["suspend", "hibernate", "poweroff", "lock", "notify"].includes(v))
+            return;
+        settings.criticalBatteryAction = v;
+        settings.scheduleSave();
+    }
+    function setLidCloseAction(v: string): void {
+        if (!["suspend", "lock", "ignore"].includes(v))
+            return;
+        settings.lidCloseAction = v;
+        settings.scheduleSave();
+    }
+    function setPowerButtonAction(v: string): void {
+        if (!["menu", "suspend", "lock", "poweroff", "ignore"].includes(v))
+            return;
+        settings.powerButtonAction = v;
+        settings.scheduleSave();
+    }
+    function setPowerProfileOnBattery(v: string): void {
+        if (!["keep", "powersaver", "balanced", "performance"].includes(v))
+            return;
+        settings.powerProfileOnBattery = v;
+        settings.scheduleSave();
+    }
+    function logindValue(action: string): string {
+        if (action === "lock")
+            return "lock";
+        if (action === "poweroff")
+            return "poweroff";
+        if (action === "ignore" || action === "menu" || action === "notify")
+            return "ignore";
+        return "suspend";
+    }
+    function logindConf(): string {
+        const L = [];
+        L.push("[Login]");
+        L.push("HandleLidSwitch=" + settings.logindValue(settings.lidCloseAction));
+        L.push("HandleLidSwitchExternalPower=" + settings.logindValue(settings.lidCloseAction));
+        L.push("HandlePowerKey=" + settings.logindValue(settings.powerButtonAction));
+        return L.join("\n") + "\n";
     }
     function writeIdleConf(): void {
         const L = [];

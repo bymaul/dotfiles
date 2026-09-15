@@ -140,7 +140,7 @@ BasePopup {
             root.clampSelection();
             return;
         }
-        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openPowerFromPanel(), () => bar.openSettingsFromPanel()];
+        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
         const tile = root.selectedTile();
         if (tile >= 0 && tile < actions.length)
             actions[tile]();

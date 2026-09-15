@@ -7,16 +7,14 @@ Rectangle {
     property bool accent: false
     property int columns: 2
     signal clicked
-    // N buttons share the row exactly: total = columns * width + (columns - 1) * spacing.
     width: (parent.width - (columns - 1) * Palette.popupSpacing) / columns
     height: Palette.rowHeight
-    color: root.accent ? Palette.accent : hover.containsMouse ? Palette.hoverBg : Palette.surface
-    border.width: root.selected ? 1 : 0
-    border.color: root.accent ? (root.selected ? Palette.fg : Palette.accent) : Palette.fg
+    readonly property bool lit: root.accent || root.selected
+    color: root.lit ? Palette.accent : hover.containsMouse ? Palette.hoverBg : Palette.surface
     Text {
         anchors.centerIn: parent
         text: root.label
-        color: root.accent ? Palette.onAccent : Palette.fg
+        color: root.lit ? Palette.onAccent : Palette.fg
         font.family: Palette.font
         font.pixelSize: Palette.px12
     }

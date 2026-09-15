@@ -14,8 +14,6 @@ Rectangle {
     width: root.wide ? parent.width : (parent.width - 8) / columns
     height: Palette.tileHeight
     color: !root.available ? "transparent" : root.accentButton ? Palette.accent : root.selected ? Palette.accent : root.active ? Palette.activeBg : hover.containsMouse ? Palette.hoverBg : Palette.surface
-    border.width: root.selected ? 1 : 0
-    border.color: root.selected ? Palette.accent : Palette.dim
     opacity: root.available ? 1 : 0.45
     Column {
         anchors.centerIn: parent

@@ -83,7 +83,7 @@ BasePopup {
         if (root.tab === 1)
             return 6;
         if (root.tab === 2)
-            return 4;
+            return 10;
         return root.monCount * 3;
     }
     function clampSelection(): void {
@@ -126,6 +126,12 @@ BasePopup {
             case 1: Services.Settings.setLockTimeout(Services.Settings.lockTimeout + dir * 60); break;
             case 2: Services.Settings.setScreenOffTimeout(Services.Settings.screenOffTimeout + dir * 60); break;
             case 3: Services.Settings.setSuspendTimeout(Services.Settings.suspendTimeout + dir * 300); break;
+            case 4: Services.Settings.setLowBatteryPct(Services.Settings.lowBatteryPct + dir * 5); break;
+            case 5: Services.Settings.setCriticalBatteryPct(Services.Settings.criticalBatteryPct + dir * 2); break;
+            case 6: Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, dir)); break;
+            case 7: Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, dir)); break;
+            case 8: Services.Settings.setPowerButtonAction(root.cycleOpt(Services.Power.buttonOptions, Services.Settings.powerButtonAction, dir)); break;
+            case 9: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
             }
             return;
         }
@@ -160,8 +166,17 @@ BasePopup {
                 Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll);
             return;
         }
-        if (root.tab === 2)
+        if (root.tab === 2) {
+            if (selectedIndex === 6)
+                Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, 1));
+            else if (selectedIndex === 7)
+                Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, 1));
+            else if (selectedIndex === 8)
+                Services.Settings.setPowerButtonAction(root.cycleOpt(Services.Power.buttonOptions, Services.Settings.powerButtonAction, 1));
+            else if (selectedIndex === 9)
+                Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, 1));
             return;
+        }
         const name = root.monitorNameAt(selectedIndex);
         if (name === "")
             return;
@@ -170,6 +185,13 @@ BasePopup {
             Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
         else if (selectedIndex % 3 === 2)
             Services.Settings.cycleMonitorRes(name, 1);
+    }
+
+    function cycleOpt(list: var, cur: string, dir: int): string {
+        let i = list.indexOf(cur);
+        if (i < 0)
+            i = 0;
+        return list[(i + dir + list.length) % list.length];
     }
 
     function fmtTimeout(s: int): string {
@@ -200,7 +222,7 @@ BasePopup {
         if (root.tab === 1)
             return 6 * Palette.rowHeight + 5 * Palette.listSpacing;
         if (root.tab === 2)
-            return 4 * Palette.rowHeight + 3 * Palette.listSpacing + Palette.popupSpacing + 30;
+            return 10 * Palette.rowHeight + 9 * Palette.listSpacing + Palette.popupSpacing + 30;
         if (root.monCount === 0)
             return root.mainSelH + Palette.popupSpacing + 30;
         return root.mainSelH + Palette.popupSpacing + root.monCount * root.monBlockH + (root.monCount - 1) * Palette.popupSpacing + Palette.popupSpacing + root.monFootH;
@@ -242,7 +264,6 @@ BasePopup {
             }
         }
 
-        // Appearance tab
         Column {
             visible: root.tab === 0
             width: parent.width
@@ -325,7 +346,6 @@ BasePopup {
             }
         }
 
-        // Hyprland tab
         Column {
             visible: root.tab === 1
             width: parent.width
@@ -394,7 +414,6 @@ BasePopup {
             }
         }
 
-        // System tab
         Column {
             visible: root.tab === 2
             width: parent.width
@@ -451,19 +470,97 @@ BasePopup {
                     onSliderMoved: value => Services.Settings.setSuspendTimeout(Math.round(value / 5) * 300)
                 }
             }
+            SettingsRow {
+                selected: root.tab === 2 && root.selectedIndex === 4
+                title: "Low battery"
+                value: Services.Settings.lowBatteryPct + "%"
+                SliderBar {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    minimum: 5
+                    maximum: 50
+                    value: Services.Settings.lowBatteryPct
+                    onSliderMoved: value => Services.Settings.setLowBatteryPct(Math.round(value / 5) * 5)
+                }
+            }
+            SettingsRow {
+                selected: root.tab === 2 && root.selectedIndex === 5
+                title: "Critical battery"
+                titleWidth: 124
+                value: Services.Settings.criticalBatteryPct + "%"
+                SliderBar {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    minimum: 3
+                    maximum: 30
+                    value: Services.Settings.criticalBatteryPct
+                    onSliderMoved: value => Services.Settings.setCriticalBatteryPct(Math.round(value / 2) * 2)
+                }
+            }
+            SettingsRow {
+                selected: root.tab === 2 && root.selectedIndex === 6
+                title: "Critical action"
+                value: ""
+                PopupButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    columns: 1
+                    label: Services.Settings.criticalBatteryAction
+                    selected: root.tab === 2 && root.selectedIndex === 6
+                    onClicked: Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, 1))
+                }
+            }
+            SettingsRow {
+                selected: root.tab === 2 && root.selectedIndex === 7
+                title: "Lid close"
+                value: ""
+                PopupButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    columns: 1
+                    label: Services.Settings.lidCloseAction
+                    selected: root.tab === 2 && root.selectedIndex === 7
+                    onClicked: Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, 1))
+                }
+            }
+            SettingsRow {
+                selected: root.tab === 2 && root.selectedIndex === 8
+                title: "Power button"
+                value: ""
+                PopupButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    columns: 1
+                    label: Services.Settings.powerButtonAction
+                    selected: root.tab === 2 && root.selectedIndex === 8
+                    onClicked: Services.Settings.setPowerButtonAction(root.cycleOpt(Services.Power.buttonOptions, Services.Settings.powerButtonAction, 1))
+                }
+            }
+            SettingsRow {
+                selected: root.tab === 2 && root.selectedIndex === 9
+                title: "On battery"
+                value: ""
+                PopupButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    columns: 1
+                    label: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
+                    selected: root.tab === 2 && root.selectedIndex === 9
+                    onClicked: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, 1))
+                }
+            }
             Text {
                 width: parent.width
                 height: 30
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-                text: "0 = Off. Applies to hypridle.conf and restarts hypridle."
+                text: "Idle rows write hypridle.conf. Lid / power key need logind: bin/qs-power-logind."
                 color: Palette.dim
                 font.family: Palette.font
                 font.pixelSize: Palette.px10
             }
         }
 
-        // Monitors tab
         Column {
             visible: root.tab === 3
             width: parent.width

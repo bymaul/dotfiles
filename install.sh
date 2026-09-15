@@ -3,12 +3,6 @@
 #
 #   ./install.sh                   install (link packages, warn on missing deps)
 #   ./install.sh --remove [pkg...] unlink packages (default: all of them)
-#
-# Each app lives in its own flat package dir (e.g. kitty/ -> ~/.config/kitty).
-# Dedicated app dirs are folded into ONE symlink, so files added to the repo
-# later show up automatically. Shared parents (~/.config root, $HOME,
-# ~/.local/bin) get their entries linked individually. Unmanaged dirs
-# (dconf, mozilla, ...) are left alone.
 
 set -euo pipefail
 
@@ -21,9 +15,6 @@ usage() {
     sed -n '2,5p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
-# mode package -> target (relative to $HOME).
-# "dir"  fold whole package into a single symlink
-# "tree" link each entry into an existing shared target
 PKGS=(
     "dir hypr .config/hypr"
     "dir quickshell .config/quickshell"
@@ -56,7 +47,7 @@ while (($#)); do
     shift
 done
 
-wanted() {  # true when no package filter given, or $1 is in it
+wanted() {
     local pkg=$1 p
     ((${#ONLY[@]})) || return 0
     for p in "${ONLY[@]}"; do
@@ -78,8 +69,6 @@ else
     log "installing dotfiles from $REPO"
 fi
 
-# migrate: remove legacy ABSOLUTE symlinks written by old installers.
-# Relative links are left for the logic below to sort out.
 migrated=0
 while IFS= read -r link; do
     case "$(readlink "$link")" in
@@ -88,14 +77,12 @@ while IFS= read -r link; do
 done < <(find "$HOME" -maxdepth 6 -type l 2>/dev/null)
 [ "$migrated" -eq 0 ] || log "removed legacy symlinks"
 
-# migrate: tmux config moved to ~/.config/tmux
 if [ -L "$HOME/.tmux.conf" ]; then
     case "$(readlink -f "$HOME/.tmux.conf")" in
         "$REPO"/*) rm "$HOME/.tmux.conf"; log "removed legacy ~/.tmux.conf" ;;
     esac
 fi
 
-# true when every direct entry of dir $1 is a symlink resolving into $REPO
 managed_dir() {
     local dir=$1 entry
     [ -d "$dir" ] && [ ! -L "$dir" ] || return 1
@@ -108,7 +95,6 @@ managed_dir() {
     done < <(find "$dir" -mindepth 1 -maxdepth 1 -print0)
 }
 
-# replace fully-managed real dir $1 with a single symlink to $2.
 collapse_to_link() {
     local dir=$1 src=$2
     managed_dir "$dir" || return 1
@@ -117,7 +103,6 @@ collapse_to_link() {
     ln -s "$(realpath --relative-to="$(dirname "$dir")" "$src")" "$dir"
 }
 
-# fold pkg $1 into ONE symlink at target $2 (relative to $HOME).
 fold_pkg() {
     local pkg=$1 rel=$2 dest="$HOME/$2"
     mkdir -p "$(dirname "$dest")"
@@ -137,9 +122,6 @@ fold_pkg() {
     fi
 }
 
-# link every entry of src dir $1 into dst dir $2. Dir entries become a single
-# symlink when the destination is missing, ours already, or a fully-managed
-# real dir; otherwise we recurse into both sides (shared dirs like ~/.config).
 link_tree() {
     local src=$1 dst=$2 entry name sub
     mkdir -p "$dst"
@@ -166,7 +148,6 @@ link_tree() {
     done < <(find "$src" -mindepth 1 -maxdepth 1 -print0 | sort -z)
 }
 
-# unlink a folded package: its single symlink, or a legacy per-entry layout
 remove_fold() {
     local pkg=$1 rel=$2 dest="$HOME/$2"
     if [ -L "$dest" ]; then
@@ -183,7 +164,6 @@ remove_fold() {
     fi
 }
 
-# unlink every entry of src dir $1 from dst dir $2 (inverse of link_tree)
 remove_tree() {
     local src=$1 dst=$2 entry name sub
     while IFS= read -r -d '' entry; do
@@ -229,13 +209,10 @@ fi
 
 log "linked ${count} package(s)"
 
-# register vendored bat theme
 if command -v bat >/dev/null 2>&1; then
     bat cache --build >/dev/null 2>&1 && log "rebuilt bat cache"
 fi
 
-# tpm + tmux plugins: with the config folded at ~/.config/tmux, TPM keeps
-# plugins there too. Clone anything declared as "@plugin 'owner/repo'".
 plugins_dir="$HOME/.config/tmux/plugins"
 if [ ! -d "$plugins_dir/tpm" ]; then
     git clone -q https://github.com/tmux-plugins/tpm "$plugins_dir/tpm" && log "installed tpm"
@@ -248,17 +225,15 @@ conf="$HOME/.config/tmux/tmux.conf"
     fi
 done < <(sed -n "s/^set -g @plugin '\([^']*\)'.*/\1/p" "$conf")
 
-# reload Hyprland if it's running
 if command -v hyprctl >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
     hyprctl reload >/dev/null 2>&1 && log "reloaded Hyprland"
 fi
 
-# requirements check (warn-only; full list in README)
 log "checking requirements"
 missing=0
 for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
            yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
-           brightnessctl notify-send pipewire fastfetch; do
+           brightnessctl notify-send pipewire fastfetch upower loginctl; do
     if ! command -v "$bin" >/dev/null 2>&1; then
         printf '  \033[1;31m%s\033[0m missing\n' "$bin"
         missing=1
@@ -269,7 +244,7 @@ done
 cat <<EOF
 
 done. next steps:
-  exec zsh                 # restart the shell to pick up the new config
-  chsh -s /usr/bin/zsh     # once: make zsh the default shell
-  hyprctl reload           # after starting Hyprland, if not reloaded above
+  exec zsh
+  chsh -s /usr/bin/zsh
+  hyprctl reload
 EOF

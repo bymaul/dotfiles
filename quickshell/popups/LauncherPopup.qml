@@ -349,8 +349,6 @@ BasePopup {
                 width: resultList.width
                 height: Palette.rowHeight
                 color: selected ? Palette.accent : rowArea.containsMouse ? Palette.hoverBg : "transparent"
-                border.width: selected ? 1 : 0
-                border.color: selected ? Palette.accent : Palette.dim
                 MouseArea {
                     id: rowArea
                     anchors.fill: parent

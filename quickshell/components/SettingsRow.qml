@@ -1,7 +1,6 @@
 import QtQuick
 import "../Palette.js" as Palette
 
-// Label on the left, control slotted on the right.
 Rectangle {
     id: root
     required property string title
@@ -11,9 +10,7 @@ Rectangle {
     default property alias control: slot.data
     width: parent.width
     height: Palette.rowHeight
-    color: Palette.surface
-    border.width: root.selected ? 1 : 0
-    border.color: root.selected ? Palette.accent : Palette.dim
+    color: root.selected ? Palette.activeBg : Palette.surface
     Text {
         anchors {
             left: parent.left

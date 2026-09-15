@@ -1,9 +1,4 @@
--- Minimal Hyprland config
--- Requires Hyprland 0.56+ (Lua config)
 
-------------------
----- MONITORS ----
-------------------
 
 hl.monitor({
 	output = "",
@@ -12,16 +7,10 @@ hl.monitor({
 	scale = "1.2",
 })
 
----------------------
----- MY PROGRAMS ----
----------------------
 
 local terminal = "kitty"
 local fileManager = "nemo"
 
--------------------
----- AUTOSTART ----
--------------------
 
 hl.on("hyprland.start", function()
 	hl.exec_cmd("qs")
@@ -31,18 +20,12 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
--------------------------------
----- ENVIRONMENT VARIABLES ----
--------------------------------
 
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QS_ICON_THEME", "Adwaita")
 
------------------------
----- LOOK AND FEEL ----
------------------------
 
 hl.config({
 	general = {
@@ -89,7 +72,6 @@ hl.config({
 	},
 })
 
--- Default curves and animations
 hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
 hl.curve("linear", { type = "bezier", points = { { 0, 0 }, { 1, 1 } } })
 hl.curve("almostLinear", { type = "bezier", points = { { 0.5, 0.5 }, { 0.75, 1 } } })
@@ -127,9 +109,6 @@ hl.config({
 	},
 })
 
-----------------
-----  MISC  ----
-----------------
 
 hl.config({
 	misc = {
@@ -138,9 +117,6 @@ hl.config({
 	},
 })
 
----------------
----- INPUT ----
----------------
 
 hl.config({
 	input = {
@@ -171,68 +147,54 @@ hl.gesture({
 	action = "workspace",
 })
 
----------------------
----- KEYBINDINGS ----
----------------------
 
 local mainMod = "SUPER"
 local secondMod = "SUPER + SHIFT"
 
--- Launch
 hl.bind(mainMod .. " + B", hl.dsp.global("qs-bar:Toggle Control Panel"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
 hl.bind(mainMod .. " + comma", hl.dsp.global("qs-bar:Settings"))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
--- Window management
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }))
 hl.bind(secondMod .. " + F", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + V", hl.dsp.global("qs-bar:Toggle Clipboard"))
 
--- Move focus (vim)
 hl.bind(mainMod .. " + H", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + J", hl.dsp.focus({ direction = "down" }))
 hl.bind(mainMod .. " + K", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + L", hl.dsp.focus({ direction = "right" }))
 
--- Move windows (vim)
 hl.bind(secondMod .. " + H", hl.dsp.window.move({ direction = "left" }))
 hl.bind(secondMod .. " + J", hl.dsp.window.move({ direction = "down" }))
 hl.bind(secondMod .. " + K", hl.dsp.window.move({ direction = "up" }))
 hl.bind(secondMod .. " + L", hl.dsp.window.move({ direction = "right" }))
 
--- Workspaces
 for i = 1, 10 do
 	local key = i % 10
 	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
 	hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
 
--- Scroll through workspaces
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
--- Move/resize with mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- System actions
 hl.bind(secondMod .. " + Q", hl.dsp.global("qs-bar:Toggle Power Menu"))
 hl.bind(secondMod .. " + C", hl.dsp.global("qs-bar:Toggle Caffeine"))
 hl.bind(secondMod .. " + D", hl.dsp.global("qs-bar:Toggle DND"))
 hl.bind(mainMod .. " + CTRL + L", hl.dsp.global("qs-bar:Lock Screen"), { locked = true })
 
--- Screenshots
--- saves to ~/Pictures/Screenshots, copies to the live clipboard, notifies.
--- the image watcher stores clipboard history.
--- Screenshots (in-shell capture, clipboard + toast handled by quickshell)
 hl.bind("Print", hl.dsp.global("qs-bar:Screenshot Area"))
 hl.bind(mainMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Full"))
 hl.bind(secondMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Window"))
 
--- Laptop multimedia keys (handled + displayed by quickshell)
+hl.bind("XF86PowerOff", hl.dsp.global("qs-bar:Toggle Power Menu"), { locked = true })
+
 hl.bind("XF86AudioRaiseVolume", hl.dsp.global("qs-bar:Volume Up"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.global("qs-bar:Volume Down"), { locked = true, repeating = true })
 hl.bind("XF86AudioMute", hl.dsp.global("qs-bar:Volume Mute"), { locked = true, repeating = true })
@@ -245,9 +207,6 @@ hl.bind("XF86AudioPause", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = t
 hl.bind("XF86AudioPlay", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.global("qs-bar:Media Previous"), { locked = true })
 
---------------------------------
----- WINDOWS AND WORKSPACES ----
---------------------------------
 
 hl.window_rule({
 	name = "fix-xwayland-drags",
@@ -263,8 +222,6 @@ hl.window_rule({
 	no_focus = true,
 })
 
--- floating windows: visibly transparent (absolute, independent of the global
--- active/inactive_opacity which stays at 0.9/0.87 for tiled windows)
 hl.window_rule({
 	name = "float-transparency",
 	match = { float = true },
@@ -283,15 +240,9 @@ hl.layer_rule({
 	match = { namespace = "qs-notifications" },
 	blur = true,
 	ignore_alpha = 0.1,
-	-- Toasts must pop instantly: the stack surface maps fresh on
-	-- every first toast, and a fade there reads as
-	-- translucent/slow loading.
 	no_anim = true,
 })
 
--- Screenshot picker vs toasts: both live on the Overlay layer, so
--- pin the stacking explicitly. Higher order renders on top: toasts
--- always stay visible (and clickable) above the area picker.
 hl.layer_rule({
 	name = "qs-picker-order",
 	match = { namespace = "qs-screenshot-picker" },
