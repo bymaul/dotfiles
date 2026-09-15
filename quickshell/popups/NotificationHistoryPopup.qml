@@ -20,6 +20,22 @@ BasePopup {
     function revealAt(i: int): void {
         historyList.positionViewAtIndex(i, ListView.Contain);
     }
+    onVisibleChanged: {
+        // Re-sync the window height after the first layout pass: delegate
+        // heights (wrapped text, action buttons) resolve after contentHeight
+        // is first measured, which would otherwise leave the popup short.
+        if (visible)
+            polishTimer.restart();
+    }
+    Timer {
+        id: polishTimer
+        interval: Palette.focusDelay
+        repeat: false
+        onTriggered: {
+            if (root.visible)
+                historyList.positionViewAtIndex(0, ListView.Beginning);
+        }
+    }
     // Shortcuts are window-scoped, and focus can land in either the panel
     // or this window, so both need the same keymap forwarding to the panel.
     // Escape closes the panel (never this window directly).
@@ -90,6 +106,10 @@ BasePopup {
                 id: historyList
                 anchors.fill: parent
                 clip: true
+                // Instantiate all delegates up front so contentHeight is
+                // truthful on the first frame (the window height derives
+                // from it). Histories are capped at 30 small cards.
+                cacheBuffer: 10000
                 model: Services.Notifs.history
                 spacing: Palette.popupSpacing
                 delegate: Rectangle {
