@@ -618,7 +618,7 @@ BasePopup {
 
         HintText {
             id: hint
-            text: "jk move · hl adjust · ↵ activate\n1-4 tabs · esc close"
+            text: "jk move · hl adjust · ↵ activate · 1-4 tabs"
         }
     }
 }

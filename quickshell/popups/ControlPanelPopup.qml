@@ -358,18 +358,18 @@ BasePopup {
                 onTileClicked: Services.Modes.toggleDnd()
             }
             ToggleTile {
-                glyph: "󰐥"
-                label: "Power"
-                active: false
-                selected: root.selectedIndex === root.firstTileIdx() + 5
-                onTileClicked: bar.openPowerFromPanel()
-            }
-            ToggleTile {
                 glyph: ""
                 label: "Settings"
                 active: false
-                selected: root.selectedIndex === root.firstTileIdx() + 6
+                selected: root.selectedIndex === root.firstTileIdx() + 5
                 onTileClicked: bar.openSettingsFromPanel()
+            }
+            ToggleTile {
+                glyph: "󰐥"
+                label: "Power"
+                active: false
+                selected: root.selectedIndex === root.firstTileIdx() + 6
+                onTileClicked: bar.openPowerFromPanel()
             }
         }
         HintText {
