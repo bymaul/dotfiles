@@ -132,10 +132,14 @@ ShellRoot {
             windows: [controlPanelPopup, historyPanel, toastStack]
             onCleared: controlPanelPopup.visible = false
         }
+        function kickPanelGrab(): void {
+            if (controlPanelPopup.visible)
+                panelGrabTimer.restart();
+        }
         Timer {
             id: panelGrabTimer
             interval: Palette.grabDelay
-            running: controlPanelPopup.visible
+            running: false
             repeat: false
             onTriggered: panelGrab.active = true
         }
@@ -144,6 +148,8 @@ ShellRoot {
             function onVisibleChanged(): void {
                 if (!controlPanelPopup.visible)
                     panelGrab.active = false;
+                else
+                    bar.kickPanelGrab();
             }
         }
         Connections {
@@ -151,7 +157,7 @@ ShellRoot {
             function onFocusedWorkspaceChanged(): void {
                 if (controlPanelPopup.visible) {
                     panelGrab.active = false;
-                    panelGrabTimer.restart();
+                    bar.kickPanelGrab();
                 }
             }
         }
@@ -167,7 +173,7 @@ ShellRoot {
 
         // Remote control (qs ipc call bar ...) lives directly under ShellRoot.
         property var wifiDevice: {
-            const devices = Networking.devices.values;
+            const devices = Networking.devices?.values ?? [];
             return devices.find(device => device.type === DeviceType.Wifi) ?? null;
         }
         Process {
@@ -188,7 +194,7 @@ ShellRoot {
         property var connectedWifi: {
             if (!wifiDevice)
                 return null;
-            return wifiDevice.networks.values.find(network => network.connected) ?? null;
+            return (wifiDevice.networks?.values ?? []).find(network => network.connected) ?? null;
         }
 
         Workspaces {}

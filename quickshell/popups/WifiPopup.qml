@@ -31,7 +31,7 @@ BasePopup {
         wifiList.positionViewAtIndex(wifiList.currentIndex, ListView.Contain);
     }
     function selectedNetwork(): var {
-        const nets = bar.wifiDevice?.networks.values ?? [];
+        const nets = bar.wifiDevice?.networks?.values ?? [];
         if (wifiList.currentIndex < 0 || wifiList.currentIndex >= nets.length)
             return null;
         return nets[wifiList.currentIndex];
@@ -112,7 +112,7 @@ BasePopup {
             width: parent.width
             height: Palette.listHeight(Palette.listVisible)
             clip: true
-            model: bar.wifiDevice ? bar.wifiDevice.networks : null
+            model: bar.wifiDevice?.networks ?? null
             spacing: Palette.listSpacing
             onCountChanged: {
                 if (currentIndex >= count)

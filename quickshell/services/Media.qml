@@ -14,6 +14,7 @@ Singleton {
     }
     property real brightness: 0
     property bool brightnessAvailable: true
+    property bool brightnessPollEnabled: true
     function osd(opts): void {
         Notifs.notify(Object.assign({timeout: Palette.osdTimeout}, opts));
     }
@@ -84,9 +85,13 @@ Singleton {
     }
     function transport(fn: string): void {
         const player = media.activePlayer();
-        if (!player)
+        if (!player || typeof player[fn] !== "function")
             return;
-        player[fn]();
+        try {
+            player[fn]();
+        } catch (_) {
+            return;
+        }
         mediaToastTimer.restart();
     }
     function mediaToggle(): void {
@@ -101,7 +106,7 @@ Singleton {
     function setBrightness(pct: real, quiet: bool): void {
         const clamped = Math.round(Palette.clamp(pct, Palette.brightnessMin, 100));
         media.brightness = clamped;
-        brightnessPoll.running = true;
+        media.brightnessPollEnabled = true;
         Quickshell.execDetached(["brightnessctl", "set", clamped + "%"]);
         if (!quiet)
             media.brightnessToast();
@@ -114,12 +119,12 @@ Singleton {
     }
     function markBrightnessUnavailable(): void {
         media.brightnessAvailable = false;
-        brightnessPoll.running = false;
+        media.brightnessPollEnabled = false;
     }
     Timer {
         id: brightnessPoll
         interval: 5000
-        running: true
+        running: media.brightnessPollEnabled
         repeat: true
         triggeredOnStart: true
         onTriggered: {

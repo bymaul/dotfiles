@@ -27,6 +27,20 @@ BasePopup {
             selectedButton = 1;
             pendingNetwork = null;
             field.forceActiveFocus();
+            focusTimer.restart();
+        } else {
+            focusTimer.stop();
+        }
+    }
+    // The focus grab activates ~grabDelay after show; re-assert text-field
+    // focus after that so first keystrokes are never lost.
+    Timer {
+        id: focusTimer
+        interval: Palette.grabDelay + 50
+        repeat: false
+        onTriggered: {
+            if (root.visible)
+                field.forceActiveFocus();
         }
     }
     onTargetNetworkChanged: authError = ""
@@ -43,9 +57,9 @@ BasePopup {
     }
     function resolveNetwork(): var {
         const name = root.targetNetwork?.name;
-        if (!name || !bar.wifiDevice)
+        if (!name || !bar.wifiDevice?.networks)
             return root.targetNetwork;
-        return bar.wifiDevice.networks.values.find(n => n.name === name) ?? root.targetNetwork;
+        return (bar.wifiDevice.networks.values ?? []).find(n => n && n.name === name) ?? root.targetNetwork;
     }
     function doConnect(): void {
         const net = root.resolveNetwork();

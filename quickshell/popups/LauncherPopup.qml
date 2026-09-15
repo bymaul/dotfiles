@@ -24,16 +24,30 @@ BasePopup {
     Shortcut { sequence: "Ctrl+Y"; enabled: root.visible; onActivated: root.launch() }
     property var appsCache: null
     property var entries: []
-    readonly property bool runMode: queryField.text.trim().startsWith(">")
-    readonly property string runQuery: queryField.text.trim().slice(1).trim().toLowerCase()
+    readonly property bool runMode: String(queryField.text ?? "").trim().startsWith(">")
+    readonly property string runQuery: String(queryField.text ?? "").trim().slice(1).trim().toLowerCase()
     onVisibleChanged: {
         if (visible) {
-            root.appsCache = DesktopEntries.applications.values;
+            root.appsCache = DesktopEntries.applications?.values ?? [];
             Services.RunMode.refresh();
             Services.LaunchHistory.load();
             queryField.text = "";
             root.refilter();
             queryField.forceActiveFocus();
+            focusTimer.restart();
+        } else {
+            focusTimer.stop();
+        }
+    }
+    // The focus grab activates ~grabDelay after show; re-assert text-field
+    // focus after that so first keystrokes are never lost.
+    Timer {
+        id: focusTimer
+        interval: Palette.grabDelay + 50
+        repeat: false
+        onTriggered: {
+            if (root.visible)
+                queryField.forceActiveFocus();
         }
     }
     Connections {
@@ -45,7 +59,7 @@ BasePopup {
     }
     function refreshApps(): void {
         if (root.visible && !root.runMode) {
-            root.appsCache = DesktopEntries.applications.values;
+            root.appsCache = DesktopEntries.applications?.values ?? [];
             root.refilter();
         }
     }
@@ -75,16 +89,18 @@ BasePopup {
         if (root.runMode)
             root.refilterRun(root.runQuery);
         else
-            root.refilterApps(queryField.text.toLowerCase().trim());
+            root.refilterApps(String(queryField.text ?? "").toLowerCase().trim());
     }
     function matchScore(text: string, q: string): int {
-        if (q === "")
+        const t = String(text ?? "").toLowerCase();
+        const query = String(q ?? "").toLowerCase();
+        if (query === "")
             return 1;
-        if (text === q)
+        if (t === query)
             return 0;
-        if (text.startsWith(q))
+        if (t.startsWith(query))
             return 1;
-        if (text.includes(q))
+        if (t.includes(query))
             return 2;
         return 3;
     }
@@ -101,7 +117,7 @@ BasePopup {
             const haystacks = [app.name ?? "", app.genericName ?? "", app.comment ?? ""].concat(app.keywords ?? []);
             let best = 3;
             for (const h of haystacks) {
-                best = Math.min(best, root.matchScore(h.toLowerCase(), q));
+                best = Math.min(best, root.matchScore(String(h ?? ""), q));
                 if (best === 0)
                     break;
             }
@@ -113,8 +129,8 @@ BasePopup {
     }
     function refilterRun(q: string): void {
         const out = [];
-        for (const name of Services.RunMode.binaries) {
-            const score = root.matchScore(name.toLowerCase(), q);
+        for (const name of Services.RunMode.binaries ?? []) {
+            const score = root.matchScore(String(name ?? ""), q);
             if (score < 3)
                 out.push({name: name, score: score, use: Services.LaunchHistory.countFor("bin:" + name), last: Services.LaunchHistory.lastFor("bin:" + name)});
         }
@@ -160,19 +176,25 @@ BasePopup {
     function findApp(rest: string): var {
         if (/\s/.test(rest))
             return null;
-        const q = rest.toLowerCase();
+        const q = String(rest ?? "").toLowerCase();
         for (const app of root.appsCache ?? []) {
-            const cmd = app.command && app.command.length > 0 ? app.command[0] : "";
+            if (!app)
+                continue;
+            const rawCmd = Array.isArray(app.command) ? app.command : (typeof app.command === "string" ? [app.command] : []);
+            const cmd = rawCmd.length > 0 ? rawCmd[0] : "";
             const base = String(cmd).split("/").pop().toLowerCase();
             if (base !== "" && base === q)
                 return app;
-            if ((app.name ?? "").toLowerCase() === q)
+            if (String(app.name ?? "").toLowerCase() === q)
                 return app;
         }
         return null;
     }
     function runApp(entry: var): void {
-        root.run(entry.runInTerminal ? ["kitty"].concat(entry.command) : entry.command);
+        if (!entry || !entry.command)
+            return;
+        const cmd = Array.isArray(entry.command) ? entry.command : [entry.command];
+        root.run(entry.runInTerminal ? ["kitty"].concat(cmd) : cmd);
     }
     function run(cmd: var): void {
         bar.closePopups();

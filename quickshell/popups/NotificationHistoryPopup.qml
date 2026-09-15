@@ -135,7 +135,7 @@ BasePopup {
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: parent.width - 52
-                                        text: modelData.summary || modelData.app
+                                        text: modelData.summary || modelData.app || ""
                                         color: Palette.fg
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px12
@@ -145,7 +145,7 @@ BasePopup {
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: 44
                                         horizontalAlignment: Text.AlignRight
-                                        text: Qt.formatDateTime(modelData.time, "HH:mm")
+                                        text: modelData.time ? Qt.formatDateTime(modelData.time, "HH:mm") : ""
                                         color: Palette.dim
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px10
@@ -163,10 +163,10 @@ BasePopup {
                                 }
                                 Flow {
                                     width: parent.width
-                                    visible: modelData.live !== null && modelData.live.actions.length > 0
+                                    visible: (modelData.live?.actions ?? []).length > 0
                                     spacing: 6
                                     Repeater {
-                                        model: modelData.live !== null ? modelData.live.actions : []
+                                        model: modelData.live?.actions ?? []
                                         delegate: Rectangle {
                                             required property var modelData
                                             width: actionLabel.width + 16

@@ -143,7 +143,9 @@ BasePopup {
             return;
         }
         const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openPowerFromPanel(), () => bar.openSettingsFromPanel()];
-        actions[root.selectedTile()]();
+        const tile = root.selectedTile();
+        if (tile >= 0 && tile < actions.length)
+            actions[tile]();
     }
     function invokeSelectedAction(): void {
         if (root.selectedKind() !== "history")

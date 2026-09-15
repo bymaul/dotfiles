@@ -9,7 +9,7 @@ Item {
     implicitHeight: label.height
     width: label.width
     height: label.height
-    property var laptopBattery: UPower.devices.values.find(device => device.isLaptopBattery)
+    property var laptopBattery: (UPower.devices?.values ?? []).find(device => device && device.isLaptopBattery) ?? null
     readonly property real level: root.laptopBattery?.percentage ?? 0
     readonly property bool charging: root.laptopBattery?.state === UPowerDeviceState.Charging
     Text {

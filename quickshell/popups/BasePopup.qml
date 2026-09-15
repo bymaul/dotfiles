@@ -14,6 +14,10 @@ PopupWindow {
         if (!grab.active && base.visible)
             grab.active = true;
     }
+    function kickGrab(): void {
+        if (base.visible && base.useGrab)
+            grabTimer.restart();
+    }
     function close(): void {
         const back = base.returnTo;
         base.returnTo = null;
@@ -29,6 +33,8 @@ PopupWindow {
     onVisibleChanged: {
         if (!base.visible)
             grab.active = false;
+        else
+            base.kickGrab();
     }
     HyprlandFocusGrab {
         id: grab
@@ -43,7 +49,7 @@ PopupWindow {
     Timer {
         id: grabTimer
         interval: Palette.grabDelay
-        running: base.visible && base.useGrab
+        running: false
         repeat: false
         onTriggered: grab.active = true
     }
@@ -52,7 +58,7 @@ PopupWindow {
         function onFocusedWorkspaceChanged(): void {
             if (base.visible && base.useGrab) {
                 grab.active = false;
-                grabTimer.restart();
+                base.kickGrab();
             }
         }
     }
@@ -62,7 +68,7 @@ PopupWindow {
     Connections {
         target: base
         function onWindowConnected(): void {
-            if (base.visible && base.useGrab && base.preventClose)
+            if (base.visible && base.useGrab)
                 base.regrab();
         }
     }

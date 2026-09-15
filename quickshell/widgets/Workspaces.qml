@@ -11,8 +11,8 @@ Row {
     spacing: 4
     readonly property var slotIds: {
         const ids = new Set([1, 2, 3]);
-        for (const ws of Hyprland.workspaces.values) {
-            if (ws.id > 0)
+        for (const ws of Hyprland.workspaces?.values ?? []) {
+            if (ws && ws.id > 0)
                 ids.add(ws.id);
         }
         const focused = Hyprland.focusedWorkspace?.id ?? 1;
@@ -21,7 +21,7 @@ Row {
         return [...ids].sort((a, b) => a - b);
     }
     function workspaceById(id: int): var {
-        return Hyprland.workspaces.values.find(ws => ws.id === id) ?? null;
+        return (Hyprland.workspaces?.values ?? []).find(ws => ws && ws.id === id) ?? null;
     }
     function activateSlot(id: int): void {
         const ws = workspaceById(id);

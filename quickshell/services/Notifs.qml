@@ -35,12 +35,17 @@ Singleton {
         notifs.pending = notifs.pending.slice(room);
         notifs.readCount = notifs.history.length;
     }
+    function safeDismiss(n): void {
+        if (!n)
+            return;
+        try {
+            n.dismiss();
+        } catch (_) {}
+    }
     function dropLive(item): void {
         if (!item || !item.live)
             return;
-        try {
-            item.live.dismiss();
-        } catch (_) {}
+        notifs.safeDismiss(item.live);
     }
     function forgetLive(n): void {
         notifs.history = notifs.history.filter(h => h.live !== n);
@@ -106,12 +111,12 @@ Singleton {
             for (const old of notifs.toasts) {
                 if (notifs.syncIdOf(old) === syncId) {
                     notifs.hideToast(old);
-                    old.dismiss();
+                    notifs.safeDismiss(old);
                     notifs.forgetLive(old);
                 }
             }
         }
-        if (syncId === undefined || notification.actions.length > 0) {
+        if (syncId === undefined || (notification.actions ?? []).length > 0) {
             let next = [notifs.snapshot(notification), ...notifs.history];
             if (syncId !== undefined)
                 next = [next[0], ...next.slice(1).filter(h => h.syncId !== syncId)];
@@ -127,7 +132,7 @@ Singleton {
         if (Modes.dndActive && !notifs.isOwnFeedback(notification.appName))
             return;
         if (notifs.suppressToasts || notifs.suspended) {
-            if (syncId === undefined || notification.actions.length > 0)
+            if (syncId === undefined || (notification.actions ?? []).length > 0)
                 notifs.pending = [notification, ...notifs.pending].slice(0, Palette.toastMax);
             return;
         }
@@ -136,7 +141,7 @@ Singleton {
         notification.qsToastId = ++notifs.toastSeq;
         notifs.toasts = next;
         for (const old of dropped) {
-            old.dismiss();
+            notifs.safeDismiss(old);
             notifs.forgetLive(old);
         }
     }

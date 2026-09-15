@@ -83,12 +83,13 @@ Rectangle {
                 color: Palette.accent
             }
         }
+    readonly property var actionList: card.notification?.actions ?? []
         Flow {
             width: parent.width
-            visible: card.notification.actions.length > 0
+            visible: card.actionList.length > 0
             spacing: 6
             Repeater {
-                model: card.notification.actions
+                model: card.actionList
                 delegate: Rectangle {
                     required property var modelData
                     width: actionLabel.width + 16

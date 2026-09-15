@@ -8,8 +8,8 @@ Item {
     implicitHeight: icon.height
     width: icon.width
     height: icon.height
-    readonly property bool connected: bar.connectedWifi !== null
-    readonly property real level: connected ? bar.connectedWifi.signalStrength : 0
+    readonly property bool connected: bar.connectedWifi != null
+    readonly property real level: connected ? Number(bar.connectedWifi.signalStrength ?? 0) || 0 : 0
     BarIcon {
         id: icon
         glyph: {
