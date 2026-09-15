@@ -32,9 +32,7 @@ BasePopup {
             root.refreshPlayer();
             Services.Notifs.hideAllToasts();
         }
-        Services.Notifs.suppressToasts = visible;
-        if (!visible)
-            Services.Notifs.flushPending();
+        bar.updateToastSuppress();
     }
     property var mprisPlayer: null
     function refreshPlayer(): void {

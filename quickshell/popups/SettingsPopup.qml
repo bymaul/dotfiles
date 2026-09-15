@@ -199,6 +199,7 @@ BasePopup {
     property int monCount: Services.Settings.monitors.length
     property int monFootH: Palette.rowHeight + Palette.listSpacing + 14
 
+    property int mainSelH: 22 + Palette.popupSpacing + mainSelFlow.height
     function contentHeight(): int {
         if (root.tab === 0)
             return Palette.listRowHeight + Palette.listSpacing + root.wpListH;
@@ -207,8 +208,8 @@ BasePopup {
         if (root.tab === 2)
             return 4 * Palette.rowHeight + 3 * Palette.listSpacing + Palette.popupSpacing + 30;
         if (root.monCount === 0)
-            return 30;
-        return root.monCount * root.monBlockH + (root.monCount - 1) * Palette.popupSpacing + Palette.popupSpacing + root.monFootH;
+            return root.mainSelH + Palette.popupSpacing + 30;
+        return root.mainSelH + Palette.popupSpacing + root.monCount * root.monBlockH + (root.monCount - 1) * Palette.popupSpacing + Palette.popupSpacing + root.monFootH;
     }
 
     PopupCard {
@@ -473,6 +474,32 @@ BasePopup {
             visible: root.tab === 3
             width: parent.width
             spacing: Palette.popupSpacing
+            Text {
+                width: parent.width
+                height: 22
+                verticalAlignment: Text.AlignVCenter
+                text: "Main display (bar + toasts)"
+                color: Palette.fg
+                font.family: Palette.font
+                font.pixelSize: Palette.px12
+                elide: Text.ElideRight
+            }
+            Flow {
+                id: mainSelFlow
+                width: parent.width
+                spacing: Palette.popupSpacing
+                Repeater {
+                    model: ["auto"].concat(Services.Settings.monitors.map(m => String(m?.name ?? "")).filter(n => n !== ""))
+                    delegate: PopupButton {
+                        required property var modelData
+                        label: modelData === "auto" ? "Auto" : modelData
+                        columns: 2
+                        accent: Services.Settings.mainMonitor === modelData
+                        selected: Services.Settings.mainMonitor === modelData
+                        onClicked: Services.Settings.setMainMonitor(modelData)
+                    }
+                }
+            }
             Text {
                 visible: root.monCount === 0
                 width: parent.width

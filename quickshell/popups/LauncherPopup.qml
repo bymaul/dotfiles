@@ -43,7 +43,7 @@ BasePopup {
     // focus after that so first keystrokes are never lost.
     Timer {
         id: focusTimer
-        interval: Palette.grabDelay + 50
+        interval: Palette.focusDelay
         repeat: false
         onTriggered: {
             if (root.visible)

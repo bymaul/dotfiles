@@ -7,6 +7,7 @@ import "../Palette.js" as Palette
 PanelWindow {
     id: root
     required property var bar
+    screen: root.bar.mainScreen
     anchors {
         top: true
         right: true

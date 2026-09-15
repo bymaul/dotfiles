@@ -24,6 +24,10 @@ ShellRoot {
             right: true
         }
 
+        // Single bar on the configured main display ("auto" = default).
+        property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
+        screen: bar.mainScreen
+
         implicitHeight: Palette.barHeight
         exclusiveZone: implicitHeight
         color: Palette.barBg
@@ -97,7 +101,8 @@ ShellRoot {
             const popups = [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, historyPanel];
             let bottom = 0;
             for (const p of popups) {
-                if (p.visible)
+                // Skip pre-layout frames (height 0) so toasts don't flicker.
+                if (p.visible && p.height > 0)
                     bottom = Math.max(bottom, top + (p.extraTop ?? 0) + p.height);
             }
             return bottom;
@@ -113,6 +118,14 @@ ShellRoot {
         }
         function closePopups(): void {
             hideAll(exclusivePopups);
+        }
+        // Conventional modal behavior: new toasts queue while any popup
+        // with keyboard focus is open; they flush when the last one closes.
+        function updateToastSuppress(): void {
+            const anyOpen = controlPanelPopup.visible || launcherPopup.visible || clipboardPopup.visible || calendarPopup.visible || passwordDialog.visible;
+            Services.Notifs.suppressToasts = anyOpen;
+            if (!anyOpen)
+                Services.Notifs.flushPending();
         }
 
         function showPasswordDialog(network): void {
@@ -150,6 +163,30 @@ ShellRoot {
                     panelGrab.active = false;
                 else
                     bar.kickPanelGrab();
+            }
+        }
+        Connections {
+            target: launcherPopup
+            function onVisibleChanged(): void {
+                bar.updateToastSuppress();
+            }
+        }
+        Connections {
+            target: clipboardPopup
+            function onVisibleChanged(): void {
+                bar.updateToastSuppress();
+            }
+        }
+        Connections {
+            target: calendarPopup
+            function onVisibleChanged(): void {
+                bar.updateToastSuppress();
+            }
+        }
+        Connections {
+            target: passwordDialog
+            function onVisibleChanged(): void {
+                bar.updateToastSuppress();
             }
         }
         Connections {

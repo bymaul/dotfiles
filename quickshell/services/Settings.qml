@@ -68,6 +68,7 @@ Singleton {
             lockTimeout: settings.lockTimeout,
             screenOffTimeout: settings.screenOffTimeout,
             suspendTimeout: settings.suspendTimeout,
+            mainMonitor: settings.mainMonitor,
             monitorConfigs: settings.monitorConfigs
         };
     }
@@ -86,6 +87,7 @@ Singleton {
         settings.lockTimeout = Math.round(settings.num(obj.lockTimeout, 300, 0, 3600));
         settings.screenOffTimeout = Math.round(settings.num(obj.screenOffTimeout, 330, 0, 3600));
         settings.suspendTimeout = Math.round(settings.num(obj.suspendTimeout, 1800, 0, 7200));
+        settings.mainMonitor = settings.pickStr(obj.mainMonitor, "auto");
         if (obj.monitorConfigs && typeof obj.monitorConfigs === "object") {
             const clean = {};
             for (const name of Object.keys(obj.monitorConfigs)) {
@@ -347,6 +349,22 @@ Singleton {
     // Live list comes from `hyprctl monitors -j`; configs overlay it.
     property var monitors: []
     property var monitorConfigs: ({})
+    // Main display for the single bar + toasts ("auto" = compositor default).
+    property string mainMonitor: "auto"
+    function setMainMonitor(name: string): void {
+        settings.mainMonitor = (typeof name === "string" && name !== "") ? name : "auto";
+        settings.scheduleSave();
+    }
+    function mainScreen(screens): var {
+        const list = screens ?? [];
+        const want = settings.mainMonitor;
+        if (typeof want === "string" && want !== "" && want !== "auto") {
+            const hit = list.find(s => s && s.name === want);
+            if (hit)
+                return hit;
+        }
+        return null;
+    }
     property bool monitorsReady: false
     property bool monitorsApplied: false
 
