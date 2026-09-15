@@ -5,8 +5,8 @@ import "../services" as Services
 import "../Palette.js" as Palette
 BasePopup {
     id: root
-    anchorMode: "center"
-    implicitWidth: Palette.popupWidth
+    anchorMode: "middle"
+    implicitWidth: Palette.launcherWidth
     implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + Palette.listHeight(Palette.listVisible) + hint.implicitHeight
     Shortcut {
         sequence: "Escape"

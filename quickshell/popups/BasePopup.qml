@@ -26,8 +26,8 @@ PopupWindow {
             back.visible = true;
     }
     anchor.window: bar
-    anchor.rect.x: base.anchorMode === "center" ? bar.width / 2 - width / 2 : bar.width - width - Palette.popupMargin
-    anchor.rect.y: bar.height + Palette.popupTopGap + base.extraTop
+    anchor.rect.x: (base.anchorMode === "center" || base.anchorMode === "middle") ? bar.width / 2 - width / 2 : bar.width - width - Palette.popupMargin
+    anchor.rect.y: base.anchorMode === "middle" ? Math.max(bar.height + Palette.popupTopGap, Screen.height / 2 - height / 2) : bar.height + Palette.popupTopGap + base.extraTop
     visible: false
     color: "transparent"
     onVisibleChanged: {
