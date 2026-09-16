@@ -154,6 +154,7 @@ local secondMod = "SUPER + SHIFT"
 hl.bind(mainMod .. " + B", hl.dsp.global("qs-bar:Toggle Control Panel"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
+hl.bind(mainMod .. " + period", hl.dsp.global("qs-bar:Toggle Emoji"))
 hl.bind(mainMod .. " + comma", hl.dsp.global("qs-bar:Settings"))
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 

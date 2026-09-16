@@ -6,7 +6,7 @@ import "../Palette.js" as Palette
 BasePopup {
     id: root
     implicitWidth: Palette.popupWidth
-    implicitHeight: 16 + statusText.height + Palette.popupSpacing + (xfceWarn.visible ? xfceWarn.height + Palette.popupSpacing : 0) + (profileRow.visible ? profileRow.height + Palette.popupSpacing : 0) + (autoRow.visible ? autoRow.height + Palette.popupSpacing : 0) + powerGrid.height + Palette.popupSpacing + hint.implicitHeight
+    implicitHeight: 16 + statusText.height + Palette.popupSpacing + (xfceWarn.visible ? xfceWarn.height + Palette.popupSpacing : 0) + powerGrid.height + Palette.popupSpacing + hint.implicitHeight
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
@@ -18,7 +18,6 @@ BasePopup {
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.hibernate() }
     Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.lock() }
     Shortcut { sequence: "e"; enabled: root.visible; onActivated: root.logout() }
-    Shortcut { sequence: "p"; enabled: root.visible && Services.Power.profilesAvailable; onActivated: Services.Power.cycleProfile() }
     function execPower(cmd: var): void {
         bar.closePopups();
         Quickshell.execDetached(cmd);
@@ -69,38 +68,6 @@ BasePopup {
             font.family: Palette.font
             font.pixelSize: Palette.px11
         }
-        Row {
-            id: profileRow
-            visible: Services.Power.profilesAvailable
-            width: parent.width
-            height: visible ? Palette.rowHeight : 0
-            spacing: Palette.popupSpacing
-            PopupButton { columns: 3; label: "Balanced"; accent: Services.Power.profileName === "balanced"; onClicked: Services.Power.setProfileByName("balanced", false) }
-            PopupButton { columns: 3; label: "Power saver"; accent: Services.Power.profileName === "powersaver"; onClicked: Services.Power.setProfileByName("powersaver", false) }
-            PopupButton { columns: 3; label: "Performance"; accent: Services.Power.profileName === "performance"; onClicked: Services.Power.setProfileByName("performance", false) }
-        }
-        Row {
-            id: autoRow
-            visible: Services.Power.profilesAvailable
-            width: parent.width
-            height: visible ? Palette.rowHeight : 0
-            spacing: Palette.popupSpacing
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width / 2 - Palette.popupSpacing / 2
-                text: "On battery auto"
-                color: Palette.fg
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
-                elide: Text.ElideRight
-            }
-            PopupButton {
-                width: parent.width / 2 - Palette.popupSpacing / 2
-                columns: 1
-                label: Services.Settings.powerProfileOnBattery
-                onClicked: Services.Power.cycleAutoProfile()
-            }
-        }
         Grid {
             id: powerGrid
             width: parent.width
@@ -116,7 +83,7 @@ BasePopup {
         }
         HintText {
             id: hint
-            text: Services.Power.profilesAvailable ? "s power off · r reboot · u suspend\nh hibernate · l lock · e logout · p profile" : "s power off · r reboot · u suspend\nh hibernate · l lock · e logout"
+            text: "s power off · r reboot · u suspend\nh hibernate · l lock · e logout"
         }
     }
 }

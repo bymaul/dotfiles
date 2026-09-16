@@ -1,3 +1,4 @@
+singleton EmojiHistory 1.0 EmojiHistory.qml
 singleton LaunchHistory 1.0 LaunchHistory.qml
 singleton Media 1.0 Media.qml
 singleton Modes 1.0 Modes.qml

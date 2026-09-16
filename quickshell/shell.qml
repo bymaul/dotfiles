@@ -41,7 +41,7 @@ ShellRoot {
             color: Palette.border
         }
         WlrLayershell.namespace: "qs-bar"
-        readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, passwordDialog, launcherPopup, clipboardPopup]
+        readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, passwordDialog, launcherPopup, clipboardPopup, emojiPopup]
         function hideAll(list): void {
             for (const p of list)
                 p.visible = false;
@@ -88,6 +88,9 @@ ShellRoot {
         function toggleClipboard(): void {
             openExclusive(clipboardPopup);
         }
+        function toggleEmoji(): void {
+            openExclusive(emojiPopup);
+        }
         function lockScreen(): void {
             bar.closePopups();
             lockContext.reset();
@@ -119,7 +122,7 @@ ShellRoot {
             hideAll(exclusivePopups);
         }
         function updateToastSuppress(): void {
-            const anyOpen = controlPanelPopup.visible || launcherPopup.visible || clipboardPopup.visible || calendarPopup.visible || passwordDialog.visible;
+            const anyOpen = controlPanelPopup.visible || launcherPopup.visible || clipboardPopup.visible || emojiPopup.visible || calendarPopup.visible || passwordDialog.visible;
             Services.Notifs.suppressToasts = anyOpen;
             if (!anyOpen)
                 Services.Notifs.flushPending();
@@ -170,6 +173,12 @@ ShellRoot {
         }
         Connections {
             target: clipboardPopup
+            function onVisibleChanged(): void {
+                bar.updateToastSuppress();
+            }
+        }
+        Connections {
+            target: emojiPopup
             function onVisibleChanged(): void {
                 bar.updateToastSuppress();
             }
@@ -317,10 +326,16 @@ ShellRoot {
             bar: bar
         }
 
+        EmojiPopup {
+            id: emojiPopup
+            bar: bar
+        }
+
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Power Menu"; description: "Open the power menu"; onPressed: bar.togglePower() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Control Panel"; description: "Open the control panel"; onPressed: bar.toggleControl() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Launcher"; description: "Open the application launcher"; onPressed: bar.toggleLauncher() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Clipboard"; description: "Open the clipboard history picker"; onPressed: bar.toggleClipboard() }
+        GlobalShortcut { appid: "qs-bar"; name: "Toggle Emoji"; description: "Open the emoji picker"; onPressed: bar.toggleEmoji() }
         GlobalShortcut { appid: "qs-bar"; name: "Settings"; description: "Open settings"; onPressed: bar.toggleSettings() }
         GlobalShortcut { appid: "qs-bar"; name: "Lock Screen"; description: "Lock the session"; onPressed: bar.lockScreen() }
         GlobalShortcut { appid: "qs-bar"; name: "Screenshot Area"; description: "Screenshot a selected area"; onPressed: bar.screenshot("area") }
@@ -349,6 +364,9 @@ ShellRoot {
         }
         function togglePower(): void {
             bar.togglePower();
+        }
+        function toggleEmoji(): void {
+            bar.toggleEmoji();
         }
         function settings(): void {
             bar.toggleSettings();

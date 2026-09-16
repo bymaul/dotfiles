@@ -12,7 +12,7 @@ BasePopup {
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
-        onActivated: root.close()
+        onActivated: (root.openDropdown >= 0 || root.openMonRes !== "") ? root.closeDrop() : root.close()
     }
     Shortcut { sequence: "1"; enabled: root.visible; onActivated: root.tab = 0 }
     Shortcut { sequence: "2"; enabled: root.visible; onActivated: root.tab = 1 }
@@ -22,6 +22,12 @@ BasePopup {
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
     Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.adjustSelected(1) }
+    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepSelection(-1) }
+    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepSelection(1) }
+    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
+    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.adjustSelected(1) }
+    Shortcut { sequence: "Tab"; enabled: root.visible && (root.tab === 2 || root.tab === 3); onActivated: root.tabStep(1) }
+    Shortcut { sequence: "Shift+Tab"; enabled: root.visible && (root.tab === 2 || root.tab === 3); onActivated: root.tabStep(-1) }
     Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
@@ -54,8 +60,13 @@ BasePopup {
     }
 
     property int selectedIndex: 0
+    property int openDropdown: -1
+    property string openMonRes: ""
+    property int dropCursor: 0
     onTabChanged: {
         root.selectedIndex = 0;
+        root.openDropdown = -1;
+        root.openMonRes = "";
         root.syncWallCursor();
     }
     onWpCountChanged: root.syncWallCursor()
@@ -64,11 +75,15 @@ BasePopup {
     onVisibleChanged: {
         if (visible) {
             root.selectedIndex = 0;
+            root.openDropdown = -1;
+            root.openMonRes = "";
             root.syncWallCursor();
             Services.Settings.refreshWallpapers();
             Services.Settings.refreshMonitors();
         } else {
             root.preventClose = false;
+            root.openDropdown = -1;
+            root.openMonRes = "";
             settleTimer.stop();
         }
     }
@@ -83,7 +98,7 @@ BasePopup {
         if (root.tab === 1)
             return 6;
         if (root.tab === 2)
-            return 10;
+            return 11;
         return root.monCount * 3;
     }
     function clampSelection(): void {
@@ -97,8 +112,21 @@ BasePopup {
             wallList.currentIndex = -1;
     }
     function stepSelection(dir: int): void {
+        if (root.tab === 2 && root.openDropdown >= 0) {
+            root.moveDropCursor(dir);
+            return;
+        }
+        if (root.tab === 3 && root.openMonRes !== "") {
+            root.monMoveCursor(dir);
+            return;
+        }
         selectedIndex += dir;
         root.syncWallCursor();
+    }
+    function tabStep(dir: int): void {
+        if (root.openDropdown >= 0)
+            root.closeDrop();
+        root.stepSelection(dir);
     }
     function monitorNameAt(i: int): string {
         const m = Services.Settings.monitors[Math.floor(i / 3)] ?? null;
@@ -121,6 +149,13 @@ BasePopup {
             return;
         }
         if (root.tab === 2) {
+            if (root.openDropdown === selectedIndex && root.openDropdown >= 0) {
+                if (dir < 0)
+                    root.closeDrop();
+                else
+                    root.commitDropCursor();
+                return;
+            }
             switch (selectedIndex) {
             case 0: Services.Settings.setDimTimeout(Services.Settings.dimTimeout + dir * 30); break;
             case 1: Services.Settings.setLockTimeout(Services.Settings.lockTimeout + dir * 60); break;
@@ -131,7 +166,8 @@ BasePopup {
             case 6: Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, dir)); break;
             case 7: Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, dir)); break;
             case 8: Services.Settings.setPowerButtonAction(root.cycleOpt(Services.Power.buttonOptions, Services.Settings.powerButtonAction, dir)); break;
-            case 9: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
+            case 9: root.cycleActiveProfile(dir); break;
+            case 10: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
             }
             return;
         }
@@ -144,7 +180,12 @@ BasePopup {
             Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
         else if (kind === 1)
             Services.Settings.setMonitorScale(name, Services.Settings.monitorScale(name) + dir * 0.05);
-        else
+        else if (root.openMonRes === name) {
+            if (dir < 0)
+                root.closeDrop();
+            else
+                root.commitMonCursor();
+        } else
             Services.Settings.cycleMonitorRes(name, dir);
     }
     function activateSelected(): void {
@@ -167,14 +208,15 @@ BasePopup {
             return;
         }
         if (root.tab === 2) {
-            if (selectedIndex === 6)
-                Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, 1));
-            else if (selectedIndex === 7)
-                Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, 1));
-            else if (selectedIndex === 8)
-                Services.Settings.setPowerButtonAction(root.cycleOpt(Services.Power.buttonOptions, Services.Settings.powerButtonAction, 1));
-            else if (selectedIndex === 9)
-                Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, 1));
+            if (root.openDropdown === selectedIndex && root.openDropdown >= 0) {
+                root.commitDropCursor();
+                return;
+            }
+            if (root.isDropdownIndex(selectedIndex)) {
+                if (root.dropEnabled(selectedIndex))
+                    root.openDrop(selectedIndex);
+                return;
+            }
             return;
         }
         const name = root.monitorNameAt(selectedIndex);
@@ -183,8 +225,12 @@ BasePopup {
         root.beginMonitorChange();
         if (selectedIndex % 3 === 0)
             Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
-        else if (selectedIndex % 3 === 2)
-            Services.Settings.cycleMonitorRes(name, 1);
+        else if (selectedIndex % 3 === 2) {
+            if (root.openMonRes === name)
+                root.commitMonCursor();
+            else
+                root.toggleMonDrop(name);
+        }
     }
 
     function cycleOpt(list: var, cur: string, dir: int): string {
@@ -192,6 +238,134 @@ BasePopup {
         if (i < 0)
             i = 0;
         return list[(i + dir + list.length) % list.length];
+    }
+
+    function cycleActiveProfile(dir: int): void {
+        if (!Services.Power.profilesAvailable)
+            return;
+        const order = Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
+        Services.Power.setProfileByName(root.cycleOpt(order, Services.Power.profileName, dir), false);
+    }
+
+    function activeProfileOptions(): var {
+        return Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
+    }
+    function isDropdownIndex(i: int): bool {
+        return root.tab === 2 && i >= 6 && i <= 10;
+    }
+    function dropEnabled(i: int): bool {
+        if (i === 9)
+            return Services.Power.profilesAvailable;
+        return true;
+    }
+    function dropdownOptions(i: int): var {
+        if (i === 6)
+            return Services.Power.criticalOptions;
+        if (i === 7)
+            return Services.Power.lidOptions;
+        if (i === 8)
+            return Services.Power.buttonOptions;
+        if (i === 9)
+            return root.activeProfileOptions();
+        if (i === 10)
+            return Services.Power.profileOptions;
+        return [];
+    }
+    function dropdownCurrent(i: int): string {
+        if (i === 6)
+            return Services.Settings.criticalBatteryAction;
+        if (i === 7)
+            return Services.Settings.lidCloseAction;
+        if (i === 8)
+            return Services.Settings.powerButtonAction;
+        if (i === 9)
+            return Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd";
+        if (i === 10)
+            return Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd";
+        return "";
+    }
+    function applyDropValue(i: int, value: string): void {
+        if (i === 6)
+            Services.Settings.setCriticalBatteryAction(value);
+        else if (i === 7)
+            Services.Settings.setLidCloseAction(value);
+        else if (i === 8)
+            Services.Settings.setPowerButtonAction(value);
+        else if (i === 9) {
+            if (Services.Power.profilesAvailable)
+                Services.Power.setProfileByName(value, false);
+        } else if (i === 10)
+            Services.Settings.setPowerProfileOnBattery(value);
+    }
+    function openDrop(i: int): void {
+        if (!root.dropEnabled(i))
+            return;
+        const opts = root.dropdownOptions(i);
+        let at = opts.indexOf(root.dropdownCurrent(i));
+        if (at < 0)
+            at = 0;
+        root.dropCursor = at;
+        root.openDropdown = i;
+        root.openMonRes = "";
+    }
+    function closeDrop(): void {
+        root.openDropdown = -1;
+        root.openMonRes = "";
+    }
+    function toggleDrop(i: int): void {
+        if (root.openDropdown === i)
+            root.closeDrop();
+        else
+            root.openDrop(i);
+    }
+    function moveDropCursor(dir: int): void {
+        const opts = root.dropdownOptions(root.openDropdown);
+        if (opts.length === 0)
+            return;
+        root.dropCursor = (root.dropCursor + dir + opts.length) % opts.length;
+    }
+    function commitDropCursor(): void {
+        const i = root.openDropdown;
+        const opts = root.dropdownOptions(i);
+        if (i < 0 || opts.length === 0) {
+            root.closeDrop();
+            return;
+        }
+        root.applyDropValue(i, opts[Palette.clamp(root.dropCursor, 0, opts.length - 1)]);
+        root.closeDrop();
+    }
+    function toggleMonDrop(name: string): void {
+        if (root.openMonRes === name) {
+            root.closeDrop();
+            return;
+        }
+        const modes = Services.Settings.monitorModes(name);
+        let at = modes.indexOf(Services.Settings.monitorRes(name));
+        if (at < 0)
+            at = 0;
+        root.dropCursor = at;
+        root.openDropdown = -1;
+        root.openMonRes = name;
+    }
+    function monMoveCursor(dir: int): void {
+        const modes = Services.Settings.monitorModes(root.openMonRes);
+        if (modes.length === 0)
+            return;
+        root.dropCursor = (root.dropCursor + dir + modes.length) % modes.length;
+    }
+    function commitMonRes(name: string, res: string): void {
+        root.beginMonitorChange();
+        Services.Settings.setMonitorRes(name, res);
+        root.closeDrop();
+    }
+    function commitMonCursor(): void {
+        const name = root.openMonRes;
+        const modes = Services.Settings.monitorModes(name);
+        if (name === "" || modes.length === 0) {
+            root.closeDrop();
+            return;
+        }
+        root.commitMonRes(name, modes[Palette.clamp(root.dropCursor, 0, modes.length - 1)]);
     }
 
     function fmtTimeout(s: int): string {
@@ -211,7 +385,7 @@ BasePopup {
 
     property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
     property int wpListH: root.wpCount * Palette.listRowHeight + Math.max(0, root.wpCount - 1) * Palette.listSpacing
-    property int monBlockH: 22 + 14 + 3 * Palette.rowHeight + 4 * Palette.listSpacing
+    property int monBlockH: 22 + 3 * Palette.rowHeight + 3 * Palette.listSpacing
     property int monCount: Services.Settings.monitors.length
     property int monFootH: Palette.rowHeight + Palette.listSpacing + 14
 
@@ -222,7 +396,7 @@ BasePopup {
         if (root.tab === 1)
             return 6 * Palette.rowHeight + 5 * Palette.listSpacing;
         if (root.tab === 2)
-            return 10 * Palette.rowHeight + 9 * Palette.listSpacing + Palette.popupSpacing + 30;
+            return 11 * Palette.rowHeight + 10 * Palette.listSpacing + Palette.popupSpacing + 30;
         if (root.monCount === 0)
             return root.mainSelH + Palette.popupSpacing + 30;
         return root.mainSelH + Palette.popupSpacing + root.monCount * root.monBlockH + (root.monCount - 1) * Palette.popupSpacing + Palette.popupSpacing + root.monFootH;
@@ -273,9 +447,9 @@ BasePopup {
                 height: Palette.listRowHeight
                 readonly property bool current: Services.Settings.wallpaperOverride === ""
                 readonly property bool selected: root.tab === 0 && root.selectedIndex === 0
-                color: selected ? Palette.accent : current ? Palette.activeBg : autoHover.containsMouse ? Palette.hoverBg : "transparent"
-                border.width: 1
-                border.color: selected ? Palette.accent : current ? Palette.accent : Palette.dim
+                color: selected ? Palette.activeBg : current ? Palette.activeBg : autoHover.containsMouse ? Palette.hoverBg : "transparent"
+                border.width: (!selected && current) ? 1 : 0
+                border.color: Palette.accent
                 Text {
                     anchors {
                         fill: parent
@@ -284,7 +458,7 @@ BasePopup {
                     }
                     verticalAlignment: Text.AlignVCenter
                     text: (parent.current ? "✓  " : "") + "Auto (default)"
-                    color: parent.selected ? Palette.onAccent : parent.current ? Palette.accent : autoHover.containsMouse ? Palette.fg : Palette.dim
+                    color: parent.selected ? Palette.fg : parent.current ? Palette.accent : autoHover.containsMouse ? Palette.fg : Palette.dim
                     font.family: Palette.font
                     font.pixelSize: Palette.px12
                     elide: Text.ElideRight
@@ -315,9 +489,9 @@ BasePopup {
                     readonly property bool selected: wallList.currentIndex === index
                     width: ListView.view.width
                     height: Palette.listRowHeight
-                    color: selected ? Palette.accent : current ? Palette.activeBg : rowHover.containsMouse ? Palette.hoverBg : "transparent"
-                    border.width: 1
-                    border.color: selected ? Palette.accent : current ? Palette.accent : Palette.dim
+                    color: selected ? Palette.activeBg : current ? Palette.activeBg : rowHover.containsMouse ? Palette.hoverBg : "transparent"
+                    border.width: (!selected && current) ? 1 : 0
+                    border.color: Palette.accent
                     Text {
                         anchors {
                             fill: parent
@@ -326,7 +500,7 @@ BasePopup {
                         }
                         verticalAlignment: Text.AlignVCenter
                         text: (parent.current ? "✓  " : "") + String(modelData).split("/").pop()
-                        color: parent.selected ? Palette.onAccent : parent.current ? Palette.accent : rowHover.containsMouse ? Palette.fg : Palette.dim
+                        color: parent.selected ? Palette.fg : parent.current ? Palette.accent : rowHover.containsMouse ? Palette.fg : Palette.dim
                         font.family: Palette.font
                         font.pixelSize: Palette.px12
                         elide: Text.ElideRight
@@ -501,52 +675,124 @@ BasePopup {
                 selected: root.tab === 2 && root.selectedIndex === 6
                 title: "Critical action"
                 value: ""
-                PopupButton {
+                z: root.openDropdown === 6 ? 100 : 0
+                Dropdown {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
-                    columns: 1
-                    label: Services.Settings.criticalBatteryAction
+                    options: Services.Power.criticalOptions
+                    current: Services.Settings.criticalBatteryAction
+                    open: root.openDropdown === 6
                     selected: root.tab === 2 && root.selectedIndex === 6
-                    onClicked: Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, 1))
+                    cursor: root.dropCursor
+                    onHeaderClicked: {
+                        root.selectedIndex = 6;
+                        root.toggleDrop(6);
+                    }
+                    onOptionClicked: value => {
+                        root.selectedIndex = 6;
+                        root.applyDropValue(6, value);
+                        root.closeDrop();
+                    }
                 }
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 7
                 title: "Lid close"
                 value: ""
-                PopupButton {
+                z: root.openDropdown === 7 ? 100 : 0
+                Dropdown {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
-                    columns: 1
-                    label: Services.Settings.lidCloseAction
+                    options: Services.Power.lidOptions
+                    current: Services.Settings.lidCloseAction
+                    open: root.openDropdown === 7
                     selected: root.tab === 2 && root.selectedIndex === 7
-                    onClicked: Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, 1))
+                    cursor: root.dropCursor
+                    onHeaderClicked: {
+                        root.selectedIndex = 7;
+                        root.toggleDrop(7);
+                    }
+                    onOptionClicked: value => {
+                        root.selectedIndex = 7;
+                        root.applyDropValue(7, value);
+                        root.closeDrop();
+                    }
                 }
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 8
                 title: "Power button"
                 value: ""
-                PopupButton {
+                z: root.openDropdown === 8 ? 100 : 0
+                Dropdown {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
-                    columns: 1
-                    label: Services.Settings.powerButtonAction
+                    options: Services.Power.buttonOptions
+                    current: Services.Settings.powerButtonAction
+                    open: root.openDropdown === 8
                     selected: root.tab === 2 && root.selectedIndex === 8
-                    onClicked: Services.Settings.setPowerButtonAction(root.cycleOpt(Services.Power.buttonOptions, Services.Settings.powerButtonAction, 1))
+                    cursor: root.dropCursor
+                    openUp: true
+                    onHeaderClicked: {
+                        root.selectedIndex = 8;
+                        root.toggleDrop(8);
+                    }
+                    onOptionClicked: value => {
+                        root.selectedIndex = 8;
+                        root.applyDropValue(8, value);
+                        root.closeDrop();
+                    }
                 }
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 9
-                title: "On battery"
+                title: "Active profile"
                 value: ""
-                PopupButton {
+                z: root.openDropdown === 9 ? 100 : 0
+                Dropdown {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
-                    columns: 1
-                    label: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
+                    options: root.activeProfileOptions()
+                    current: Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd"
+                    enabled: Services.Power.profilesAvailable
+                    open: root.openDropdown === 9
                     selected: root.tab === 2 && root.selectedIndex === 9
-                    onClicked: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, 1))
+                    cursor: root.dropCursor
+                    openUp: true
+                    onHeaderClicked: {
+                        root.selectedIndex = 9;
+                        root.toggleDrop(9);
+                    }
+                    onOptionClicked: value => {
+                        root.selectedIndex = 9;
+                        root.applyDropValue(9, value);
+                        root.closeDrop();
+                    }
+                }
+            }
+            SettingsRow {
+                selected: root.tab === 2 && root.selectedIndex === 10
+                title: "On battery"
+                value: ""
+                z: root.openDropdown === 10 ? 100 : 0
+                Dropdown {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    options: Services.Power.profileOptions
+                    current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
+                    open: root.openDropdown === 10
+                    selected: root.tab === 2 && root.selectedIndex === 10
+                    cursor: root.dropCursor
+                    openUp: true
+                    onHeaderClicked: {
+                        root.selectedIndex = 10;
+                        root.toggleDrop(10);
+                    }
+                    onOptionClicked: value => {
+                        root.selectedIndex = 10;
+                        root.applyDropValue(10, value);
+                        root.closeDrop();
+                    }
                 }
             }
             Text {
@@ -606,6 +852,7 @@ BasePopup {
                 model: Services.Settings.monitors
                 delegate: Column {
                     required property var modelData
+                    required property int index
                     readonly property string monName: String(modelData.name ?? "")
                     width: parent.width
                     spacing: Palette.listSpacing
@@ -652,40 +899,25 @@ BasePopup {
                     selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 2
                         title: "Resolution"
                         value: ""
-                        Row {
+                        z: root.openMonRes === monName ? 100 : 0
+                        Dropdown {
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width
-                            spacing: Palette.popupSpacing
-                            PopupButton {
-                                label: "Previous"
-                                selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 2
-                                columns: 2
-                                onClicked: {
-                                    root.beginMonitorChange();
-                                    Services.Settings.cycleMonitorRes(monName, -1)
-                                }
+                            options: Services.Settings.monitorModes(monName)
+                            current: Services.Settings.monitorRes(monName)
+                            open: root.openMonRes === monName
+                            selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 2
+                            cursor: root.dropCursor
+                            openUp: index === root.monCount - 1
+                            onHeaderClicked: {
+                                root.selectedIndex = Services.Settings.monitorBase(monName) + 2;
+                                root.toggleMonDrop(monName);
                             }
-                            PopupButton {
-                                label: "Next"
-                                selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 2
-                                columns: 2
-                                onClicked: {
-                                    root.beginMonitorChange();
-                                    Services.Settings.cycleMonitorRes(monName, 1)
-                                }
+                            onOptionClicked: value => {
+                                root.selectedIndex = Services.Settings.monitorBase(monName) + 2;
+                                root.commitMonRes(monName, value);
                             }
                         }
-                    }
-                    Text {
-                        width: parent.width
-                        height: 14
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideMiddle
-                        text: Services.Settings.monitorRes(monName)
-                        color: Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px10
                     }
                 }
             }
@@ -709,7 +941,7 @@ BasePopup {
 
         HintText {
             id: hint
-            text: "jk move · hl adjust · ↵ activate · 1-4 tabs"
+            text: "1-4 tabs · jk move · hl adjust · ↵ open/pick"
         }
     }
 }

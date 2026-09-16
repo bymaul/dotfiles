@@ -110,8 +110,8 @@ BasePopup {
                     width: historyList.width
                     height: content.height + 16
                     color: selected ? Palette.activeBg : cardArea.containsMouse ? Palette.hoverBg : Palette.bg
-                    border.width: 1
-                    border.color: modelData.critical ? Palette.danger : selected ? Palette.accent : Palette.dim
+                    border.width: modelData.critical ? 1 : 0
+                    border.color: Palette.danger
                     MouseArea {
                         id: cardArea
                         anchors.fill: parent

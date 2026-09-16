@@ -290,7 +290,7 @@ Singleton {
         }
         const scale = String(settings.monitorScale(name));
         const desc = name + " -> " + settings.monitorRes(name) + " x" + scale;
-        settings.applyTracked(desc, 'hl.monitor({output = "' + name + '", mode = "' + settings.monitorRes(name) + '", position = "auto", scale = "' + scale + '"})', q);
+        settings.applyTracked(desc, 'hl.monitor({output = "' + name + '", disabled = false, mode = "' + settings.monitorRes(name) + '", position = "auto", scale = "' + scale + '"})', q);
     }
     function applyTracked(label: string, code: string, quiet: bool): void {
         settings.applyQueue = [...settings.applyQueue, {label: label, code: code, quiet: !!quiet}];
@@ -326,15 +326,18 @@ Singleton {
         settings.applyMonitor(name);
         settings.scheduleSave();
     }
+    function setMonitorRes(name: string, res: string): void {
+        settings.putMonitorCfg(name, {res: res});
+        settings.applyMonitor(name);
+        settings.scheduleSave();
+    }
     function cycleMonitorRes(name: string, dir: int): void {
         const modes = settings.monitorModes(name);
         let idx = modes.indexOf(settings.monitorRes(name));
         if (idx < 0)
             idx = 0;
         idx = (idx + dir + modes.length) % modes.length;
-        settings.putMonitorCfg(name, {res: modes[idx]});
-        settings.applyMonitor(name);
-        settings.scheduleSave();
+        settings.setMonitorRes(name, modes[idx]);
     }
 
     property var monitors: []
@@ -544,7 +547,7 @@ Singleton {
     }
     Process {
         id: monitorScan
-        command: ["hyprctl", "monitors", "-j"]
+        command: ["hyprctl", "monitors", "all", "-j"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

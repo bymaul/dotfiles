@@ -132,9 +132,9 @@ BasePopup {
                     readonly property bool connected: modelData.state === BluetoothDeviceState.Connected
                     width: btList.width
                     height: Palette.listRowHeight
-                    color: selected ? Palette.accent : rowArea.containsMouse ? Palette.hoverBg : (connected ? Palette.activeBg : "transparent")
-                    border.width: selected ? 0 : 1
-                    border.color: selected ? Palette.accent : connected ? Palette.accent : Palette.dim
+                    color: selected ? Palette.activeBg : rowArea.containsMouse ? Palette.hoverBg : (connected ? Palette.activeBg : "transparent")
+                    border.width: (!selected && connected) ? 1 : 0
+                    border.color: Palette.accent
                     MouseArea {
                         id: rowArea
                         anchors.fill: parent
@@ -153,7 +153,7 @@ BasePopup {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 18
                             text: modelData.connected ? "󰂯" : "󰂲"
-                            color: selected ? Palette.onAccent : modelData.connected ? Palette.accent : rowArea.containsMouse ? Palette.fg : Palette.dim
+                            color: selected ? Palette.fg : modelData.connected ? Palette.accent : rowArea.containsMouse ? Palette.fg : Palette.dim
                             font.family: Palette.font
                             font.pixelSize: Palette.px13
                         }
@@ -164,7 +164,7 @@ BasePopup {
                             Text {
                                 width: parent.width
                                 text: modelData.name || "Unknown device"
-                                color: selected ? Palette.onAccent : (modelData.connected || rowArea.containsMouse) ? Palette.fg : Palette.dim
+                                color: selected ? Palette.fg : (modelData.connected || rowArea.containsMouse) ? Palette.fg : Palette.dim
                                 font.family: Palette.font
                                 font.pixelSize: Palette.px12
                                 elide: Text.ElideRight
@@ -172,7 +172,7 @@ BasePopup {
                             Text {
                                 width: parent.width
                                 text: root.statusText(modelData)
-                                color: selected ? Palette.onAccent : rowArea.containsMouse ? Palette.fg : Palette.dim
+                                color: selected ? Palette.fg : rowArea.containsMouse ? Palette.fg : Palette.dim
                                 font.family: Palette.font
                                 font.pixelSize: Palette.px10
                             }
@@ -182,7 +182,7 @@ BasePopup {
                             width: 24
                             horizontalAlignment: Text.AlignHCenter
                             text: "󰅖"
-                            color: selected ? Palette.onAccent : forgetArea.containsMouse ? Palette.fg : Palette.dim
+                            color: selected ? Palette.fg : forgetArea.containsMouse ? Palette.fg : Palette.dim
                             font.family: Palette.font
                             font.pixelSize: Palette.px13
                             visible: modelData.paired && !modelData.connected

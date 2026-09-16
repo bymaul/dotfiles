@@ -124,9 +124,9 @@ BasePopup {
                 readonly property bool selected: wifiList.currentIndex === index
                 width: wifiList.width
                 height: Palette.listRowHeight
-                color: selected ? Palette.accent : rowArea.containsMouse ? Palette.hoverBg : (modelData.connected ? Palette.activeBg : "transparent")
-                border.width: selected ? 0 : 1
-                border.color: selected ? Palette.accent : modelData.connected ? Palette.accent : Palette.dim
+                color: selected ? Palette.activeBg : rowArea.containsMouse ? Palette.hoverBg : (modelData.connected ? Palette.activeBg : "transparent")
+                border.width: (!selected && modelData.connected) ? 1 : 0
+                border.color: Palette.accent
                 MouseArea {
                     id: rowArea
                     anchors.fill: parent
@@ -154,7 +154,7 @@ BasePopup {
                                 return "󰤢";
                             return "󰤟";
                         }
-                        color: selected ? Palette.onAccent : modelData.connected ? Palette.accent : rowArea.containsMouse ? Palette.fg : Palette.dim
+                        color: selected ? Palette.fg : modelData.connected ? Palette.accent : rowArea.containsMouse ? Palette.fg : Palette.dim
                         font.family: Palette.font
                         font.pixelSize: Palette.px13
                     }
@@ -162,7 +162,7 @@ BasePopup {
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 82
                         text: modelData.name || "Hidden network"
-                        color: selected ? Palette.onAccent : (modelData.connected || rowArea.containsMouse) ? Palette.fg : Palette.dim
+                        color: selected ? Palette.fg : (modelData.connected || rowArea.containsMouse) ? Palette.fg : Palette.dim
                         font.family: Palette.font
                         font.pixelSize: Palette.px12
                         elide: Text.ElideRight
@@ -171,7 +171,7 @@ BasePopup {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 16
                         text: "󰌾"
-                        color: selected ? Palette.onAccent : rowArea.containsMouse ? Palette.fg : Palette.dim
+                        color: selected ? Palette.fg : rowArea.containsMouse ? Palette.fg : Palette.dim
                         font.family: Palette.font
                         font.pixelSize: Palette.px12
                         visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
@@ -181,7 +181,7 @@ BasePopup {
                         width: 24
                         horizontalAlignment: Text.AlignHCenter
                         text: "󰅖"
-                        color: selected ? Palette.onAccent : forgetArea.containsMouse ? Palette.fg : Palette.dim
+                        color: selected ? Palette.fg : forgetArea.containsMouse ? Palette.fg : Palette.dim
                         font.family: Palette.font
                         font.pixelSize: Palette.px13
                         visible: modelData.known && !modelData.connected

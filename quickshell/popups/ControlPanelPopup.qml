@@ -165,9 +165,7 @@ BasePopup {
             visible: Services.Media.brightnessAvailable
             width: parent.width
             height: visible ? Palette.rowHeight : 0
-            color: Palette.surface
-            border.width: root.selectedIndex === 0 ? 1 : 0
-            border.color: root.selectedIndex === 0 ? Palette.accent : Palette.dim
+            color: root.selectedIndex === 0 ? Palette.activeBg : Palette.surface
             Row {
                 anchors {
                     fill: parent
@@ -203,9 +201,7 @@ BasePopup {
         Rectangle {
             width: parent.width
             height: Palette.rowHeight
-            color: Palette.surface
-            border.width: root.selectedIndex === root.volumeIdx() ? 1 : 0
-            border.color: root.selectedIndex === root.volumeIdx() ? Palette.accent : Palette.dim
+            color: root.selectedIndex === root.volumeIdx() ? Palette.activeBg : Palette.surface
             Row {
                 anchors {
                     fill: parent
