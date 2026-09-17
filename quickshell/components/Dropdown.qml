@@ -13,6 +13,7 @@ Item {
     property int maxVisible: 6
     signal headerClicked()
     signal optionClicked(string value)
+    signal optionHovered(int index)
     width: parent.width
     height: Palette.rowHeight
     function menuHeight(): int {
@@ -121,6 +122,10 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onContainsMouseChanged: {
+                        if (containsMouse)
+                            root.optionHovered(index);
+                    }
                     onClicked: root.optionClicked(modelData)
                 }
             }

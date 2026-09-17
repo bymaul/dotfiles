@@ -12,6 +12,11 @@ BasePopup {
         enabled: root.visible
         onActivated: root.close()
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible
+        onActivated: root.close()
+    }
     Shortcut { sequence: "s"; enabled: root.visible; onActivated: root.powerOff() }
     Shortcut { sequence: "r"; enabled: root.visible; onActivated: root.reboot() }
     Shortcut { sequence: "u"; enabled: root.visible; onActivated: root.suspend() }

@@ -10,26 +10,38 @@ BasePopup {
     id: root
     useGrab: false
     implicitWidth: Palette.popupWidth
-    implicitHeight: (Services.Media.brightnessAvailable ? 258 : 214) + (root.mprisPlayer !== null ? Palette.rowHeight + Palette.popupSpacing : 0) + (Services.Notifs.history.length > 0 ? 12 : 0)
+    implicitHeight: (Services.Media.brightnessAvailable ? 258 : 214) + (root.mprisPlayer !== null ? Palette.rowHeight + Palette.popupSpacing : 0)
     Shortcut {
         sequence: "Escape"
         enabled: root.visible
         onActivated: root.close()
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible
+        onActivated: root.close()
+    }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepVertical(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepVertical(-1) }
+    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepVertical(1) }
+    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepVertical(-1) }
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
     Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.adjustSelected(1) }
+    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
+    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.adjustSelected(1) }
+    Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.focusNext() }
+    Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.focusPrev() }
     Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "m"; enabled: root.visible; onActivated: root.toggleVolumeMute() }
-    Shortcut { sequence: "c"; enabled: root.visible && Services.Notifs.history.length > 0; onActivated: Services.Notifs.clearHistory() }
-    Shortcut { sequence: "o"; enabled: root.visible && Services.Notifs.history.length > 0; onActivated: root.invokeSelectedAction() }
     onVisibleChanged: {
         if (visible) {
             selectedIndex = 0;
+            actionIndex = -1;
+            mprisCol = 1;
             root.refreshPlayer();
+            root.clampSelection();
             Services.Notifs.hideAllToasts();
         }
         bar.updateToastSuppress();
@@ -45,22 +57,70 @@ BasePopup {
         onTriggered: root.refreshPlayer()
     }
     property int selectedIndex: 0
+    property int actionIndex: -1
+    property int mprisCol: 1
     property var micSource: Pipewire.defaultAudioSource
     readonly property var audioSink: Services.Media.sink
     function volumeIdx(): int {
         return Services.Media.brightnessAvailable ? 1 : 0;
     }
+    function mprisIdx(): int {
+        return root.mprisPlayer !== null ? root.volumeIdx() + 1 : -1;
+    }
     function firstTileIdx(): int {
-        return root.volumeIdx() + 1;
+        return root.volumeIdx() + 1 + (root.mprisPlayer !== null ? 1 : 0);
+    }
+    function clearIdx(): int {
+        return Services.Notifs.history.length > 0 ? root.firstTileIdx() + 7 : -1;
     }
     function firstHistIdx(): int {
-        return root.firstTileIdx() + 7;
+        return root.firstTileIdx() + 7 + (Services.Notifs.history.length > 0 ? 1 : 0);
     }
     function itemCount(): int {
         return root.firstHistIdx() + Services.Notifs.history.length;
     }
     function clampSelection(): void {
         selectedIndex = Palette.clamp(selectedIndex, 0, root.itemCount() - 1);
+        root.clampAction();
+    }
+    function selectedActions(): var {
+        if (root.selectedKind() !== "history")
+            return [];
+        const item = Services.Notifs.history[root.selectedHistItem()] ?? null;
+        return item?.live?.actions ?? [];
+    }
+    function actionCount(): int {
+        return root.selectedActions().length;
+    }
+    function clampAction(): void {
+        if (root.selectedKind() !== "history" || root.actionCount() === 0)
+            actionIndex = -1;
+        else
+            actionIndex = Palette.clamp(actionIndex, -1, root.actionCount() - 1);
+    }
+    function selectIndex(i: int): void {
+        if (selectedIndex === i && actionIndex === -1)
+            return;
+        selectedIndex = i;
+        actionIndex = -1;
+        root.clampSelection();
+        root.revealSelection();
+    }
+    function selectAction(histItem: int, actIdx: int): void {
+        selectedIndex = root.firstHistIdx() + histItem;
+        actionIndex = actIdx;
+        root.clampSelection();
+        root.revealSelection();
+    }
+    function selectMpris(col: int): void {
+        if (root.mprisPlayer === null)
+            return;
+        if (selectedIndex === root.mprisIdx() && mprisCol === col)
+            return;
+        selectedIndex = root.mprisIdx();
+        actionIndex = -1;
+        mprisCol = Palette.clamp(col, 0, 2);
+        root.clampSelection();
     }
     Connections {
         target: Services.Notifs
@@ -69,22 +129,36 @@ BasePopup {
             root.revealSelection();
         }
     }
+    onMprisPlayerChanged: {
+        if (root.visible)
+            root.clampSelection();
+    }
     function revealSelection(): void {
-        if (root.selectedKind() === "history")
+        const kind = root.selectedKind();
+        if (kind === "history")
             bar.revealHistory(root.selectedHistItem());
+        else if (kind === "clear")
+            bar.revealHistory(0);
     }
     function stepSelection(dir: int): void {
+        actionIndex = -1;
         selectedIndex += dir;
         root.clampSelection();
         root.revealSelection();
     }
     function stepVertical(dir: int): void {
+        actionIndex = -1;
         if (root.selectedKind() !== "tile") {
             root.stepSelection(dir);
             return;
         }
         const target = selectedIndex + dir * 3;
-        selectedIndex = target < root.firstTileIdx() ? root.volumeIdx() : target;
+        if (target < root.firstTileIdx())
+            selectedIndex = root.mprisPlayer !== null ? root.mprisIdx() : root.volumeIdx();
+        else if (dir > 0 && Services.Notifs.history.length > 0 && target >= root.clearIdx())
+            selectedIndex = root.clearIdx();
+        else
+            selectedIndex = target;
         root.clampSelection();
         root.revealSelection();
     }
@@ -93,6 +167,10 @@ BasePopup {
             return "brightness";
         if (selectedIndex === root.volumeIdx())
             return "volume";
+        if (root.mprisPlayer !== null && selectedIndex === root.mprisIdx())
+            return "mpris";
+        if (Services.Notifs.history.length > 0 && selectedIndex === root.clearIdx())
+            return "clear";
         if (selectedIndex >= root.firstHistIdx())
             return "history";
         return "tile";
@@ -124,8 +202,95 @@ BasePopup {
             Services.Media.setBrightness(Services.Media.brightness + dir * Palette.brightnessStep, true);
         else if (kind === "volume")
             root.adjustVolume(dir * Palette.volumeStep);
+        else if (kind === "mpris")
+            mprisCol = Palette.clamp(mprisCol + dir, 0, 2);
+        else if (kind === "history")
+            root.moveAction(dir);
         else
             root.stepSelection(dir);
+    }
+    function moveAction(dir: int): void {
+        const count = root.actionCount();
+        if (count === 0) {
+            root.stepSelection(dir);
+            return;
+        }
+        if (actionIndex === -1) {
+            if (dir > 0)
+                actionIndex = 0;
+            else
+                root.stepSelection(dir);
+            return;
+        }
+        const next = actionIndex + dir;
+        if (next < 0)
+            actionIndex = -1;
+        else if (next >= count)
+            actionIndex = count - 1;
+        else
+            actionIndex = next;
+    }
+    function focusNext(): void {
+        const kind = root.selectedKind();
+        if (kind === "history" && root.actionCount() > 0) {
+            if (actionIndex === -1) {
+                actionIndex = 0;
+                return;
+            }
+            if (actionIndex < root.actionCount() - 1) {
+                actionIndex += 1;
+                return;
+            }
+            actionIndex = -1;
+        }
+        root.stepSelection(1);
+    }
+    function focusPrev(): void {
+        const kind = root.selectedKind();
+        if (kind === "history" && actionIndex >= 0) {
+            actionIndex -= 1;
+            return;
+        }
+        root.stepSelection(-1);
+    }
+    function activateMpris(col: int): void {
+        if (col === 0)
+            Services.Media.mediaPrev();
+        else if (col === 2)
+            Services.Media.mediaNext();
+        else
+            Services.Media.mediaToggle();
+    }
+    function activateActionAt(actIdx: int): void {
+        const histItem = root.selectedHistItem();
+        const item = Services.Notifs.history[histItem] ?? null;
+        const live = item?.live ?? null;
+        const actions = live?.actions ?? [];
+        if (!live || actIdx < 0 || actIdx >= actions.length)
+            return;
+        Services.Notifs.activateAction(live, actions[actIdx]);
+        Services.Notifs.dismissHistoryAt(histItem);
+        actionIndex = -1;
+        root.clampSelection();
+        bar.closePopups();
+    }
+    function dismissSelected(): void {
+        if (root.selectedKind() !== "history")
+            return;
+        actionIndex = -1;
+        Services.Notifs.dismissHistoryAt(root.selectedHistItem());
+        root.clampSelection();
+    }
+    function activateDefaultAction(): void {
+        const actions = root.selectedActions();
+        if (actions.length === 0) {
+            root.dismissSelected();
+            return;
+        }
+        let idx = actions.findIndex(a => a.identifier === "default");
+        if (idx < 0)
+            idx = 0;
+        root.activateActionAt(idx);
     }
     function activateSelected(): void {
         const kind = root.selectedKind();
@@ -135,27 +300,28 @@ BasePopup {
         }
         if (kind === "brightness")
             return;
-        if (kind === "history") {
-            Services.Notifs.dismissHistoryAt(root.selectedHistItem());
+        if (kind === "mpris") {
+            root.activateMpris(mprisCol);
+            return;
+        }
+        if (kind === "clear") {
+            actionIndex = -1;
+            Services.Notifs.clearHistory();
             root.clampSelection();
+            return;
+        }
+        if (kind === "history") {
+            if (actionIndex >= 0) {
+                root.activateActionAt(actionIndex);
+                return;
+            }
+            root.activateDefaultAction();
             return;
         }
         const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
         const tile = root.selectedTile();
         if (tile >= 0 && tile < actions.length)
             actions[tile]();
-    }
-    function invokeSelectedAction(): void {
-        if (root.selectedKind() !== "history")
-            return;
-        const item = Services.Notifs.history[root.selectedHistItem()] ?? null;
-        const live = item?.live ?? null;
-        const actions = live?.actions ?? [];
-        if (!live || actions.length === 0)
-            return;
-        Services.Notifs.activateAction(live, actions.find(a => a.identifier === "default") ?? actions[0]);
-        root.clampSelection();
-        bar.closePopups();
     }
     PwObjectTracker {
         objects: [root.micSource]
@@ -166,6 +332,14 @@ BasePopup {
             width: parent.width
             height: visible ? Palette.rowHeight : 0
             color: root.selectedIndex === 0 ? Palette.activeBg : Palette.surface
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onContainsMouseChanged: {
+                    if (containsMouse)
+                        root.selectIndex(0);
+                }
+            }
             Row {
                 anchors {
                     fill: parent
@@ -202,6 +376,14 @@ BasePopup {
             width: parent.width
             height: Palette.rowHeight
             color: root.selectedIndex === root.volumeIdx() ? Palette.activeBg : Palette.surface
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onContainsMouseChanged: {
+                    if (containsMouse)
+                        root.selectIndex(root.volumeIdx());
+                }
+            }
             Row {
                 anchors {
                     fill: parent
@@ -246,8 +428,17 @@ BasePopup {
         Rectangle {
             visible: root.mprisPlayer !== null
             width: parent.width
-            height: Palette.rowHeight
-            color: Palette.surface
+            height: visible ? Palette.rowHeight : 0
+            color: root.selectedKind() === "mpris" ? Palette.activeBg : Palette.surface
+            readonly property bool mprisSelected: root.selectedKind() === "mpris"
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onContainsMouseChanged: {
+                    if (containsMouse)
+                        root.selectMpris(root.mprisCol);
+                }
+            }
             Row {
                 anchors {
                     fill: parent
@@ -260,14 +451,27 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: "󰒮"
-                    color: Palette.fg
+                    color: parent.parent.mprisSelected && root.mprisCol === 0 ? Palette.onAccent : Palette.fg
                     font.family: Palette.font
                     font.pixelSize: Palette.px14
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        radius: 4
+                        visible: parent.parent.parent.mprisSelected && root.mprisCol === 0
+                        color: Palette.accent
+                        z: -1
+                    }
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Services.Media.mediaPrev()
+                        onContainsMouseChanged: {
+                            if (containsMouse)
+                                root.selectMpris(0);
+                        }
+                        onClicked: root.activateMpris(0)
                     }
                 }
                 Text {
@@ -275,14 +479,27 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: (root.mprisPlayer?.isPlaying ?? false) ? "󰏤" : "󰐊"
-                    color: Palette.fg
+                    color: parent.parent.mprisSelected && root.mprisCol === 1 ? Palette.onAccent : Palette.fg
                     font.family: Palette.font
                     font.pixelSize: Palette.px14
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        radius: 4
+                        visible: parent.parent.parent.mprisSelected && root.mprisCol === 1
+                        color: Palette.accent
+                        z: -1
+                    }
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Services.Media.mediaToggle()
+                        onContainsMouseChanged: {
+                            if (containsMouse)
+                                root.selectMpris(1);
+                        }
+                        onClicked: root.activateMpris(1)
                     }
                 }
                 Text {
@@ -290,14 +507,27 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: "󰒭"
-                    color: Palette.fg
+                    color: parent.parent.mprisSelected && root.mprisCol === 2 ? Palette.onAccent : Palette.fg
                     font.family: Palette.font
                     font.pixelSize: Palette.px14
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        radius: 4
+                        visible: parent.parent.parent.mprisSelected && root.mprisCol === 2
+                        color: Palette.accent
+                        z: -1
+                    }
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Services.Media.mediaNext()
+                        onContainsMouseChanged: {
+                            if (containsMouse)
+                                root.selectMpris(2);
+                        }
+                        onClicked: root.activateMpris(2)
                     }
                 }
                 Text {
@@ -322,6 +552,7 @@ BasePopup {
                 active: Networking.wifiEnabled
                 selected: root.selectedIndex === root.firstTileIdx() + 0
                 onTileClicked: bar.openWifiFromPanel()
+                onHovered: root.selectIndex(root.firstTileIdx() + 0)
             }
             ToggleTile {
                 glyph: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
@@ -330,6 +561,7 @@ BasePopup {
                 enabled: Bluetooth.defaultAdapter != null
                 selected: root.selectedIndex === root.firstTileIdx() + 1
                 onTileClicked: bar.openBluetoothFromPanel()
+                onHovered: root.selectIndex(root.firstTileIdx() + 1)
             }
             ToggleTile {
                 glyph: root.micSource?.audio?.muted ? "󰍭" : "󰍬"
@@ -338,6 +570,7 @@ BasePopup {
                 enabled: root.micSource?.audio != null
                 selected: root.selectedIndex === root.firstTileIdx() + 2
                 onTileClicked: root.toggleMicMute()
+                onHovered: root.selectIndex(root.firstTileIdx() + 2)
             }
             ToggleTile {
                 glyph: "󰅶"
@@ -345,6 +578,7 @@ BasePopup {
                 active: Services.Modes.caffeineActive
                 selected: root.selectedIndex === root.firstTileIdx() + 3
                 onTileClicked: Services.Modes.toggleCaffeine()
+                onHovered: root.selectIndex(root.firstTileIdx() + 3)
             }
             ToggleTile {
                 glyph: ""
@@ -352,6 +586,7 @@ BasePopup {
                 active: Services.Modes.dndActive
                 selected: root.selectedIndex === root.firstTileIdx() + 4
                 onTileClicked: Services.Modes.toggleDnd()
+                onHovered: root.selectIndex(root.firstTileIdx() + 4)
             }
             ToggleTile {
                 glyph: ""
@@ -359,6 +594,7 @@ BasePopup {
                 active: false
                 selected: root.selectedIndex === root.firstTileIdx() + 5
                 onTileClicked: bar.openSettingsFromPanel()
+                onHovered: root.selectIndex(root.firstTileIdx() + 5)
             }
             ToggleTile {
                 glyph: "󰐥"
@@ -366,10 +602,15 @@ BasePopup {
                 active: false
                 selected: root.selectedIndex === root.firstTileIdx() + 6
                 onTileClicked: bar.openPowerFromPanel()
+                onHovered: root.selectIndex(root.firstTileIdx() + 6)
             }
         }
         HintText {
-            text: Services.Notifs.history.length > 0 ? "jk move · hl adjust · ↵ activate\nm mute · c clear · o open" : "jk move · hl adjust · ↵ activate · m mute"
+            text: {
+                if (Services.Notifs.history.length === 0)
+                    return "jk move · hl adjust · ↵ select · m mute";
+                return "jk move · hl adjust · Tab actions · ↵ open · m mute";
+            }
         }
     }
 }

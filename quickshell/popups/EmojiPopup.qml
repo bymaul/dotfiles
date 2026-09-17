@@ -7,12 +7,17 @@ import "../Palette.js" as Palette
 BasePopup {
     id: root
     anchorMode: "center"
-    implicitWidth: Palette.launcherWidth
+    implicitWidth: Palette.settingsWidth
     implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + resultGrid.cellHeight * root.gridRows + hint.implicitHeight
     readonly property int gridCols: 10
     readonly property int gridRows: 9
     Shortcut {
         sequence: "Escape"
+        enabled: root.visible && !queryField.activeFocus
+        onActivated: root.close()
+    }
+    Shortcut {
+        sequence: "q"
         enabled: root.visible && !queryField.activeFocus
         onActivated: root.close()
     }
@@ -206,6 +211,13 @@ BasePopup {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onContainsMouseChanged: {
+                        if (containsMouse) {
+                            resultGrid.currentIndex = index;
+                            resultGrid.positionViewAtIndex(index, GridView.Contain);
+                            root.selMoved = true;
+                        }
+                    }
                     onClicked: {
                         resultGrid.currentIndex = index;
                         root.selMoved = true;

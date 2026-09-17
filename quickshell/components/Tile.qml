@@ -11,6 +11,7 @@ Rectangle {
     property bool wide: false
     property int columns: 3
     signal clicked
+    signal hovered
     width: root.wide ? parent.width : (parent.width - 8) / columns
     height: Palette.tileHeight
     color: !root.available ? "transparent" : root.accentButton ? Palette.accent : root.selected ? Palette.accent : root.active ? Palette.activeBg : hover.containsMouse ? Palette.hoverBg : Palette.surface
@@ -40,5 +41,9 @@ Rectangle {
         hoverEnabled: true
         cursorShape: root.available ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
+        onContainsMouseChanged: {
+            if (containsMouse)
+                root.hovered();
+        }
     }
 }

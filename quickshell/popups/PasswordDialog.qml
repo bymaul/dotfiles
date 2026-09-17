@@ -13,9 +13,18 @@ BasePopup {
         enabled: root.visible
         onActivated: root.close()
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible && !field.activeFocus
+        onActivated: root.close()
+    }
     property int selectedButton: 1
     Shortcut { sequence: "h"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = 0 }
     Shortcut { sequence: "l"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = 1 }
+    Shortcut { sequence: "Left"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = 0 }
+    Shortcut { sequence: "Right"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = 1 }
+    Shortcut { sequence: "Tab"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
+    Shortcut { sequence: "Shift+Tab"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
     Shortcut { sequence: "Space"; enabled: root.visible && !field.activeFocus; onActivated: root.activateSelectedButton() }
     Shortcut { sequence: "Return"; enabled: root.visible && !field.activeFocus; onActivated: root.activateSelectedButton() }
     Shortcut { sequence: "Enter"; enabled: root.visible && !field.activeFocus; onActivated: root.activateSelectedButton() }
@@ -134,6 +143,7 @@ BasePopup {
             PopupButton {
                 label: "Cancel"
                 selected: root.selectedButton === 0
+                onHovered: root.selectedButton = 0
                 onClicked: {
                     root.selectedButton = 0;
                     root.cancelDialog();
@@ -143,6 +153,7 @@ BasePopup {
                 label: "Connect"
                 accent: true
                 selected: root.selectedButton === 1
+                onHovered: root.selectedButton = 1
                 onClicked: {
                     root.selectedButton = 1;
                     root.doConnect();

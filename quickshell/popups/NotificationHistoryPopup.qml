@@ -36,16 +36,25 @@ BasePopup {
         enabled: root.visible
         onActivated: root.panel.close()
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible
+        onActivated: root.panel.close()
+    }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.panel.stepVertical(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.panel.stepVertical(-1) }
+    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.panel.stepVertical(1) }
+    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.panel.stepVertical(-1) }
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.panel.adjustSelected(-1) }
     Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.panel.adjustSelected(1) }
+    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.panel.adjustSelected(-1) }
+    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.panel.adjustSelected(1) }
+    Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.panel.focusNext() }
+    Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.panel.focusPrev() }
     Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.panel.activateSelected() }
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.panel.activateSelected() }
     Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.panel.activateSelected() }
     Shortcut { sequence: "m"; enabled: root.visible; onActivated: root.panel.toggleVolumeMute() }
-    Shortcut { sequence: "c"; enabled: root.visible && Services.Notifs.history.length > 0; onActivated: Services.Notifs.clearHistory() }
-    Shortcut { sequence: "o"; enabled: root.visible && Services.Notifs.history.length > 0; onActivated: root.panel.invokeSelectedAction() }
     Column {
         anchors {
             top: parent.top
@@ -77,14 +86,20 @@ BasePopup {
                     width: 60
                     horizontalAlignment: Text.AlignRight
                     text: "Clear"
-                    color: clearArea.containsMouse ? Palette.fg : Palette.dim
+                    readonly property bool selected: root.panel.selectedKind() === "clear"
+                    color: selected ? Palette.accent : clearArea.containsMouse ? Palette.fg : Palette.dim
                     font.family: Palette.font
                     font.pixelSize: Palette.px12
+                    font.underline: selected
                     MouseArea {
                         id: clearArea
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: {
+                            if (containsMouse && Services.Notifs.history.length > 0)
+                                root.panel.selectIndex(root.panel.clearIdx());
+                        }
                         onClicked: Services.Notifs.clearHistory()
                     }
                 }
@@ -117,6 +132,10 @@ BasePopup {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: {
+                            if (containsMouse)
+                                root.panel.selectIndex(root.panel.firstHistIdx() + historyCard.index);
+                        }
                         onClicked: Services.Notifs.dismissHistoryAt(index)
                     }
                     Column {
@@ -178,14 +197,16 @@ BasePopup {
                                         model: modelData.live?.actions ?? []
                                         delegate: Rectangle {
                                             required property var modelData
+                                            required property int index
+                                            readonly property bool focused: historyCard.selected && root.panel.actionIndex === index
                                             width: actionLabel.width + 16
                                             height: 24
-                                            color: actionArea.containsMouse ? Palette.hoverBg : Palette.surface
+                                            color: focused ? Palette.accent : actionArea.containsMouse ? Palette.hoverBg : Palette.surface
                                             Text {
                                                 id: actionLabel
                                                 anchors.centerIn: parent
                                                 text: modelData.text
-                                                color: Palette.fg
+                                                color: parent.focused ? Palette.onAccent : Palette.fg
                                                 font.family: Palette.font
                                                 font.pixelSize: Palette.px12
                                             }
@@ -194,6 +215,10 @@ BasePopup {
                                                 anchors.fill: parent
                                                 hoverEnabled: true
                                                 cursorShape: Qt.PointingHandCursor
+                                                onContainsMouseChanged: {
+                                                    if (containsMouse)
+                                                        root.panel.selectAction(historyCard.index, index);
+                                                }
                                                 onClicked: {
                                                     Services.Notifs.activateAction(historyCard.modelData.live, modelData);
                                                     Services.Notifs.dismissHistoryAt(historyCard.index);

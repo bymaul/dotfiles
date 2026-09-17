@@ -8,9 +8,18 @@ Rectangle {
     property int titleWidth: 110
     property bool selected: false
     default property alias control: slot.data
+    signal hovered
     width: parent.width
     height: Palette.rowHeight
     color: root.selected ? Palette.activeBg : Palette.surface
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        onContainsMouseChanged: {
+            if (containsMouse)
+                root.hovered();
+        }
+    }
     Text {
         anchors {
             left: parent.left

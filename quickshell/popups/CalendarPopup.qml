@@ -14,8 +14,19 @@ BasePopup {
         enabled: root.visible
         onActivated: root.close()
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible
+        onActivated: root.close()
+    }
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.stepMonth(-1) }
     Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.stepMonth(1) }
+    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.stepMonth(-1) }
+    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.stepMonth(1) }
+    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepMonth(-12) }
+    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepMonth(12) }
+    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepMonth(-12) }
+    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepMonth(12) }
     Shortcut { sequence: "t"; enabled: root.visible; onActivated: root.resetToToday() }
     onVisibleChanged: {
         if (visible)

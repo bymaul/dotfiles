@@ -20,15 +20,25 @@ BasePopup {
                 root.close();
         }
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible
+        onActivated: root.close()
+    }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
+    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepSelection(1) }
+    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.confirm() }
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.confirm() }
     Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.confirm() }
     Shortcut { sequence: "d"; enabled: root.visible; onActivated: root.deleteSelected() }
+    Shortcut { sequence: "Delete"; enabled: root.visible; onActivated: root.deleteSelected() }
     Shortcut { sequence: "Shift+D"; enabled: root.visible; onActivated: root.requestWipe() }
     Shortcut { sequence: "h"; enabled: root.visible && root.wipeConfirm; onActivated: root.wipeChoice = 0 }
     Shortcut { sequence: "l"; enabled: root.visible && root.wipeConfirm; onActivated: root.wipeChoice = 1 }
+    Shortcut { sequence: "Left"; enabled: root.visible && root.wipeConfirm; onActivated: root.wipeChoice = 0 }
+    Shortcut { sequence: "Right"; enabled: root.visible && root.wipeConfirm; onActivated: root.wipeChoice = 1 }
     property var entries: []
     property int pendingIndex: 0
     property var deleteQueue: []
@@ -216,6 +226,13 @@ BasePopup {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onContainsMouseChanged: {
+                        if (containsMouse) {
+                            root.wipeConfirm = false;
+                            clipList.currentIndex = index;
+                            clipList.positionViewAtIndex(index, ListView.Contain);
+                        }
+                    }
                     onClicked: {
                         clipList.currentIndex = index;
                         root.pasteSelected();
@@ -280,6 +297,7 @@ BasePopup {
                 choice: root.wipeChoice
                 noLabel: "No"
                 yesLabel: "Yes"
+                onHovered: index => root.wipeChoice = index
                 onPicked: index => {
                     root.wipeChoice = index;
                     root.confirmWipe();

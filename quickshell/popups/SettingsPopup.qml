@@ -14,6 +14,11 @@ BasePopup {
         enabled: root.visible
         onActivated: (root.openDropdown >= 0 || root.openMonRes !== "") ? root.closeDrop() : root.close()
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible
+        onActivated: root.close()
+    }
     Shortcut { sequence: "1"; enabled: root.visible; onActivated: root.tab = 0 }
     Shortcut { sequence: "2"; enabled: root.visible; onActivated: root.tab = 1 }
     Shortcut { sequence: "3"; enabled: root.visible; onActivated: root.tab = 2 }
@@ -468,6 +473,10 @@ BasePopup {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onContainsMouseChanged: {
+                        if (containsMouse)
+                            root.selectedIndex = 0;
+                    }
                     onClicked: {
                         root.selectedIndex = 0;
                         Services.Settings.setWallpaper("");
@@ -510,6 +519,12 @@ BasePopup {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: {
+                            if (containsMouse) {
+                                wallList.currentIndex = index;
+                                root.selectedIndex = index + 1;
+                            }
+                        }
                         onClicked: {
                             wallList.currentIndex = index;
                             root.selectedIndex = index + 1;
@@ -528,6 +543,7 @@ BasePopup {
                 title: "Blur"
                 value: Services.Settings.blurEnabled ? "On" : "Off"
                 selected: root.tab === 1 && root.selectedIndex === 0
+                onHovered: root.selectedIndex = 0
                 SettingsSwitch {
                     on: Services.Settings.blurEnabled
                     onToggled: Services.Settings.setBlurEnabled(!Services.Settings.blurEnabled)
@@ -537,6 +553,7 @@ BasePopup {
                 title: "Transparency"
                 value: Services.Settings.transparentFx ? "On" : "Off"
                 selected: root.tab === 1 && root.selectedIndex === 1
+                onHovered: root.selectedIndex = 1
                 SettingsSwitch {
                     on: Services.Settings.transparentFx
                     onToggled: Services.Settings.setTransparentFx(!Services.Settings.transparentFx)
@@ -546,6 +563,7 @@ BasePopup {
                 title: "Animations"
                 value: Services.Settings.animEnabled ? "On" : "Off"
                 selected: root.tab === 1 && root.selectedIndex === 2
+                onHovered: root.selectedIndex = 2
                 SettingsSwitch {
                     on: Services.Settings.animEnabled
                     onToggled: Services.Settings.setAnimEnabled(!Services.Settings.animEnabled)
@@ -555,6 +573,7 @@ BasePopup {
                 title: "Sensitivity"
                 value: Services.Settings.sensitivity.toFixed(1)
                 selected: root.tab === 1 && root.selectedIndex === 3
+                onHovered: root.selectedIndex = 3
                 SliderBar {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
@@ -568,6 +587,7 @@ BasePopup {
                 title: "Touchpad scroll"
                 value: Services.Settings.touchScroll.toFixed(1)
                 selected: root.tab === 1 && root.selectedIndex === 4
+                onHovered: root.selectedIndex = 4
                 SliderBar {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width
@@ -581,6 +601,7 @@ BasePopup {
                 title: "Natural scroll"
                 value: Services.Settings.naturalScroll ? "On" : "Off"
                 selected: root.tab === 1 && root.selectedIndex === 5
+                onHovered: root.selectedIndex = 5
                 SettingsSwitch {
                     on: Services.Settings.naturalScroll
                     onToggled: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll)
@@ -594,6 +615,7 @@ BasePopup {
             spacing: Palette.listSpacing
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 0
+                onHovered: root.selectedIndex = 0
                 title: "Dim display"
                 value: root.fmtTimeout(Services.Settings.dimTimeout)
                 SliderBar {
@@ -607,6 +629,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 1
+                onHovered: root.selectedIndex = 1
                 title: "Lock"
                 value: root.fmtTimeout(Services.Settings.lockTimeout)
                 SliderBar {
@@ -620,6 +643,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 2
+                onHovered: root.selectedIndex = 2
                 title: "Screen off"
                 value: root.fmtTimeout(Services.Settings.screenOffTimeout)
                 SliderBar {
@@ -633,6 +657,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 3
+                onHovered: root.selectedIndex = 3
                 title: "Suspend"
                 value: root.fmtTimeout(Services.Settings.suspendTimeout)
                 SliderBar {
@@ -646,6 +671,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 4
+                onHovered: root.selectedIndex = 4
                 title: "Low battery"
                 value: Services.Settings.lowBatteryPct + "%"
                 SliderBar {
@@ -659,6 +685,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 5
+                onHovered: root.selectedIndex = 5
                 title: "Critical battery"
                 titleWidth: 124
                 value: Services.Settings.criticalBatteryPct + "%"
@@ -673,6 +700,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 6
+                onHovered: root.selectedIndex = 6
                 title: "Critical action"
                 value: ""
                 z: root.openDropdown === 6 ? 100 : 0
@@ -688,6 +716,7 @@ BasePopup {
                         root.selectedIndex = 6;
                         root.toggleDrop(6);
                     }
+                    onOptionHovered: index => root.dropCursor = index
                     onOptionClicked: value => {
                         root.selectedIndex = 6;
                         root.applyDropValue(6, value);
@@ -697,6 +726,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 7
+                onHovered: root.selectedIndex = 7
                 title: "Lid close"
                 value: ""
                 z: root.openDropdown === 7 ? 100 : 0
@@ -712,6 +742,7 @@ BasePopup {
                         root.selectedIndex = 7;
                         root.toggleDrop(7);
                     }
+                    onOptionHovered: index => root.dropCursor = index
                     onOptionClicked: value => {
                         root.selectedIndex = 7;
                         root.applyDropValue(7, value);
@@ -721,6 +752,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 8
+                onHovered: root.selectedIndex = 8
                 title: "Power button"
                 value: ""
                 z: root.openDropdown === 8 ? 100 : 0
@@ -737,6 +769,7 @@ BasePopup {
                         root.selectedIndex = 8;
                         root.toggleDrop(8);
                     }
+                    onOptionHovered: index => root.dropCursor = index
                     onOptionClicked: value => {
                         root.selectedIndex = 8;
                         root.applyDropValue(8, value);
@@ -746,6 +779,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 9
+                onHovered: root.selectedIndex = 9
                 title: "Active profile"
                 value: ""
                 z: root.openDropdown === 9 ? 100 : 0
@@ -763,6 +797,7 @@ BasePopup {
                         root.selectedIndex = 9;
                         root.toggleDrop(9);
                     }
+                    onOptionHovered: index => root.dropCursor = index
                     onOptionClicked: value => {
                         root.selectedIndex = 9;
                         root.applyDropValue(9, value);
@@ -772,6 +807,7 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 10
+                onHovered: root.selectedIndex = 10
                 title: "On battery"
                 value: ""
                 z: root.openDropdown === 10 ? 100 : 0
@@ -788,6 +824,7 @@ BasePopup {
                         root.selectedIndex = 10;
                         root.toggleDrop(10);
                     }
+                    onOptionHovered: index => root.dropCursor = index
                     onOptionClicked: value => {
                         root.selectedIndex = 10;
                         root.applyDropValue(10, value);
@@ -868,6 +905,7 @@ BasePopup {
                     }
                     SettingsRow {
                     selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 0
+                    onHovered: root.selectedIndex = Services.Settings.monitorBase(monName) + 0
                         title: "Enabled"
                         value: Services.Settings.monitorEnabled(monName) ? "On" : "Off"
                         SettingsSwitch {
@@ -881,6 +919,7 @@ BasePopup {
                     }
                     SettingsRow {
                     selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 1
+                    onHovered: root.selectedIndex = Services.Settings.monitorBase(monName) + 1
                         title: "Scale"
                         value: "x" + Services.Settings.monitorScale(monName).toFixed(2).replace(/0$/, "")
                         SliderBar {
@@ -897,6 +936,7 @@ BasePopup {
                     }
                     SettingsRow {
                     selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 2
+                    onHovered: root.selectedIndex = Services.Settings.monitorBase(monName) + 2
                         title: "Resolution"
                         value: ""
                         z: root.openMonRes === monName ? 100 : 0
@@ -913,6 +953,7 @@ BasePopup {
                                 root.selectedIndex = Services.Settings.monitorBase(monName) + 2;
                                 root.toggleMonDrop(monName);
                             }
+                            onOptionHovered: optIdx => root.dropCursor = optIdx
                             onOptionClicked: value => {
                                 root.selectedIndex = Services.Settings.monitorBase(monName) + 2;
                                 root.commitMonRes(monName, value);

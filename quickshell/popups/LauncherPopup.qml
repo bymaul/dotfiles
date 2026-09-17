@@ -13,6 +13,11 @@ BasePopup {
         enabled: root.visible
         onActivated: root.close()
     }
+    Shortcut {
+        sequence: "q"
+        enabled: root.visible && !queryField.activeFocus
+        onActivated: root.close()
+    }
     Shortcut { sequence: "Down"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Up"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "Return"; enabled: root.visible && !queryField.activeFocus; onActivated: root.launch() }
@@ -354,6 +359,13 @@ BasePopup {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onContainsMouseChanged: {
+                        if (containsMouse) {
+                            resultList.currentIndex = index;
+                            resultList.positionViewAtIndex(index, ListView.Contain);
+                            root.selMoved = true;
+                        }
+                    }
                     onClicked: {
                         resultList.currentIndex = index;
                         root.selMoved = true;
@@ -377,7 +389,7 @@ BasePopup {
         }
         HintText {
             id: hint
-            text: "^n/^p move · ^y launch · > command"
+            text: "Tab move · Enter launch · > command"
         }
     }
 }

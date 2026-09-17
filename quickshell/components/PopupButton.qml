@@ -7,6 +7,7 @@ Rectangle {
     property bool accent: false
     property int columns: 2
     signal clicked
+    signal hovered
     width: (parent.width - (columns - 1) * Palette.popupSpacing) / columns
     height: Palette.rowHeight
     readonly property bool lit: root.accent || root.selected
@@ -24,5 +25,9 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
+        onContainsMouseChanged: {
+            if (containsMouse)
+                root.hovered();
+        }
     }
 }
