@@ -36,11 +36,11 @@ Singleton {
     function micToast(): void {
         const audio = media.source?.audio;
         if (!audio) {
-            media.osd({app: "volume", summary: "No mic device", body: "Mic unavailable", icon: "microphone-sensitivity-muted-symbolic"});
+            media.osd({app: "volume", summary: "No mic device", body: "Mic unavailable", icon: "microphone-sensitivity-muted-symbolic", syncId: "mic"});
             return;
         }
         const muted = audio.muted ?? false;
-        media.osd({app: "volume", summary: muted ? "Mic Muted" : "Mic", body: "Mic", icon: muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic"});
+        media.osd({app: "volume", summary: muted ? "Mic Muted" : "Mic", body: "Mic", icon: muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic", syncId: "mic"});
     }
     function brightnessToast(): void {
         if (!media.brightnessAvailable) {
@@ -88,7 +88,7 @@ Singleton {
         const player = media.activePlayer();
         if (!player)
             return;
-        media.osd({app: "media", summary: player.trackTitle || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic"});
+        media.osd({app: "media", summary: player.trackTitle || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic", syncId: "media"});
     }
     Timer {
         id: mediaToastTimer

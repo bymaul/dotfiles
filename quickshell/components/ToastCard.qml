@@ -7,14 +7,26 @@ Rectangle {
     id: card
     required property var notification
     property bool parked: false
+    property int seq: Services.Notifs.toastSeq
+    onSeqChanged: {
+        if (card.notification?.qsInternal === true)
+            expiryTimer.restart();
+    }
     width: Palette.popupWidth
     height: content.height + 16
     color: Palette.bg
     border.width: 1
-    border.color: card.notification.urgency === NotificationUrgency.Critical || (card.notification.appName === "volume" && card.notification.summary === "Muted") ? Palette.danger : Palette.dim
-    readonly property var valueHint: notification.hints ? notification.hints["value"] : undefined
+    border.color: {
+        card.seq;
+        return card.notification.urgency === NotificationUrgency.Critical || (card.notification.appName === "volume" && card.notification.summary === "Muted") ? Palette.danger : Palette.dim;
+    }
+    readonly property var valueHint: {
+        card.seq;
+        return notification.hints ? notification.hints["value"] : undefined;
+    }
     readonly property bool hasProgress: valueHint !== undefined && !isNaN(Number(valueHint))
     readonly property string rawIcon: {
+        card.seq;
         const hit = [notification.image, notification.appIcon].find(s => typeof s === "string" && s !== "");
         return hit ?? "";
     }
@@ -30,6 +42,7 @@ Rectangle {
         }
     }
     Timer {
+        id: expiryTimer
         interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Palette.toastTimeout
         running: true
         onTriggered: Services.Notifs.hideToast(card.notification)
@@ -55,7 +68,10 @@ Rectangle {
                 spacing: 2
                 Text {
                     width: parent.width
-                    text: card.notification.summary
+                    text: {
+                        card.seq;
+                        return card.notification.summary;
+                    }
                     color: Palette.fg
                     font.family: Palette.font
                     font.pixelSize: Palette.px12
@@ -64,7 +80,10 @@ Rectangle {
                 Text {
                     width: parent.width
                     visible: text !== ""
-                    text: card.notification.body
+                    text: {
+                        card.seq;
+                        return card.notification.body;
+                    }
                     color: Palette.dim
                     font.family: Palette.font
                     font.pixelSize: Palette.px12
@@ -82,6 +101,11 @@ Rectangle {
                 width: parent.width * Palette.clamp01(Number(card.valueHint) / 100)
                 height: parent.height
                 color: Palette.accent
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 120
+                    }
+                }
             }
         }
         Flow {

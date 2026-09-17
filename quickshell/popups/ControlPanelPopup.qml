@@ -42,9 +42,12 @@ BasePopup {
             mprisCol = 1;
             root.refreshPlayer();
             root.clampSelection();
-            Services.Notifs.hideAllToasts();
+            Services.Notifs.suppressToasts = true;
+            Services.Notifs.shelveToasts();
+        } else {
+            Services.Notifs.suppressToasts = false;
+            Services.Notifs.flushPending();
         }
-        bar.updateToastSuppress();
     }
     property var mprisPlayer: null
     function refreshPlayer(): void {

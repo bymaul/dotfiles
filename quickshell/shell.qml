@@ -51,6 +51,8 @@ ShellRoot {
             hideAll(exclusivePopups);
             target.returnTo = open ? returnTo : null;
             target.visible = open;
+            if (open && target.useGrab !== false && typeof target.regrab === "function")
+                target.regrab();
         }
         function toggleCalendar(): void {
             openExclusive(calendarPopup);
@@ -121,18 +123,12 @@ ShellRoot {
         function closePopups(): void {
             hideAll(exclusivePopups);
         }
-        function updateToastSuppress(): void {
-            const anyOpen = controlPanelPopup.visible || launcherPopup.visible || clipboardPopup.visible || emojiPopup.visible || calendarPopup.visible || passwordDialog.visible;
-            Services.Notifs.suppressToasts = anyOpen;
-            if (!anyOpen)
-                Services.Notifs.flushPending();
-        }
-
         function showPasswordDialog(network): void {
             passwordDialog.returnTo = wifiPopup;
             wifiPopup.visible = false;
             passwordDialog.targetNetwork = network;
             passwordDialog.visible = true;
+            passwordDialog.regrab();
         }
         function closePasswordAndControl(): void {
             passwordDialog.returnTo = null;
@@ -140,10 +136,18 @@ ShellRoot {
             passwordDialog.visible = false;
             controlPanelPopup.visible = false;
         }
+        property double panelOpenedAt: 0
         HyprlandFocusGrab {
             id: panelGrab
-            windows: [controlPanelPopup, historyPanel, toastStack]
-            onCleared: controlPanelPopup.visible = false
+            windows: [controlPanelPopup, historyPanel]
+            onCleared: {
+                if (!controlPanelPopup.visible)
+                    return;
+                if (Date.now() - bar.panelOpenedAt < 250)
+                    bar.kickPanelGrab();
+                else
+                    controlPanelPopup.visible = false;
+            }
         }
         function kickPanelGrab(): void {
             if (controlPanelPopup.visible)
@@ -159,40 +163,16 @@ ShellRoot {
         Connections {
             target: controlPanelPopup
             function onVisibleChanged(): void {
-                if (!controlPanelPopup.visible)
+                if (!controlPanelPopup.visible) {
                     panelGrab.active = false;
-                else
+                    panelGrabTimer.stop();
+                } else {
+                    bar.panelOpenedAt = Date.now();
                     bar.kickPanelGrab();
+                }
             }
-        }
-        Connections {
-            target: launcherPopup
-            function onVisibleChanged(): void {
-                bar.updateToastSuppress();
-            }
-        }
-        Connections {
-            target: clipboardPopup
-            function onVisibleChanged(): void {
-                bar.updateToastSuppress();
-            }
-        }
-        Connections {
-            target: emojiPopup
-            function onVisibleChanged(): void {
-                bar.updateToastSuppress();
-            }
-        }
-        Connections {
-            target: calendarPopup
-            function onVisibleChanged(): void {
-                bar.updateToastSuppress();
-            }
-        }
-        Connections {
-            target: passwordDialog
-            function onVisibleChanged(): void {
-                bar.updateToastSuppress();
+            function onWindowConnected(): void {
+                bar.kickPanelGrab();
             }
         }
         Connections {

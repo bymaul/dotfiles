@@ -29,6 +29,12 @@ Singleton {
     function hideAllToasts(): void {
         notifs.toasts = [];
     }
+    function shelveToasts(): void {
+        if (notifs.toasts.length === 0)
+            return;
+        notifs.pending = [...notifs.toasts, ...notifs.pending].slice(0, Palette.toastMax);
+        notifs.toasts = [];
+    }
     function flushPending(): void {
         const room = Math.max(0, Palette.toastMax - notifs.toasts.length);
         notifs.toasts = [...notifs.pending.slice(0, room), ...notifs.toasts];
@@ -147,6 +153,27 @@ Singleton {
     }
     function notify(opts): void {
         const o = opts ?? {};
+        if (o.syncId !== undefined && !notifs.suspended && !(Modes.dndActive && !notifs.isOwnFeedback(o.app ?? ""))) {
+            const cur = notifs.toasts.find(t => t && t.qsInternal === true && t.qsSyncKey === o.syncId);
+            if (cur) {
+                cur.appName = o.app ?? cur.appName;
+                cur.summary = o.summary ?? "";
+                cur.body = o.body ?? "";
+                cur.urgency = o.urgency ?? NotificationUrgency.Normal;
+                cur.appIcon = o.icon ?? "";
+                cur.expireTimeout = o.timeout ?? Palette.toastTimeout;
+                cur.hints = {};
+                if (o.value !== undefined)
+                    cur.hints["value"] = o.value;
+                cur.hints["x-canonical-private-synchronous"] = o.syncId;
+                if (o.filepath !== undefined)
+                    cur.hints["filepath"] = o.filepath;
+                cur.qsRev = (cur.qsRev ?? 0) + 1;
+                notifs.toastSeq += 1;
+                notifs.toasts = notifs.toasts.slice();
+                return;
+            }
+        }
         const hints = {};
         if (o.value !== undefined)
             hints["value"] = o.value;
@@ -164,6 +191,9 @@ Singleton {
             image: "",
             appIcon: o.icon ?? "",
             expireTimeout: o.timeout ?? Palette.toastTimeout,
+            qsInternal: true,
+            qsSyncKey: o.syncId,
+            qsRev: 0,
             tracked: false,
             dismiss: () => {},
             closed: {

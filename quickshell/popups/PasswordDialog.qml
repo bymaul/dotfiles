@@ -6,6 +6,7 @@ import "../Palette.js" as Palette
 BasePopup {
     id: root
     anchorMode: "center"
+    focusTarget: field
     implicitWidth: Palette.popupWidth
     implicitHeight: root.authError !== "" ? 172 : 150
     Shortcut {
@@ -35,19 +36,6 @@ BasePopup {
         if (visible) {
             selectedButton = 1;
             pendingNetwork = null;
-            field.forceActiveFocus();
-            focusTimer.restart();
-        } else {
-            focusTimer.stop();
-        }
-    }
-    Timer {
-        id: focusTimer
-        interval: Palette.focusDelay
-        repeat: false
-        onTriggered: {
-            if (root.visible)
-                field.forceActiveFocus();
         }
     }
     onTargetNetworkChanged: authError = ""

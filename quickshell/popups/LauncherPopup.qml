@@ -6,6 +6,7 @@ import "../Palette.js" as Palette
 BasePopup {
     id: root
     anchorMode: "middle"
+    focusTarget: queryField
     implicitWidth: Palette.launcherWidth
     implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + Palette.listHeight(Palette.listVisible) + hint.implicitHeight
     Shortcut {
@@ -40,19 +41,6 @@ BasePopup {
             queryField.text = "";
             root.selMoved = false;
             root.refilter();
-            queryField.forceActiveFocus();
-            focusTimer.restart();
-        } else {
-            focusTimer.stop();
-        }
-    }
-    Timer {
-        id: focusTimer
-        interval: Palette.focusDelay
-        repeat: false
-        onTriggered: {
-            if (root.visible)
-                queryField.forceActiveFocus();
         }
     }
     Connections {
