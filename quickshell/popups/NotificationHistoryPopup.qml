@@ -15,6 +15,9 @@ BasePopup {
     function close(): void {
         panel.close();
     }
+    function cancelOrClose(): void {
+        root.panel.close();
+    }
     function revealAt(i: int): void {
         historyList.positionViewAtIndex(i, ListView.Contain);
     }
@@ -31,30 +34,10 @@ BasePopup {
                 historyList.positionViewAtIndex(0, ListView.Beginning);
         }
     }
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: root.panel.close()
+    PanelNavKeys {
+        host: root
+        panel: root.panel
     }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible
-        onActivated: root.panel.close()
-    }
-    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.panel.stepVertical(1) }
-    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.panel.stepVertical(-1) }
-    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.panel.stepVertical(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.panel.stepVertical(-1) }
-    Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.panel.adjustSelected(-1) }
-    Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.panel.adjustSelected(1) }
-    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.panel.adjustSelected(-1) }
-    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.panel.adjustSelected(1) }
-    Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.panel.focusNext() }
-    Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.panel.focusPrev() }
-    Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.panel.activateSelected() }
-    Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.panel.activateSelected() }
-    Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.panel.activateSelected() }
-    Shortcut { sequence: "m"; enabled: root.visible; onActivated: root.panel.toggleVolumeMute() }
     Column {
         anchors {
             top: parent.top

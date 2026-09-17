@@ -35,6 +35,25 @@ PopupWindow {
                 back.regrab();
         }
     }
+    function escArmed(): bool {
+        return true;
+    }
+    function quitArmed(): bool {
+        return true;
+    }
+    function cancelOrClose(): void {
+        base.close();
+    }
+    Shortcut {
+        sequence: "Escape"
+        enabled: base.visible && base.escArmed()
+        onActivated: base.cancelOrClose()
+    }
+    Shortcut {
+        sequence: "q"
+        enabled: base.visible && base.quitArmed()
+        onActivated: base.close()
+    }
     anchor.window: bar
     anchor.rect.x: (base.anchorMode === "center" || base.anchorMode === "middle") ? bar.width / 2 - width / 2 : bar.width - width - Palette.popupMargin
     anchor.rect.y: base.anchorMode === "middle" ? Math.max(bar.height + Palette.popupTopGap, Screen.height / 2 - height / 2) : bar.height + Palette.popupTopGap + base.extraTop

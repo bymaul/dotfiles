@@ -6,20 +6,16 @@ import "../emoji/emoji.js" as EmojiData
 import "../Palette.js" as Palette
 BasePopup {
     id: root
-    anchorMode: "center"
+    anchorMode: "middle"
     implicitWidth: Palette.settingsWidth
     implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + resultGrid.cellHeight * root.gridRows + hint.implicitHeight
     readonly property int gridCols: 10
     readonly property int gridRows: 9
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible && !queryField.activeFocus
-        onActivated: root.close()
+    function escArmed(): bool {
+        return !queryField.activeFocus;
     }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible && !queryField.activeFocus
-        onActivated: root.close()
+    function quitArmed(): bool {
+        return !queryField.activeFocus;
     }
     Shortcut { sequence: "Down"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1, root.gridCols) }
     Shortcut { sequence: "Up"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1, root.gridCols) }

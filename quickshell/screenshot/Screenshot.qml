@@ -17,12 +17,67 @@ Scope {
     property string tmpFile: "/tmp/qs-screenshot-full.png"
     property bool freezeForPicker: false
     property real lastScale: 1
+    property bool dirsReady: false
+    property int stillAttempts: 0
     function stamp(): string {
         return Qt.formatDateTime(new Date(), "yyyy-MM-dd_HH-mm-ss");
     }
+    Component.onCompleted: mkdir.running = true
     function capture(mode: string): void {
         root.pendingMode = mode;
-        mkdir.running = true;
+        if (root.dirsReady)
+            root.startPending();
+        else
+            mkdir.running = true;
+    }
+    function startPending(): void {
+        if (root.pendingMode === "area") {
+            picker.pickMode = "area";
+            picker.visible = true;
+            return;
+        }
+        if (root.pendingMode === "window") {
+            winProbe.running = true;
+            return;
+        }
+        root.showCapture(false);
+    }
+    function tryStill(): void {
+        if (!captureWin.visible)
+            return;
+        const src = captureView.sourceSize;
+        const w = root.targetScreen?.width ?? 0;
+        if (src.width > 0 && w > 0)
+            root.lastScale = src.width / w;
+        captureView.grabToImage(result => {
+            if (!result) {
+                if (root.stillAttempts < 6 && captureWin.visible) {
+                    root.stillAttempts += 1;
+                    stillRetry.restart();
+                    return;
+                }
+                captureTimeout.stop();
+                Services.Notifs.notify({app: "screenshot", summary: "Capture failed", body: "Empty frame", timeout: 5000});
+                root.freezeForPicker = false;
+                captureView.captureSource = null;
+                captureWin.visible = false;
+                return;
+            }
+            captureTimeout.stop();
+            if (root.freezeForPicker) {
+                root.freezeForPicker = false;
+                if (result.saveToFile(root.tmpFile)) {
+                    still.source = "file://" + root.tmpFile;
+                    picker.stillReady = true;
+                } else {
+                    picker.close();
+                }
+            } else if (result.saveToFile(root.pendingFile)) {
+                root.finishShot(root.pendingFile);
+            }
+            captureView.captureSource = null;
+            captureWin.visible = false;
+        });
     }
     Process {
         id: mkdir
@@ -30,16 +85,8 @@ Scope {
         onExited: exitCode => {
             if (exitCode !== 0)
                 return;
-            if (root.pendingMode === "area") {
-                picker.pickMode = "area";
-                picker.visible = true;
-                return;
-            }
-            if (root.pendingMode === "window") {
-                winProbe.running = true;
-                return;
-            }
-            root.showCapture(false);
+            root.dirsReady = true;
+            root.startPending();
         }
     }
     function showCapture(freeze: bool): void {
@@ -63,7 +110,7 @@ Scope {
     }
     Process {
         id: winProbe
-        command: ["sh", "-c", "M=$(hyprctl monitors -j 2>/dev/null); W=$(hyprctl activewindow -j 2>/dev/null); [ -n \"$M\" ] && [ -n \"$W\" ] && echo \"$W\" | jq -e 'select(.address != null and .address != \"\")' >/dev/null 2>&1 && MID=$(echo \"$W\" | jq -r '.monitor // -1') && O=$(echo \"$M\" | jq -r --argjson mid \"$MID\" '([.[] | select(.id == $mid)][0] // ([.[] | select(.focused == true)][0])) | select(. != null) | \"\\(.x) \\(.y)\"') && [ -n \"$O\" ] && G=$(echo \"$W\" | jq -r '\"\\(.at[0]) \\(.at[1]) \\(.size[0]) \\(.size[1])\"') && [ -n \"$G\" ] && printf '%s %s\\n' \"$O\" \"$G\""]
+        command: ["sh", "-c", "W=$(hyprctl activewindow -j 2>/dev/null); M=$(hyprctl monitors -j 2>/dev/null); [ -n \"$M\" ] && [ -n \"$W\" ] && printf \"%s\\\\n%s\" \"$M\" \"$W\" | jq -r -s '.[1] as $w | select($w.address != null and $w.address != \"\") | (.[0] | ([.[] | select(.id == ($w.monitor // -1))][0] // ([.[] | select(.focused == true)][0]))) as $m | select($m != null) | \"\\($m.x) \\($m.y) \\($w.at[0]) \\($w.at[1]) \\($w.size[0]) \\($w.size[1])\"' 2>/dev/null"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const m = text.trim().match(/(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)/);
@@ -97,43 +144,17 @@ Scope {
             live: false
             paintCursor: false
             onHasContentChanged: {
-                if (hasContent)
-                    grabDelay.start();
+                if (hasContent) {
+                    root.stillAttempts = 0;
+                    root.tryStill();
+                }
             }
         }
         Timer {
-            id: grabDelay
-            interval: 400
+            id: stillRetry
+            interval: 50
             repeat: false
-            onTriggered: {
-                const src = captureView.sourceSize;
-                const w = root.targetScreen?.width ?? 0;
-                if (src.width > 0 && w > 0)
-                    root.lastScale = src.width / w;
-                captureView.grabToImage(result => {
-                    captureTimeout.stop();
-                    if (!result) {
-                        Services.Notifs.notify({app: "screenshot", summary: "Capture failed", body: "Empty frame", timeout: 5000});
-                        root.freezeForPicker = false;
-                        captureView.captureSource = null;
-                        captureWin.visible = false;
-                        return;
-                    }
-                    if (root.freezeForPicker) {
-                        root.freezeForPicker = false;
-                        if (result.saveToFile(root.tmpFile)) {
-                            still.source = "file://" + root.tmpFile;
-                            picker.stillReady = true;
-                        } else {
-                            picker.close();
-                        }
-                    } else if (result.saveToFile(root.pendingFile)) {
-                        root.finishShot(root.pendingFile);
-                    }
-                    captureView.captureSource = null;
-                    captureWin.visible = false;
-                });
-            }
+            onTriggered: root.tryStill()
         }
         Timer {
             id: captureTimeout
@@ -187,6 +208,7 @@ Scope {
         WlrLayershell.namespace: "qs-screenshot-picker"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         property bool stillReady: false
+        property bool cropArmed: false
         property string pickMode: "area"
         property rect winRect: Qt.rect(0, 0, 0, 0)
         property real startX: 0
@@ -209,6 +231,7 @@ Scope {
             } else {
                 focusGrab.active = false;
                 stillReady = false;
+                cropArmed = false;
                 selection = Qt.rect(0, 0, 0, 0);
                 selecting = false;
                 still.source = "";
@@ -246,7 +269,25 @@ Scope {
             cropBox.width = r.width;
             cropBox.height = r.height;
             cropBox.visible = true;
-            cropGrab.start();
+            picker.cropArmed = true;
+            if (cropImg.status === Image.Ready)
+                picker.doCrop();
+            else
+                cropGrab.restart();
+        }
+        function doCrop(): void {
+            if (!picker.cropArmed)
+                return;
+            picker.cropArmed = false;
+            cropGrab.stop();
+            const r = picker.normalized;
+            const k = root.lastScale;
+            cropBox.grabToImage(result => {
+                cropBox.visible = false;
+                picker.close();
+                if (result && result.saveToFile(root.pendingFile))
+                    root.finishShot(root.pendingFile);
+            }, Qt.size(Math.max(1, Math.round(r.width * k)), Math.max(1, Math.round(r.height * k))));
         }
         Image {
             id: still
@@ -295,6 +336,15 @@ Scope {
             border.width: 1
             border.color: Palette.accent
         }
+        Text {
+            x: Math.min(picker.normalized.x, picker.width - 80)
+            y: picker.normalized.y > 26 ? picker.normalized.y - 22 : picker.normalized.y + picker.normalized.height + 4
+            visible: picker.selecting && picker.normalized.width > 0 && picker.normalized.height > 0
+            text: Math.round(picker.normalized.width * root.lastScale) + "x" + Math.round(picker.normalized.height * root.lastScale)
+            color: Palette.fg
+            font.family: Palette.font
+            font.pixelSize: Palette.px12
+        }
         Item {
             id: cropBox
             visible: false
@@ -307,22 +357,17 @@ Scope {
                 fillMode: Image.Stretch
                 cache: false
                 source: picker.stillReady ? "file://" + root.tmpFile : ""
+                onStatusChanged: {
+                    if (status === Image.Ready && picker.cropArmed)
+                        picker.doCrop();
+                }
             }
         }
         Timer {
             id: cropGrab
             interval: 250
             repeat: false
-            onTriggered: {
-                const r = picker.normalized;
-                const k = root.lastScale;
-                cropBox.grabToImage(result => {
-                    cropBox.visible = false;
-                    picker.close();
-                    if (result.saveToFile(root.pendingFile))
-                        root.finishShot(root.pendingFile);
-                }, Qt.size(Math.max(1, Math.round(r.width * k)), Math.max(1, Math.round(r.height * k))));
-            }
+            onTriggered: picker.doCrop()
         }
         Text {
             anchors {

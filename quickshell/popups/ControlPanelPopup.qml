@@ -11,30 +11,10 @@ BasePopup {
     useGrab: false
     implicitWidth: Palette.popupWidth
     implicitHeight: (Services.Media.brightnessAvailable ? 258 : 214) + (root.mprisPlayer !== null ? Palette.rowHeight + Palette.popupSpacing : 0)
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: root.close()
+    PanelNavKeys {
+        host: root
+        panel: root
     }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible
-        onActivated: root.close()
-    }
-    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepVertical(1) }
-    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepVertical(-1) }
-    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepVertical(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepVertical(-1) }
-    Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
-    Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.adjustSelected(1) }
-    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
-    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.adjustSelected(1) }
-    Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.focusNext() }
-    Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.focusPrev() }
-    Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.activateSelected() }
-    Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
-    Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.activateSelected() }
-    Shortcut { sequence: "m"; enabled: root.visible; onActivated: root.toggleVolumeMute() }
     onVisibleChanged: {
         if (visible) {
             selectedIndex = 0;
@@ -461,7 +441,6 @@ BasePopup {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
-                        radius: 4
                         visible: parent.parent.parent.mprisSelected && root.mprisCol === 0
                         color: Palette.accent
                         z: -1

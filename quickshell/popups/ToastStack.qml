@@ -42,7 +42,6 @@ PanelWindow {
             required property var modelData
             notification: modelData
             width: root.stackWidth
-            parked: root.parked
         }
     }
 }

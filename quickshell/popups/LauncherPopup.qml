@@ -9,15 +9,8 @@ BasePopup {
     focusTarget: queryField
     implicitWidth: Palette.launcherWidth
     implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + Palette.listHeight(Palette.listVisible) + hint.implicitHeight
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: root.close()
-    }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible && !queryField.activeFocus
-        onActivated: root.close()
+    function quitArmed(): bool {
+        return !queryField.activeFocus;
     }
     Shortcut { sequence: "Down"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Up"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1) }
@@ -114,6 +107,22 @@ BasePopup {
     }
     function matchScore(text: string, q: string): int {
         return root.matchScoreLn(String(text ?? "").toLowerCase(), String(q ?? "").toLowerCase());
+    }
+    function hlQuery(): string {
+        return root.runMode ? root.runQuery : String(queryField.text ?? "").toLowerCase().trim();
+    }
+    function escHtml(s: string): string {
+        return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function hlName(name: string, q: string): string {
+        const raw = String(name ?? "");
+        const query = String(q ?? "");
+        if (query === "")
+            return root.escHtml(raw);
+        const i = raw.toLowerCase().indexOf(query);
+        if (i < 0)
+            return root.escHtml(raw);
+        return root.escHtml(raw.slice(0, i)) + "<u>" + root.escHtml(raw.slice(i, i + query.length)) + "</u>" + root.escHtml(raw.slice(i + query.length));
     }
     function entryKey(e): string {
         if (!e)
@@ -367,7 +376,8 @@ BasePopup {
                         leftMargin: 10
                     }
                     width: parent.width - 20
-                    text: (modelData.isCmd ? "> " : "") + modelData.name
+                    textFormat: Text.RichText
+                    text: (modelData.isCmd ? "> " : "") + root.hlName(modelData.name, root.hlQuery())
                     color: selected ? Palette.onAccent : rowArea.containsMouse ? Palette.fg : Palette.dim
                     font.family: Palette.font
                     font.pixelSize: Palette.px12

@@ -9,16 +9,6 @@ BasePopup {
     implicitWidth: Palette.popupWidth
     implicitHeight: 256
     property date viewDate: new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: root.close()
-    }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible
-        onActivated: root.close()
-    }
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.stepMonth(-1) }
     Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.stepMonth(1) }
     Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.stepMonth(-1) }

@@ -7,16 +7,6 @@ BasePopup {
     id: root
     implicitWidth: Palette.popupWidth
     implicitHeight: 16 + statusText.height + Palette.popupSpacing + (xfceWarn.visible ? xfceWarn.height + Palette.popupSpacing : 0) + powerGrid.height + Palette.popupSpacing + hint.implicitHeight
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: root.close()
-    }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible
-        onActivated: root.close()
-    }
     Shortcut { sequence: "s"; enabled: root.visible; onActivated: root.powerOff() }
     Shortcut { sequence: "r"; enabled: root.visible; onActivated: root.reboot() }
     Shortcut { sequence: "u"; enabled: root.visible; onActivated: root.suspend() }

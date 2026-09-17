@@ -7,16 +7,6 @@ BasePopup {
     id: root
     implicitWidth: Palette.popupWidth
     implicitHeight: Palette.listHeight(Palette.listVisible) + 36 + 36 + Palette.popupSpacing * 3 + 16 + hint.implicitHeight
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: root.close()
-    }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible
-        onActivated: root.close()
-    }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepSelection(1) }

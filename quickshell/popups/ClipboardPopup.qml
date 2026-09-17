@@ -7,23 +7,14 @@ import "../services" as Services
 import "../Palette.js" as Palette
 BasePopup {
     id: root
-    anchorMode: "center"
+    anchorMode: "middle"
     implicitWidth: Palette.settingsWidth
     implicitHeight: 16 + title.implicitHeight + Palette.rowHeight + Palette.popupSpacing * 3 + Palette.listHeight(Palette.listVisible) + hint.implicitHeight
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: {
-            if (root.wipeConfirm)
-                root.wipeConfirm = false;
-            else
-                root.close();
-        }
-    }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible
-        onActivated: root.close()
+    function cancelOrClose(): void {
+        if (root.wipeConfirm)
+            root.wipeConfirm = false;
+        else
+            root.close();
     }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }

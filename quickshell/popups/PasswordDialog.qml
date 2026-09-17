@@ -9,15 +9,8 @@ BasePopup {
     focusTarget: field
     implicitWidth: Palette.popupWidth
     implicitHeight: root.authError !== "" ? 172 : 150
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: root.close()
-    }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible && !field.activeFocus
-        onActivated: root.close()
+    function quitArmed(): bool {
+        return !field.activeFocus;
     }
     property int selectedButton: 1
     Shortcut { sequence: "h"; enabled: root.visible && !field.activeFocus; onActivated: root.selectedButton = 0 }

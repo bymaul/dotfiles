@@ -8,7 +8,6 @@ Singleton {
     property var toasts: []
     property var pending: []
     property bool suppressToasts: false
-    property bool suspended: false
     property var history: []
     property int readCount: 0
     readonly property int unread: Math.max(0, history.length - readCount)
@@ -25,9 +24,6 @@ Singleton {
     function hideToast(n): void {
         const k = notifs.toastKey(n);
         notifs.toasts = notifs.toasts.filter(t => notifs.toastKey(t) !== k);
-    }
-    function hideAllToasts(): void {
-        notifs.toasts = [];
     }
     function shelveToasts(): void {
         if (notifs.toasts.length === 0)
@@ -137,7 +133,7 @@ Singleton {
         });
         if (Modes.dndActive && !notifs.isOwnFeedback(notification.appName))
             return;
-        if (notifs.suppressToasts || notifs.suspended) {
+        if (notifs.suppressToasts) {
             if (syncId === undefined || (notification.actions ?? []).length > 0)
                 notifs.pending = [notification, ...notifs.pending].slice(0, Palette.toastMax);
             return;
@@ -153,7 +149,7 @@ Singleton {
     }
     function notify(opts): void {
         const o = opts ?? {};
-        if (o.syncId !== undefined && !notifs.suspended && !(Modes.dndActive && !notifs.isOwnFeedback(o.app ?? ""))) {
+        if (o.syncId !== undefined && !(Modes.dndActive && !notifs.isOwnFeedback(o.app ?? ""))) {
             const cur = notifs.toasts.find(t => t && t.qsInternal === true && t.qsSyncKey === o.syncId);
             if (cur) {
                 cur.appName = o.app ?? cur.appName;
@@ -168,7 +164,6 @@ Singleton {
                 cur.hints["x-canonical-private-synchronous"] = o.syncId;
                 if (o.filepath !== undefined)
                     cur.hints["filepath"] = o.filepath;
-                cur.qsRev = (cur.qsRev ?? 0) + 1;
                 notifs.toastSeq += 1;
                 notifs.toasts = notifs.toasts.slice();
                 return;
@@ -193,7 +188,6 @@ Singleton {
             expireTimeout: o.timeout ?? Palette.toastTimeout,
             qsInternal: true,
             qsSyncKey: o.syncId,
-            qsRev: 0,
             tracked: false,
             dismiss: () => {},
             closed: {

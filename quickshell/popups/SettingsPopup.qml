@@ -8,16 +8,11 @@ BasePopup {
     implicitWidth: Palette.settingsWidth
     implicitHeight: 16 + tabRow.height + Palette.popupSpacing + root.contentHeight() + Palette.popupSpacing + hint.implicitHeight
     property int tab: 0
-
-    Shortcut {
-        sequence: "Escape"
-        enabled: root.visible
-        onActivated: (root.openDropdown >= 0 || root.openMonRes !== "") ? root.closeDrop() : root.close()
-    }
-    Shortcut {
-        sequence: "q"
-        enabled: root.visible
-        onActivated: root.close()
+    function cancelOrClose(): void {
+        if (root.openDropdown >= 0 || root.openMonRes !== "")
+            root.closeDrop();
+        else
+            root.close();
     }
     Shortcut { sequence: "1"; enabled: root.visible; onActivated: root.tab = 0 }
     Shortcut { sequence: "2"; enabled: root.visible; onActivated: root.tab = 1 }

@@ -6,7 +6,6 @@ import "../Palette.js" as Palette
 Rectangle {
     id: card
     required property var notification
-    property bool parked: false
     property int seq: Services.Notifs.toastSeq
     onSeqChanged: {
         if (card.notification?.qsInternal === true)
