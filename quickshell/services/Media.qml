@@ -136,7 +136,7 @@ Singleton {
     }
     Timer {
         id: brightnessPoll
-        interval: 5000
+        interval: 15000
         running: media.brightnessPollEnabled
         repeat: true
         triggeredOnStart: true

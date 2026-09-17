@@ -468,7 +468,6 @@ BasePopup {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
-                        radius: 4
                         visible: parent.parent.parent.mprisSelected && root.mprisCol === 1
                         color: Palette.accent
                         z: -1
@@ -496,7 +495,6 @@ BasePopup {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
-                        radius: 4
                         visible: parent.parent.parent.mprisSelected && root.mprisCol === 2
                         color: Palette.accent
                         z: -1

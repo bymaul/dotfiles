@@ -72,8 +72,8 @@ Scope {
                 } else {
                     picker.close();
                 }
-            } else if (result.saveToFile(root.pendingFile)) {
-                root.finishShot(root.pendingFile);
+            } else {
+                root.saveShot(result, root.pendingFile);
             }
             captureView.captureSource = null;
             captureWin.visible = false;
@@ -83,10 +83,43 @@ Scope {
         id: mkdir
         command: ["mkdir", "-p", root.shotDir]
         onExited: exitCode => {
-            if (exitCode !== 0)
+            if (exitCode !== 0) {
+                Services.Notifs.notify({app: "screenshot", summary: "Screenshot folder unavailable", body: root.shotDir, timeout: 5000});
                 return;
+            }
             root.dirsReady = true;
-            root.startPending();
+            if (root.pendingMode !== "")
+                root.startPending();
+        }
+    }
+    property var retryResult: null
+    property string retryFile: ""
+    function saveShot(result: var, file: string): void {
+        if (result.saveToFile(file)) {
+            root.finishShot(file);
+            return;
+        }
+        if (root.retryResult) {
+            Services.Notifs.notify({app: "screenshot", summary: "Screenshot save failed", body: root.shotDir, timeout: 5000});
+            return;
+        }
+        root.retryResult = result;
+        root.retryFile = file;
+        fixupDir.running = true;
+    }
+    Process {
+        id: fixupDir
+        command: ["mkdir", "-p", root.shotDir]
+        onExited: exitCode => {
+            const result = root.retryResult;
+            const file = root.retryFile;
+            root.retryResult = null;
+            root.retryFile = "";
+            if (exitCode !== 0 || !result || !result.saveToFile(file)) {
+                Services.Notifs.notify({app: "screenshot", summary: "Screenshot save failed", body: root.shotDir, timeout: 5000});
+                return;
+            }
+            root.finishShot(file);
         }
     }
     function showCapture(freeze: bool): void {
@@ -285,8 +318,8 @@ Scope {
             cropBox.grabToImage(result => {
                 cropBox.visible = false;
                 picker.close();
-                if (result && result.saveToFile(root.pendingFile))
-                    root.finishShot(root.pendingFile);
+                if (result)
+                    root.saveShot(result, root.pendingFile);
             }, Qt.size(Math.max(1, Math.round(r.width * k)), Math.max(1, Math.round(r.height * k))));
         }
         Image {

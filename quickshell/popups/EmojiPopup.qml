@@ -35,7 +35,15 @@ BasePopup {
     property var entries: []
     property bool selMoved: false
     function groupRank(g: int): int {
-        return [0, 1, 0, 2, 3, 4, 5, 6, 7, 8][g] ?? 99;
+        if (g < 0)
+            return 99;
+        if (g <= 1)
+            return g;
+        if (g === 2)
+            return 0;
+        if (g <= 9)
+            return g - 1;
+        return 99;
     }
     function groupName(g: int): string {
         return ["Smileys", "People", "", "Animals", "Food", "Travel", "Activities", "Objects", "Symbols", "Flags"][g] ?? "";
@@ -119,12 +127,15 @@ BasePopup {
         }
         root.applyResults(out);
     }
+    property var emojiByChar: null
     function entryFor(ch: string): var {
-        for (const e of EmojiData.EMOJI) {
-            if (e[0] === ch)
-                return e;
+        if (!root.emojiByChar) {
+            const m = {};
+            for (const e of EmojiData.EMOJI)
+                m[e[0]] = e;
+            root.emojiByChar = m;
         }
-        return null;
+        return root.emojiByChar[ch] ?? null;
     }
     function applyResults(out: var): void {
         let idx = 0;

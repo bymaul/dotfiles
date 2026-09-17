@@ -5,9 +5,18 @@ import Quickshell.Io
 Singleton {
     id: runMode
     property var binaries: []
+    property string lastPath: ""
+    property double lastScan: 0
+    readonly property int scanTtl: 60000
     function refresh(): void {
-        if (!scanner.running)
-            scanner.running = true;
+        if (scanner.running)
+            return;
+        const cur = Quickshell.env("PATH") ?? "";
+        if (runMode.binaries.length > 0 && cur === runMode.lastPath && Date.now() - runMode.lastScan < runMode.scanTtl)
+            return;
+        runMode.lastPath = cur;
+        runMode.lastScan = Date.now();
+        scanner.running = true;
     }
     Process {
         id: scanner

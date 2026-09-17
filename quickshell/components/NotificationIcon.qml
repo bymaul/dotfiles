@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 Item {
     id: root
@@ -11,14 +12,23 @@ Item {
     readonly property string directSource: root.iconStr.startsWith("file://") || root.iconStr.startsWith("image://") ? root.iconStr : "file://" + root.iconStr
     readonly property string themeIcon: hasIcon && !iconIsDirect ? Quickshell.iconPath(root.iconStr, true) : ""
     readonly property string resolvedSource: hasIcon && iconIsDirect ? directSource : themeIcon
+    readonly property bool recolorable: !iconIsDirect && root.iconStr.endsWith("-symbolic")
     visible: resolvedSource !== ""
     width: iconSize
     height: iconSize
     Image {
+        id: img
         anchors.fill: parent
         source: root.resolvedSource
         sourceSize.width: root.iconSize
         sourceSize.height: root.iconSize
         fillMode: Image.PreserveAspectFit
+        visible: !root.recolorable && root.resolvedSource !== ""
+    }
+    MultiEffect {
+        anchors.fill: parent
+        visible: root.recolorable && root.resolvedSource !== ""
+        source: img
+        brightness: 0.6
     }
 }
