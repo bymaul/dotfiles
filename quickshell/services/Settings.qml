@@ -262,15 +262,18 @@ Singleton {
         if (typeof cfg.res === "string" && cfg.res !== "")
             return cfg.res;
         const live = settings.monitorLive(name);
-        if (live && typeof live.width === "number" && typeof live.height === "number")
-            return live.width + "x" + live.height + "@" + live.refreshRate + "Hz";
+        if (live && typeof live.width === "number" && typeof live.height === "number") {
+            if (typeof live.refreshRate === "number")
+                return live.width + "x" + live.height + "@" + live.refreshRate.toFixed(2) + "Hz";
+            return live.width + "x" + live.height;
+        }
         return "preferred";
     }
     function monitorSummary(name: string): string {
         const live = settings.monitorLive(name);
         if (!live || typeof live.width !== "number" || typeof live.height !== "number")
             return name;
-        const rate = typeof live.refreshRate === "number" ? live.refreshRate : "?";
+        const rate = typeof live.refreshRate === "number" ? live.refreshRate.toFixed(2) : "?";
         let s = name + "  " + live.width + "x" + live.height + "@" + rate + "  x" + settings.monitorScale(name);
         if (live.disabled === true)
             s += "  (disabled)";
@@ -501,8 +504,10 @@ Singleton {
     Process {
         id: saver
         onExited: exitCode => {
-            if (exitCode !== 0 && settings.saveQueued)
+            if (exitCode !== 0) {
+                settings.saveQueued = true;
                 saveTimer.restart();
+            }
         }
     }
     Process {

@@ -54,10 +54,10 @@ BasePopup {
         return root.volumeIdx() + 1 + (root.mprisPlayer !== null ? 1 : 0);
     }
     function clearIdx(): int {
-        return Services.Notifs.history.length > 0 ? root.firstTileIdx() + 7 : -1;
+        return Services.Notifs.history.length > 0 ? root.firstTileIdx() + 8 : -1;
     }
     function firstHistIdx(): int {
-        return root.firstTileIdx() + 7 + (Services.Notifs.history.length > 0 ? 1 : 0);
+        return root.firstTileIdx() + 8 + (Services.Notifs.history.length > 0 ? 1 : 0);
     }
     function itemCount(): int {
         return root.firstHistIdx() + Services.Notifs.history.length;
@@ -301,7 +301,7 @@ BasePopup {
             root.activateDefaultAction();
             return;
         }
-        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
+        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openSettingsFromPanel(), () => Services.Power.cycleProfile(), () => bar.openPowerFromPanel()];
         const tile = root.selectedTile();
         if (tile >= 0 && tile < actions.length)
             actions[tile]();
@@ -577,12 +577,21 @@ BasePopup {
                 onHovered: root.selectIndex(root.firstTileIdx() + 5)
             }
             ToggleTile {
+                glyph: "󰓅"
+                label: Services.Power.profilesAvailable && Services.Power.profileName !== "" ? Services.Power.profileName : "Profile"
+                active: Services.Power.profileName === "performance"
+                enabled: Services.Power.profilesAvailable
+                selected: root.selectedIndex === root.firstTileIdx() + 6
+                onTileClicked: Services.Power.cycleProfile()
+                onHovered: root.selectIndex(root.firstTileIdx() + 6)
+            }
+            ToggleTile {
                 glyph: "󰐥"
                 label: "Power"
                 active: false
-                selected: root.selectedIndex === root.firstTileIdx() + 6
+                selected: root.selectedIndex === root.firstTileIdx() + 7
                 onTileClicked: bar.openPowerFromPanel()
-                onHovered: root.selectIndex(root.firstTileIdx() + 6)
+                onHovered: root.selectIndex(root.firstTileIdx() + 7)
             }
         }
         HintText {

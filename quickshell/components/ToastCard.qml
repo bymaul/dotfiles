@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import Quickshell.Services.Notifications
 import "../services" as Services
 import "../Palette.js" as Palette
@@ -8,7 +7,7 @@ Rectangle {
     required property var notification
     property int seq: Services.Notifs.toastSeq
     onSeqChanged: {
-        if (card.notification?.qsInternal === true)
+        if (card.notification?.qsInternal === true && !cardArea.containsMouse)
             expiryTimer.restart();
     }
     width: Palette.popupWidth
@@ -31,20 +30,25 @@ Rectangle {
     }
     readonly property var actionList: card.notification?.actions ?? []
     MouseArea {
+        id: cardArea
         anchors.fill: parent
+        hoverEnabled: true
+        onContainsMouseChanged: {
+            if (containsMouse)
+                expiryTimer.stop();
+            else if (card.notification.resident !== true)
+                expiryTimer.restart();
+        }
         onClicked: {
-            const path = Services.Notifs.filepathOf(card.notification);
-            if (path !== "")
-                Quickshell.execDetached(["xdg-open", path]);
-            Services.Notifs.hideToast(card.notification);
-            Services.Notifs.forgetLive(card.notification);
+            Services.Notifs.activateDefault(card.notification);
+            Services.Notifs.dismissToast(card.notification);
         }
     }
     Timer {
         id: expiryTimer
         interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Palette.toastTimeout
-        running: true
-        onTriggered: Services.Notifs.hideToast(card.notification)
+        running: !(card.notification.resident === true)
+        onTriggered: Services.Notifs.dismissToast(card.notification)
     }
     Column {
         id: content
@@ -63,7 +67,7 @@ Rectangle {
                 rawIcon: card.rawIcon
             }
             Column {
-                width: parent.width - (cardIcon.hasIcon ? cardIcon.width + 8 : 0)
+                width: parent.width - (cardIcon.hasIcon ? cardIcon.width + 8 : 0) - (closeBox.width + 8)
                 spacing: 2
                 Text {
                     width: parent.width
@@ -88,6 +92,26 @@ Rectangle {
                     font.pixelSize: Palette.px12
                     textFormat: Text.RichText
                     wrapMode: Text.WordWrap
+                }
+            }
+            Item {
+                id: closeBox
+                anchors.verticalCenter: parent.verticalCenter
+                width: 20
+                height: 20
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰅖"
+                    color: closeArea.containsMouse ? Palette.fg : Palette.dim
+                    font.family: Palette.font
+                    font.pixelSize: Palette.px12
+                }
+                MouseArea {
+                    id: closeArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Services.Notifs.dismissToast(card.notification)
                 }
             }
         }
@@ -132,8 +156,8 @@ Rectangle {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (Services.Notifs.activateAction(card.notification, modelData))
-                                Services.Notifs.hideToast(card.notification);
+                            Services.Notifs.activateAction(card.notification, modelData);
+                            Services.Notifs.dismissToast(card.notification);
                         }
                     }
                 }

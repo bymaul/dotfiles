@@ -41,7 +41,7 @@ ShellRoot {
             color: Palette.border
         }
         WlrLayershell.namespace: "qs-bar"
-        readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, passwordDialog, launcherPopup, clipboardPopup, emojiPopup]
+        readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, launcherPopup, clipboardPopup, emojiPopup]
         function hideAll(list): void {
             for (const p of list)
                 p.visible = false;
@@ -122,19 +122,6 @@ ShellRoot {
         }
         function closePopups(): void {
             hideAll(exclusivePopups);
-        }
-        function showPasswordDialog(network): void {
-            passwordDialog.returnTo = wifiPopup;
-            wifiPopup.visible = false;
-            passwordDialog.targetNetwork = network;
-            passwordDialog.visible = true;
-            passwordDialog.regrab();
-        }
-        function closePasswordAndControl(): void {
-            passwordDialog.returnTo = null;
-            wifiPopup.returnTo = null;
-            passwordDialog.visible = false;
-            controlPanelPopup.visible = false;
         }
         property double panelOpenedAt: 0
         HyprlandFocusGrab {
@@ -288,11 +275,6 @@ ShellRoot {
 
         SettingsPopup {
             id: settingsPopup
-            bar: bar
-        }
-
-        PasswordDialog {
-            id: passwordDialog
             bar: bar
         }
 

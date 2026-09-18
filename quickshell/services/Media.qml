@@ -150,13 +150,18 @@ Singleton {
         command: ["sh", "-c", "command -v brightnessctl >/dev/null && brightnessctl -m || exit 1"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const fields = text.split(",");
+                const lines = String(text ?? "").split("\n").map(l => l.trim()).filter(l => l !== "");
+                const line = lines.find(l => l.includes(",backlight,")) ?? lines[0] ?? "";
+                const fields = line.split(",");
                 if (fields.length >= 4) {
-                    media.brightness = parseFloat(fields[3]) || 0;
-                    media.brightnessAvailable = true;
-                } else {
-                    media.markBrightnessUnavailable();
+                    const pct = parseFloat(fields[3]);
+                    if (!isNaN(pct)) {
+                        media.brightness = pct;
+                        media.brightnessAvailable = true;
+                        return;
+                    }
                 }
+                media.markBrightnessUnavailable();
             }
         }
         onExited: exitCode => {

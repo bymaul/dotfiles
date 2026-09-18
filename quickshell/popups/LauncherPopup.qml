@@ -94,6 +94,14 @@ BasePopup {
         else
             root.refilterApps(String(queryField.text ?? "").toLowerCase().trim());
     }
+    function fuzzyMatch(t: string, query: string): bool {
+        let qi = 0;
+        for (let ti = 0; ti < t.length && qi < query.length; ti++) {
+            if (t[ti] === query[qi])
+                qi++;
+        }
+        return qi >= query.length;
+    }
     function matchScoreLn(t: string, query: string): int {
         if (query === "")
             return 1;
@@ -103,7 +111,9 @@ BasePopup {
             return 1;
         if (t.includes(query))
             return 2;
-        return 3;
+        if (root.fuzzyMatch(t, query))
+            return 3;
+        return 4;
     }
     function matchScore(text: string, q: string): int {
         return root.matchScoreLn(String(text ?? "").toLowerCase(), String(q ?? "").toLowerCase());
@@ -114,15 +124,30 @@ BasePopup {
     function escHtml(s: string): string {
         return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
+    function hlFuzzy(raw: string, query: string): string {
+        const lower = raw.toLowerCase();
+        let qi = 0;
+        let out = "";
+        for (let ti = 0; ti < raw.length; ti++) {
+            const c = root.escHtml(raw[ti]);
+            if (qi < query.length && lower[ti] === query[qi]) {
+                out += "<u>" + c + "</u>";
+                qi++;
+            } else {
+                out += c;
+            }
+        }
+        return out;
+    }
     function hlName(name: string, q: string): string {
         const raw = String(name ?? "");
         const query = String(q ?? "");
         if (query === "")
             return root.escHtml(raw);
         const i = raw.toLowerCase().indexOf(query);
-        if (i < 0)
-            return root.escHtml(raw);
-        return root.escHtml(raw.slice(0, i)) + "<u>" + root.escHtml(raw.slice(i, i + query.length)) + "</u>" + root.escHtml(raw.slice(i + query.length));
+        if (i >= 0)
+            return root.escHtml(raw.slice(0, i)) + "<u>" + root.escHtml(raw.slice(i, i + query.length)) + "</u>" + root.escHtml(raw.slice(i + query.length));
+        return root.hlFuzzy(raw, query);
     }
     function entryKey(e): string {
         if (!e)
@@ -144,13 +169,13 @@ BasePopup {
             if (name === "")
                 continue;
             const haystacks = [app.name ?? "", app.genericName ?? "", app.comment ?? ""].concat(app.keywords ?? []);
-            let best = 3;
+            let best = 4;
             for (const h of haystacks) {
                 best = Math.min(best, root.matchScore(String(h ?? ""), q));
                 if (best === 0)
                     break;
             }
-            if (best < 3)
+            if (best < 4)
                 out.push({name: name, ln: String(name ?? "").toLowerCase(), key: "app:" + (app.id ?? name), entry: app, score: best, use: Services.LaunchHistory.countFor("app:" + (app.id ?? "")), last: Services.LaunchHistory.lastFor("app:" + (app.id ?? ""))});
         }
         root.sortScored(out);
@@ -160,7 +185,7 @@ BasePopup {
         const out = [];
         for (const b of Services.RunMode.binaries ?? []) {
             const score = root.matchScoreLn(b.ln ?? "", q);
-            if (score < 3)
+            if (score < 4)
                 out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, score: score, use: Services.LaunchHistory.countFor("bin:" + b.name), last: Services.LaunchHistory.lastFor("bin:" + b.name)});
         }
         root.sortScored(out);

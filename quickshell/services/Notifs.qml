@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Notifications
 import "../Palette.js" as Palette
 Singleton {
@@ -12,11 +13,21 @@ Singleton {
     property int readCount: 0
     readonly property int unread: Math.max(0, history.length - readCount)
     property int toastSeq: 0
+    readonly property string historyFile: {
+        const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
+        const base = xdg !== "" ? xdg : (Quickshell.env("HOME") ?? "") + "/.local/share";
+        return base + "/quickshell/notif-history.json";
+    }
     function syncIdOf(n): var {
         return n?.hints ? n.hints["x-canonical-private-synchronous"] : undefined;
     }
     function isOwnFeedback(app: string): bool {
         return app === "dnd" || app === "caffeine" || app === "screenshot";
+    }
+    function bypassesDnd(n): bool {
+        if (notifs.isOwnFeedback(n?.appName ?? ""))
+            return true;
+        return n?.urgency === NotificationUrgency.Critical;
     }
     function toastKey(t): var {
         return t && t.qsToastId !== undefined ? t.qsToastId : t;
@@ -24,6 +35,12 @@ Singleton {
     function hideToast(n): void {
         const k = notifs.toastKey(n);
         notifs.toasts = notifs.toasts.filter(t => notifs.toastKey(t) !== k);
+    }
+    function dismissToast(n): void {
+        if (!n)
+            return;
+        notifs.hideToast(n);
+        notifs.safeDismiss(n);
     }
     function shelveToasts(): void {
         if (notifs.toasts.length === 0)
@@ -53,12 +70,15 @@ Singleton {
         notifs.history = notifs.history.filter(h => h.live !== n);
         notifs.pending = notifs.pending.filter(t => t !== n);
         notifs.readCount = Math.min(notifs.readCount, notifs.history.length);
+        notifs.schedulePersist();
     }
     function filepathOf(notification): string {
         const hints = notification?.hints;
         return hints && typeof hints["filepath"] === "string" ? hints["filepath"] : "";
     }
     function activateAction(notification, action): bool {
+        if (!notification || !action)
+            return false;
         const path = notifs.filepathOf(notification);
         const id = action?.identifier ?? "";
         if (path !== "" && (id === "open" || id === "path" || id === "default")) {
@@ -70,14 +90,31 @@ Singleton {
         }
         try {
             action.invoke();
-        } catch (_) {}
-        return false;
+        } catch (_) {
+            return false;
+        }
+        return true;
+    }
+    function defaultActionOf(actions): var {
+        const list = actions ?? [];
+        if (list.length === 0)
+            return null;
+        return list.find(a => a.identifier === "default") ?? list[0] ?? null;
+    }
+    function activateDefault(live): bool {
+        if (!live)
+            return false;
+        const act = notifs.defaultActionOf(live?.actions ?? []);
+        if (!act)
+            return false;
+        return notifs.activateAction(live, act);
     }
     function clearHistory(): void {
         for (const h of notifs.history)
             notifs.dropLive(h);
         notifs.history = [];
         notifs.readCount = 0;
+        notifs.schedulePersist();
     }
     function dismissHistoryAt(i: int): void {
         if (i < 0 || i >= notifs.history.length)
@@ -85,6 +122,7 @@ Singleton {
         notifs.dropLive(notifs.history[i]);
         notifs.history = notifs.history.filter((_, idx) => idx !== i);
         notifs.readCount = Math.min(notifs.readCount, notifs.history.length);
+        notifs.schedulePersist();
     }
     function snapshot(n): var {
         const cands = [n.image, n.appIcon];
@@ -118,20 +156,21 @@ Singleton {
                 }
             }
         }
-        if (syncId === undefined || (notification.actions ?? []).length > 0) {
+        if ((syncId === undefined || (notification.actions ?? []).length > 0) && notification.transient !== true) {
             let next = [notifs.snapshot(notification), ...notifs.history];
             if (syncId !== undefined)
                 next = [next[0], ...next.slice(1).filter(h => h.syncId !== syncId)];
             for (const h of next.slice(Palette.historyMax))
                 notifs.dropLive(h);
             notifs.history = next.slice(0, Palette.historyMax);
+            notifs.schedulePersist();
         }
         notification.tracked = true;
         notification.closed.connect(() => {
             notifs.toasts = notifs.toasts.filter(t => t !== notification);
             notifs.pending = notifs.pending.filter(t => t !== notification);
         });
-        if (Modes.dndActive && !notifs.isOwnFeedback(notification.appName))
+        if (Modes.dndActive && !notifs.bypassesDnd(notification))
             return;
         if (notifs.suppressToasts) {
             if (syncId === undefined || (notification.actions ?? []).length > 0)
@@ -194,5 +233,56 @@ Singleton {
                 connect: () => {}
             }
         });
+    }
+    function schedulePersist(): void {
+        persistTimer.restart();
+    }
+    function persistHistory(): void {
+        const data = notifs.history.slice(0, Palette.historyMax).map(h => ({
+                    app: h?.app ?? "",
+                    summary: h?.summary ?? "",
+                    body: h?.body ?? "",
+                    icon: h?.icon ?? "",
+                    critical: !!h?.critical,
+                    time: h?.time instanceof Date ? h.time.getTime() : Date.now(),
+                    syncId: h?.syncId ?? null
+                }));
+        saver.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" > "$2"', "qs", JSON.stringify(data), notifs.historyFile];
+        saver.running = true;
+    }
+    Timer {
+        id: persistTimer
+        interval: 1000
+        repeat: false
+        onTriggered: notifs.persistHistory()
+    }
+    Process {
+        id: saver
+    }
+    Process {
+        id: historyLoader
+        command: ["cat", notifs.historyFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const arr = JSON.parse(text);
+                    if (!Array.isArray(arr))
+                        return;
+                    const restored = arr.slice(0, Palette.historyMax).map(e => ({
+                                app: String(e?.app ?? ""),
+                                summary: String(e?.summary ?? ""),
+                                body: String(e?.body ?? ""),
+                                icon: String(e?.icon ?? ""),
+                                critical: !!e?.critical,
+                                time: new Date(typeof e?.time === "number" ? e.time : Date.now()),
+                                syncId: e?.syncId ?? undefined,
+                                live: null
+                            }));
+                    notifs.history = [...notifs.history, ...restored].slice(0, Palette.historyMax);
+                    notifs.readCount = notifs.history.length;
+                } catch (_) {}
+            }
+        }
+        Component.onCompleted: historyLoader.running = true
     }
 }

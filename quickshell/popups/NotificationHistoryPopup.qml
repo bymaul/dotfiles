@@ -119,7 +119,11 @@ BasePopup {
                             if (containsMouse)
                                 root.panel.selectIndex(root.panel.firstHistIdx() + historyCard.index);
                         }
-                        onClicked: Services.Notifs.dismissHistoryAt(index)
+                        onClicked: {
+                            if (Services.Notifs.activateDefault(historyCard.modelData.live))
+                                bar.closePopups();
+                            Services.Notifs.dismissHistoryAt(historyCard.index);
+                        }
                     }
                     Column {
                         id: content
@@ -145,7 +149,7 @@ BasePopup {
                                     spacing: 8
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: parent.width - 52
+                                        width: parent.width - 80
                                         text: modelData.summary || modelData.app || ""
                                         color: Palette.fg
                                         font.family: Palette.font
@@ -160,6 +164,25 @@ BasePopup {
                                         color: Palette.dim
                                         font.family: Palette.font
                                         font.pixelSize: Palette.px10
+                                    }
+                                    Item {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 20
+                                        height: 20
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "󰅖"
+                                            color: histCloseArea.containsMouse ? Palette.fg : Palette.dim
+                                            font.family: Palette.font
+                                            font.pixelSize: Palette.px12
+                                        }
+                                        MouseArea {
+                                            id: histCloseArea
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: Services.Notifs.dismissHistoryAt(historyCard.index)
+                                        }
                                     }
                                 }
                                 Text {
