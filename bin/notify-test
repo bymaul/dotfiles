@@ -1,20 +1,28 @@
 #!/bin/bash
 # notify-test: exercise the quickshell notification server.
-# Usage: notify-test [CASE]...   (default: all except dnd/actions)
+# Usage: notify-test [CASE]...   (default: non-blocking, non-sticky cases
+#                                 that need no prior DND state)
 #
 #   basic     plain summary + body toast (5s)
 #   markup    bold/italic body rendering
 #   image     themed icon AND file-path thumbnail toasts
 #   progress  OSD-style value bar (replaces stacking)
-#   actions   blocking action toast; prints the chosen key (default/dismiss)
+#   actions   blocking action toast; prints the chosen key, toast dismisses
+#             on choice (default/dismiss)
 #   buttons   fire-and-forget action toast (no --wait, sender is gone on
-#             click): buttons render, relay is a harmless no-op
+#             click): body click = default action (dead relay) + dismiss,
+#             button click = invoke + dismiss, x = dismiss, history kept
 #   open      file-backed Open/Copy path actions (filepath hint, no
-#             --wait): handled natively, sender may be gone
-#   urgent    critical urgency (danger border)
+#             --wait): body click opens the viewer too (default action)
+#   urgent    critical urgency (danger border); bypasses DND (see dndcrit)
 #   sticky    15s timeout instead of the 5s default
+#   transient boolean-transient hint: shows, skipped from history
+#   history   dump persisted history file (count + newest summaries)
+#   resident  boolean-resident hint: ignores timeout, dismiss with x
+#             (NOT in default: stays until dismissed)
 #   dnd       silent-drop check (enable DND in the panel FIRST, then run:
-#             nothing should appear)
+#             nothing should appear; NOT in default)
+#   dndcrit   critical bypasses DND (enable DND FIRST; NOT in default)
 #
 # OSD/media keys are NOT covered here (they need a reloaded Hyprland):
 #   hyprctl dispatch global qs-bar:"Volume Up"
@@ -67,7 +75,7 @@ case_buttons() {
         -t 10000 -i "$IMG" \
         -A "default=Open" -A "dismiss=Dismiss" \
         "Dead sender" "no --wait: gone before any click"
-    echo "expected: buttons render; clicks relay nowhere (no-op)"
+    echo "expected: body click = default action (dead relay) + dismiss, button = invoke + dismiss, x = dismiss"
 }
 
 case_open() {
@@ -76,20 +84,47 @@ case_open() {
         -h string:filepath:"$IMG" -t 10000 -i "$IMG" \
         -A "default=Open" -A "path=Copy path" \
         "Open something" "$IMG"
-    echo "expected: Open launches viewer, Copy path copies path (native)"
+    echo "expected: body click opens viewer too (default action); Copy path copies path (native)"
 }
 
 case_sticky() {
     notify-send -t 15000 "Sticky" "15s timeout, outlives the default"
 }
 
+case_transient() {
+    notify-send -h boolean:transient:true "Transient" "shows, but skipped from history"
+    echo "expected: toast appears; missing from history (check: notify-test history)"
+}
+
+case_history() {
+    HIST="${XDG_DATA_HOME:-$HOME/.local/share}/quickshell/notif-history.json"
+    [ -f "$HIST" ] || { echo "no history file yet"; return; }
+    python3 -c '
+import json, sys
+data = json.load(open(sys.argv[1]))
+print(str(len(data)) + " entries (newest first):")
+for h in data[:8]:
+    print("  - [" + str(h.get("app", "")) + "] " + str(h.get("summary", "")))
+' "$HIST"
+}
+
+case_resident() {
+    notify-send -t 2000 -h boolean:resident:true "Resident" "ignores the 2s timeout"
+    echo "expected: still visible after 2s; dismiss with the x button"
+}
+
 case_dnd() {
     notify-send "DND probe" "if DND is on, this must stay silent"
-    echo "if DND is on and nothing appeared: OK"
+    echo "if DND is on and nothing appeared: OK (critical still shows: dndcrit)"
+}
+
+case_dndcrit() {
+    notify-send -u critical "Critical under DND" "bypasses Do Not Disturb"
+    echo "with DND on: this must still appear (normal toasts stay silent)"
 }
 
 if (($# == 0)); then
-    set -- basic markup image progress urgent sticky buttons open
+    set -- basic markup image progress urgent sticky buttons open transient history
 fi
 
 for c in "$@"; do
