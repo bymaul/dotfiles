@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # install.sh - link dotfiles into $HOME with plain symlinks. Idempotent: safe to re-run.
 #
-#   ./install.sh                   install (link packages, warn on missing deps)
-#   ./install.sh --remove [pkg...] unlink packages (default: all of them)
+#   ./install.sh [--category CAT]... [pkg...]
+#   ./install.sh --remove [--category CAT]... [pkg...]
 
 set -euo pipefail
 
@@ -13,6 +13,8 @@ warn() { printf '\033[1;33m==>\033[0m %s\n' "$*" >&2; }
 
 usage() {
     sed -n '2,5p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    printf 'categories:\n'
+    for c in desktop shell tools; do printf '  %s: %s\n' "$c" "${CATS[$c]}"; done
 }
 
 PKGS=(
@@ -35,11 +37,24 @@ PKGS=(
     "dir vague-theme .local/share/themes/Vague"
 )
 
+declare -A CATS=(
+    [desktop]="hypr quickshell gtk vague-theme"
+    [shell]="zsh starship tmux mise"
+    [tools]="kitty bat btop fastfetch lazygit nvim opencode yazi bin"
+)
+
 MODE=install
 ONLY=()
 while (($#)); do
     case "$1" in
         -R | --remove) MODE=remove ;;
+        -C | --category | --only)
+            [ $# -ge 2 ] || { echo "error: $1 needs a category name" >&2; exit 1; }
+            [[ -v CATS[$2] ]] || { echo "error: unknown category: $2" >&2; exit 1; }
+            read -r -a _expand <<<"${CATS[$2]}"
+            ONLY+=("${_expand[@]}")
+            shift
+            ;;
         -h | --help) usage; exit 0 ;;
         -*) echo "error: unknown option: $1" >&2; exit 1 ;;
         *) ONLY+=("$1") ;;
