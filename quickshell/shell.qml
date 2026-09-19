@@ -98,6 +98,23 @@ ShellRoot {
             lockContext.reset();
             sessionLock.locked = true;
         }
+        function handlePowerKey(): void {
+            const action = Services.Settings.powerButtonAction;
+            if (action === "lock") {
+                bar.lockScreen();
+            } else if (action === "suspend") {
+                Services.Power.lock();
+                bar.closePopups();
+                Quickshell.execDetached(["systemctl", "suspend", "-i"]);
+            } else if (action === "poweroff") {
+                bar.closePopups();
+                Quickshell.execDetached(["systemctl", "poweroff", "-i"]);
+            } else if (action === "ignore") {
+                return;
+            } else {
+                bar.togglePower();
+            }
+        }
         function screenshot(mode: string): void {
             screenshotTool.capture(mode);
         }
@@ -294,6 +311,7 @@ ShellRoot {
         }
 
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Power Menu"; description: "Open the power menu"; onPressed: bar.togglePower() }
+        GlobalShortcut { appid: "qs-bar"; name: "Power Key"; description: "Handle the power key per settings"; onPressed: bar.handlePowerKey() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Control Panel"; description: "Open the control panel"; onPressed: bar.toggleControl() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Launcher"; description: "Open the application launcher"; onPressed: bar.toggleLauncher() }
         GlobalShortcut { appid: "qs-bar"; name: "Toggle Clipboard"; description: "Open the clipboard history picker"; onPressed: bar.toggleClipboard() }
@@ -344,6 +362,9 @@ ShellRoot {
         }
         function lock(): void {
             bar.lockScreen();
+        }
+        function powerKey(): void {
+            bar.handlePowerKey();
         }
         function screenshot(mode: string): void {
             bar.screenshot(mode);

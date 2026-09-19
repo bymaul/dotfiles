@@ -450,23 +450,6 @@ Singleton {
         settings.powerProfileOnBattery = v;
         settings.scheduleSave();
     }
-    function logindValue(action: string): string {
-        if (action === "lock")
-            return "lock";
-        if (action === "poweroff")
-            return "poweroff";
-        if (action === "ignore" || action === "menu" || action === "notify")
-            return "ignore";
-        return "suspend";
-    }
-    function logindConf(): string {
-        const L = [];
-        L.push("[Login]");
-        L.push("HandleLidSwitch=" + settings.logindValue(settings.lidCloseAction));
-        L.push("HandleLidSwitchExternalPower=" + settings.logindValue(settings.lidCloseAction));
-        L.push("HandlePowerKey=" + settings.logindValue(settings.powerButtonAction));
-        return L.join("\n") + "\n";
-    }
     function writeIdleConf(): void {
         idleDebounce.restart();
     }

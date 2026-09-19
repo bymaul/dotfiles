@@ -25,7 +25,7 @@ Plus **quickshell** (Hyprland >= 0.56, Lua config), a **Nerd Font**, and **stars
 
 ## Power management
 
-Idle dim/lock/DPMS/suspend is owned by quickshell (Settings popup, System tab writes `hypridle.conf`). Lid close / power button actions go through systemd-logind:
+Idle dim/lock/DPMS/suspend is owned by quickshell (Settings popup, System tab writes `hypridle.conf`). The power button is handled live by quickshell per the System tab setting. Lid close goes through systemd-logind:
 
 ```sh
 qs-power-logind --apply

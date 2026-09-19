@@ -194,7 +194,7 @@ hl.bind("Print", hl.dsp.global("qs-bar:Screenshot Area"))
 hl.bind(mainMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Full"))
 hl.bind(secondMod .. " + Print", hl.dsp.global("qs-bar:Screenshot Window"))
 
-hl.bind("XF86PowerOff", hl.dsp.global("qs-bar:Toggle Power Menu"), { locked = true })
+hl.bind("XF86PowerOff", hl.dsp.global("qs-bar:Power Key"), { locked = true })
 
 hl.bind("XF86AudioRaiseVolume", hl.dsp.global("qs-bar:Volume Up"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.global("qs-bar:Volume Down"), { locked = true, repeating = true })

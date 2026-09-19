@@ -847,7 +847,7 @@ BasePopup {
                 height: 30
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-                text: "Idle rows write hypridle.conf. Lid / power key need logind: bin/qs-power-logind."
+                text: "Idle rows write hypridle.conf. Lid close needs logind: bin/qs-power-logind. Power key applies instantly."
                 color: Palette.dim
                 font.family: Palette.font
                 font.pixelSize: Palette.px10
