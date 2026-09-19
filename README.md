@@ -18,10 +18,10 @@ git clone https://github.com/bymaul/dotfiles ~/dotfiles
 ## Requirements
 
 ```sh
-sudo pacman -S hyprland hypridle hyprpolkitagent kitty nemo nvim tmux zsh starship lazygit yazi eza bat fd btop fastfetch mise pipewire brightnessctl upower libnotify wl-clipboard cliphist jq systemd power-profiles-daemon
+sudo pacman -S hyprland hypridle hyprpolkitagent kitty nemo nvim tmux zsh lazygit yazi eza bat fd btop fastfetch mise pipewire brightnessctl upower libnotify wl-clipboard cliphist jq systemd power-profiles-daemon
 ```
 
-Plus **quickshell** (Hyprland >= 0.56, Lua config) and a **Nerd Font**. power-profiles-daemon is optional - only for power-profile switching.
+Plus **quickshell** (Hyprland >= 0.56, Lua config), a **Nerd Font**, and **starship** (installed via `zinit` from GitHub releases on first `zsh` run). power-profiles-daemon is optional - only for power-profile switching.
 
 ## Power management
 
