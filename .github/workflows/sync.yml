@@ -13,7 +13,14 @@ on:
       - "tmux/**"
       - "fastfetch/**"
       - "yazi/**"
+      - "mise/**"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run - show diff without pushing"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: sync-shared
@@ -93,6 +100,7 @@ jobs:
           sync_dir tmux wsl/tmux
           sync_dir fastfetch fastfetch
           sync_dir yazi yazi
+          sync_dir mise mise
 
       - name: Create sync branch
         if: steps.check.outputs.skip != 'true'
@@ -118,6 +126,15 @@ jobs:
 
           if [ -z "$(git status --porcelain)" ]; then
             echo "No changes to sync"
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "Dry run - changes that would be pushed:"
+            git status --short
+            git diff --stat
+            git diff | head -n 500
             echo "pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
