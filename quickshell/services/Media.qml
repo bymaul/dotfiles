@@ -116,13 +116,27 @@ Singleton {
     function mediaPrev(): void {
         media.transport("previous");
     }
+    property int pendingBrightness: -1
     function setBrightness(pct: real, quiet: bool): void {
         const clamped = Math.round(Palette.clamp(pct, Palette.brightnessMin, 100));
         media.brightness = clamped;
         media.brightnessPollEnabled = true;
-        Quickshell.execDetached(["brightnessctl", "set", clamped + "%"]);
+        media.pendingBrightness = clamped;
+        brightnessApply.restart();
         if (!quiet)
             media.brightnessToast();
+    }
+    Timer {
+        id: brightnessApply
+        interval: 120
+        repeat: false
+        onTriggered: {
+            if (media.pendingBrightness < 0)
+                return;
+            const v = media.pendingBrightness;
+            media.pendingBrightness = -1;
+            Quickshell.execDetached(["brightnessctl", "set", v + "%"]);
+        }
     }
     function brightnessUp(): void {
         media.setBrightness(media.brightness + Palette.brightnessStep, false);
@@ -132,7 +146,7 @@ Singleton {
     }
     function markBrightnessUnavailable(): void {
         media.brightnessAvailable = false;
-        media.brightnessPollEnabled = false;
+        media.brightnessPollEnabled = true;
     }
     Timer {
         id: brightnessPoll
@@ -141,7 +155,17 @@ Singleton {
         repeat: true
         triggeredOnStart: true
         onTriggered: {
-            if (media.brightnessAvailable)
+            if (!brightnessProbe.running)
+                brightnessProbe.running = true;
+        }
+    }
+    Timer {
+        id: brightnessRetry
+        interval: 60000
+        running: !media.brightnessAvailable
+        repeat: true
+        onTriggered: {
+            if (!brightnessProbe.running)
                 brightnessProbe.running = true;
         }
     }

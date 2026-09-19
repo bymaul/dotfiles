@@ -60,7 +60,22 @@ Item {
                     Keys.onReturnPressed: root.context.tryUnlock()
                     Keys.onEnterPressed: root.context.tryUnlock()
                     Keys.onEscapePressed: root.context.currentText = ""
-                    Component.onCompleted: forceActiveFocus()
+                    Component.onCompleted: {
+                        forceActiveFocus();
+                        focusRetry.restart();
+                    }
+                    Timer {
+                        id: focusRetry
+                        interval: 200
+                        repeat: true
+                        onTriggered: {
+                            if (!field.activeFocus && field.visible && field.enabled) {
+                                field.forceActiveFocus();
+                            } else {
+                                focusRetry.stop();
+                            }
+                        }
+                    }
                     Connections {
                         target: root.context
                         function onCurrentTextChanged() {

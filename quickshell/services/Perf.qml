@@ -56,6 +56,16 @@ Singleton {
         onTriggered: {
             if (!probe.running)
                 probe.running = true;
+            probeTimeout.restart();
+        }
+    }
+    Timer {
+        id: probeTimeout
+        interval: 5000
+        repeat: false
+        onTriggered: {
+            if (probe.running)
+                probe.running = false;
         }
     }
     Process {
@@ -67,5 +77,6 @@ Singleton {
                 perf.parseMem(text);
             }
         }
+        onExited: probeTimeout.stop()
     }
 }

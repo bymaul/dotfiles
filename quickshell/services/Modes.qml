@@ -26,14 +26,22 @@ Singleton {
         id: inhibitProc
         command: ["systemd-inhibit", "--what=idle:sleep", "--who=Quickshell", "--why=Caffeine mode", "sleep", "infinity"]
         running: modes.caffeineActive
+        onExited: exitCode => {
+            if (modes.caffeineActive && exitCode !== 0) {
+                modes.caffeineActive = false;
+                Notifs.notify({app: "caffeine", summary: "Caffeine failed", body: "inhibitor exited, turned off", timeout: Palette.osdTimeout});
+            }
+        }
     }
     Process {
         id: caffeineCheck
         command: ["sh", "-c", "command -v systemd-inhibit >/dev/null"]
         onExited: exitCode => {
+            if (caffeineCheck.running)
+                return;
             if (exitCode !== 0)
                 Notifs.notify({app: "caffeine", summary: "Caffeine unavailable", body: "systemd-inhibit not found", timeout: Palette.osdTimeout});
-            else
+            else if (!modes.caffeineActive)
                 modes.setCaffeine(true);
         }
     }

@@ -155,8 +155,6 @@ BasePopup {
         function onConnectionFailed(reason) {
             const net = root.pendingNetwork;
             root.pendingNetwork = null;
-            if (net && net.known && !net.connected)
-                net.forget();
             root.authTarget = net;
             root.authError = (reason === ConnectionFailReason.NoSecrets || reason === ConnectionFailReason.WifiAuthTimeout) ? "Wrong password, try again" : "Connection failed (" + ConnectionFailReason.toString(reason) + ")";
             root.focusTarget = field;
@@ -201,7 +199,7 @@ BasePopup {
                     leftMargin: 10
                 }
                 width: parent.width - 20
-                text: bar.connectedWifi ? "󰤨 " + bar.connectedWifi.name : bar.wifiDevice?.networks.values.find(n => n.state === ConnectionState.Connecting) ? "󰤭 Connecting..." : Networking.wifiEnabled ? "󰤭 Not connected" : "󰤯 Wi-Fi off"
+                text: bar.connectedWifi ? "󰤨 " + bar.connectedWifi.name : (bar.wifiDevice?.networks?.values ?? []).find(n => n && n.state === ConnectionState.Connecting) ? "󰤭 Connecting..." : Networking.wifiEnabled ? "󰤭 Not connected" : "󰤯 Wi-Fi off"
                 color: bar.connectedWifi ? Palette.fg : Palette.dim
                 font.family: Palette.font
                 font.pixelSize: Palette.px12

@@ -13,14 +13,15 @@ Row {
             height: 18
             Image {
                 anchors.fill: parent
-                source: modelData.icon
+                source: modelData?.icon ?? ""
                 sourceSize.width: 18
                 sourceSize.height: 18
                 fillMode: Image.PreserveAspectFit
+                visible: (modelData?.icon ?? "") !== ""
             }
             QsMenuAnchor {
                 id: menuAnchor
-                menu: trayIcon.modelData.menu
+                menu: trayIcon.modelData?.menu ?? null
                 anchor.item: trayIcon
                 anchor.edges: Edges.Bottom
                 anchor.gravity: Edges.Bottom
@@ -29,12 +30,17 @@ Row {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: mouse => {
-                    if (mouse.button === Qt.LeftButton && !trayIcon.modelData.onlyMenu)
-                        trayIcon.modelData.activate();
-                    else if (trayIcon.modelData.hasMenu)
-                        menuAnchor.open();
-                    else
-                        trayIcon.modelData.secondaryActivate();
+                    const item = trayIcon.modelData;
+                    if (!item)
+                        return;
+                    try {
+                        if (mouse.button === Qt.LeftButton && !item.onlyMenu)
+                            item.activate();
+                        else if (item.hasMenu)
+                            menuAnchor.open();
+                        else
+                            item.secondaryActivate();
+                    } catch (_) {}
                 }
             }
         }

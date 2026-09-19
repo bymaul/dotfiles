@@ -47,6 +47,7 @@ Singleton {
         }
     }
 
+    property int validSamples: 0
     function evaluate(): void {
         if (!Settings.loaded)
             return;
@@ -54,12 +55,18 @@ Singleton {
             power.lowFired = false;
             power.criticalFired = false;
             power.actionFired = false;
+            power.validSamples = 0;
             return;
         }
         if (!power.discharging)
             return;
-        if (power.pct > 0)
+        if (power.pct > 0 || power.battery?.timeToEmpty > 60) {
             power.seenValid = true;
+        } else {
+            power.validSamples += 1;
+            if (power.validSamples >= 6)
+                power.seenValid = true;
+        }
         if (!power.seenValid)
             return;
         const p = power.pct;
@@ -230,9 +237,22 @@ Singleton {
         command: ["sh", "-c", "command -v powerprofilesctl >/dev/null && exit 0; test -f /usr/share/dbus-1/system-services/org.freedesktop.UPower.PowerProfiles.service"]
         onExited: exitCode => {
             power.profilesAvailable = exitCode === 0;
-            if (exitCode === 0)
+            if (exitCode === 0) {
+                ppRetry.stop();
                 power.applyAutoProfile();
+            } else {
+                ppRetry.restart();
+            }
         }
         Component.onCompleted: ppProbe.running = true
+    }
+    Timer {
+        id: ppRetry
+        interval: 30000
+        repeat: false
+        onTriggered: {
+            if (!ppProbe.running)
+                ppProbe.running = true;
+        }
     }
 }

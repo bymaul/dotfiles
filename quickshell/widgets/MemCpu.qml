@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import "../services" as Services
 import "../Palette.js" as Palette
@@ -28,7 +29,13 @@ Item {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        onClicked: btop.running = true
+        onClicked: {
+            if (!btop.running) {
+                const term = Quickshell.env("TERMINAL") ?? "kitty";
+                btop.command = term === "kitty" ? ["kitty", "--class", "btop", "btop"] : [term, "-e", "btop"];
+                btop.running = true;
+            }
+        }
     }
     Process {
         id: btop

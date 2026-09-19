@@ -175,8 +175,10 @@ BasePopup {
                 if (best === 0)
                     break;
             }
-            if (best < 4)
-                out.push({name: name, ln: String(name ?? "").toLowerCase(), key: "app:" + (app.id ?? name), entry: app, score: best, use: Services.LaunchHistory.countFor("app:" + (app.id ?? "")), last: Services.LaunchHistory.lastFor("app:" + (app.id ?? ""))});
+            if (best < 4) {
+                const appKey = "app:" + (app.id ?? name);
+                out.push({name: name, ln: String(name ?? "").toLowerCase(), key: appKey, entry: app, score: best, use: Services.LaunchHistory.countFor(appKey), last: Services.LaunchHistory.lastFor(appKey)});
+            }
         }
         root.sortScored(out);
         root.applyResults(out.slice(0, Palette.resultMax));
@@ -253,9 +255,9 @@ BasePopup {
             return;
         }
         const entry = root.entries[resultList.currentIndex];
-        if (!entry)
+        if (!entry || !entry.entry)
             return;
-        Services.LaunchHistory.record("app:" + (entry.entry.id ?? ""));
+        Services.LaunchHistory.record(entry.key ?? ("app:" + (entry.entry.id ?? entry.name ?? "")));
         root.runApp(entry.entry);
     }
     function findApp(rest: string): var {
@@ -324,7 +326,12 @@ BasePopup {
         const cmd = root.sanitizeExec(entry.command);
         if (cmd.length === 0)
             return;
-        root.run(entry.runInTerminal ? ["kitty"].concat(cmd) : cmd);
+        if (!entry.runInTerminal) {
+            root.run(cmd);
+            return;
+        }
+        const term = Quickshell.env("TERMINAL") ?? "kitty";
+        root.run([term].concat(cmd));
     }
     function run(cmd: var): void {
         bar.closePopups();

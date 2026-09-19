@@ -154,6 +154,7 @@ Singleton {
                 launchHistory.retryQueue = launchHistory.activeBatch.concat(launchHistory.retryQueue);
                 launchHistory.activeBatch = [];
                 launchHistory.rewriting = false;
+                retryTimer.restart();
                 return;
             }
             launchHistory.activeBatch = [];
@@ -165,5 +166,11 @@ Singleton {
             }
             launchHistory.pumpWrites();
         }
+    }
+    Timer {
+        id: retryTimer
+        interval: 5000
+        repeat: false
+        onTriggered: launchHistory.pumpWrites()
     }
 }

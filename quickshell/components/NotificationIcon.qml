@@ -13,8 +13,9 @@ Item {
     readonly property string themeIcon: hasIcon && !iconIsDirect ? Quickshell.iconPath(root.iconStr, true) : ""
     readonly property string resolvedSource: hasIcon && iconIsDirect ? directSource : themeIcon
     readonly property bool recolorable: !iconIsDirect && root.iconStr.endsWith("-symbolic")
-    visible: resolvedSource !== ""
-    width: iconSize
+    readonly property bool showIcon: root.resolvedSource !== ""
+    visible: showIcon
+    width: showIcon ? iconSize : 0
     height: iconSize
     Image {
         id: img

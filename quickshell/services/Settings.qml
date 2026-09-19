@@ -121,15 +121,39 @@ Singleton {
         }
     }
 
+    property var hyprPending: ({})
     function hypr(key: string, value: string): void {
+        settings.queueHypr(key, value);
+    }
+    function hyprNow(key: string, value: string): void {
         Quickshell.execDetached(["hyprctl", "eval", settings.luaFor(key, value)]);
+    }
+    function queueHypr(key: string, value: string): void {
+        const pending = Object.assign({}, settings.hyprPending);
+        pending[key] = value;
+        settings.hyprPending = pending;
+        hyprDebounce.restart();
+    }
+    Timer {
+        id: hyprDebounce
+        interval: 150
+        repeat: false
+        onTriggered: {
+            const pending = settings.hyprPending;
+            settings.hyprPending = {};
+            for (const key of Object.keys(pending))
+                settings.hyprNow(key, pending[key]);
+        }
     }
     function luaVal(v: string): string {
         if (v === "true" || v === "false")
             return v;
         if (v !== "" && !isNaN(Number(v)))
             return v;
-        return '"' + v.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+        return settings.luaStr(v);
+    }
+    function luaStr(v: string): string {
+        return '"' + String(v ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ") + '"';
     }
     function luaFor(key: string, value: string): string {
         const parts = key.split(":");
@@ -166,7 +190,8 @@ Singleton {
         settings.scheduleSave();
     }
     function refreshWallpapers(): void {
-        wallpaperScan.running = true;
+        if (!wallpaperScan.running)
+            wallpaperScan.running = true;
     }
 
     function setBlurEnabled(on: bool): void {
@@ -207,7 +232,8 @@ Singleton {
     }
 
     function refreshMonitors(): void {
-        monitorScan.running = true;
+        if (!monitorScan.running)
+            monitorScan.running = true;
     }
     function monitorCfg(name: string): var {
         return settings.monitorConfigs[name] ?? {};
@@ -231,7 +257,7 @@ Singleton {
     }
     function canDisableMonitor(name: string): bool {
         if (!settings.monitorsReady)
-            return true;
+            return false;
         const enabled = settings.enabledMonitors();
         if (enabled.length === 0)
             return true;
@@ -281,6 +307,8 @@ Singleton {
     }
     function applyMonitor(name: string, quiet: bool): void {
         const q = !!quiet;
+        if (typeof name !== "string" || name === "")
+            return;
         if (!settings.monitorEnabled(name)) {
             if (!settings.canDisableMonitor(name)) {
                 settings.putMonitorCfg(name, {enabled: true});
@@ -288,15 +316,19 @@ Singleton {
                 settings.scheduleSave();
                 return;
             }
-            settings.applyTracked(name + " disabled", 'hl.monitor({output = "' + name + '", disabled = true})', q);
+            settings.applyTracked(name + " disabled", 'hl.monitor({output = ' + settings.luaStr(name) + ', disabled = true})', q, name);
             return;
         }
         const scale = String(settings.monitorScale(name));
-        const desc = name + " -> " + settings.monitorRes(name) + " x" + scale;
-        settings.applyTracked(desc, 'hl.monitor({output = "' + name + '", disabled = false, mode = "' + settings.monitorRes(name) + '", position = "auto", scale = "' + scale + '"})', q);
+        const res = String(settings.monitorRes(name));
+        const desc = name + " -> " + res + " x" + scale;
+        settings.applyTracked(desc, 'hl.monitor({output = ' + settings.luaStr(name) + ', disabled = false, mode = ' + settings.luaStr(res) + ', position = "auto", scale = ' + settings.luaStr(scale) + '})', q, name);
     }
-    function applyTracked(label: string, code: string, quiet: bool): void {
-        settings.applyQueue = [...settings.applyQueue, {label: label, code: code, quiet: !!quiet}];
+    function applyTracked(label: string, code: string, quiet: bool, key: string): void {
+        const k = typeof key === "string" && key !== "" ? key : label;
+        settings.applyQueue = [...settings.applyQueue.filter(j => j.key !== k), {label: label, code: code, quiet: !!quiet, key: k}];
+        if (settings.applyQueue.length > 20)
+            settings.applyQueue = settings.applyQueue.slice(settings.applyQueue.length - 20);
         settings.pumpApply();
     }
     function pumpApply(): void {
@@ -308,6 +340,7 @@ Singleton {
         monApply.jobQuiet = job.quiet;
         monApply.command = ["hyprctl", "eval", job.code];
         monApply.running = true;
+        applyTimeout.restart();
     }
     function putMonitorCfg(name: string, patch: var): void {
         const cfgs = Object.assign({}, settings.monitorConfigs);
@@ -358,7 +391,7 @@ Singleton {
             if (hit)
                 return hit;
         }
-        return null;
+        return list.length > 0 ? list[0] : null;
     }
     property bool monitorsReady: false
     property bool monitorsApplied: false
@@ -435,6 +468,13 @@ Singleton {
         return L.join("\n") + "\n";
     }
     function writeIdleConf(): void {
+        idleDebounce.restart();
+    }
+    function doWriteIdleConf(): void {
+        if (idleWriter.running) {
+            settings.idleDirty = true;
+            return;
+        }
         const L = [];
         L.push("general {");
         L.push("    lock_cmd = qs ipc call bar lock");
@@ -478,8 +518,15 @@ Singleton {
             L.push("}");
             L.push("");
         }
-        idleWriter.command = ["sh", "-c", 'mkdir -p "$(dirname "$1")"; printf "%s\\n" "$2" > "$1"', "qs", settings.hypridleFile, L.join("\n")];
+        idleWriter.command = ["sh", "-c", 'mkdir -p "$(dirname "$1")"; printf "%s\\n" "$2" > "$1.tmp"; mv -f "$1.tmp" "$1"', "qs", settings.hypridleFile, L.join("\n")];
         idleWriter.running = true;
+    }
+    property bool idleDirty: false
+    Timer {
+        id: idleDebounce
+        interval: 500
+        repeat: false
+        onTriggered: settings.doWriteIdleConf()
     }
 
     property bool saveQueued: false
@@ -496,8 +543,10 @@ Singleton {
         onTriggered: {
             if (!settings.saveQueued)
                 return;
+            if (saver.running)
+                return;
             settings.saveQueued = false;
-            saver.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" > "$2"', "qs", JSON.stringify(settings.snapshot()), settings.settingsFile];
+            saver.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" > "$2.tmp"; mv -f "$2.tmp" "$2"', "qs", JSON.stringify(settings.snapshot()), settings.settingsFile];
             saver.running = true;
         }
     }
@@ -506,6 +555,8 @@ Singleton {
         onExited: exitCode => {
             if (exitCode !== 0) {
                 settings.saveQueued = true;
+                saveTimer.restart();
+            } else if (settings.saveQueued) {
                 saveTimer.restart();
             }
         }
@@ -529,8 +580,7 @@ Singleton {
                     settings.applyLoaded(parsed);
                 }
                 settings.loaded = true;
-                if (!corrupt && text.trim() !== "")
-                    settings.applyAll();
+                settings.applyAll();
                 settings.applyScannedMonitors();
             }
         }
@@ -585,6 +635,7 @@ Singleton {
             id: monErr
         }
         onExited: exitCode => {
+            applyTimeout.stop();
             const detail = (monErr.text + " " + monOut.text).trim();
             const failed = exitCode !== 0 || /error|failed|invalid|unknown|not found|no such/i.test(detail);
             if (!failed) {
@@ -598,11 +649,40 @@ Singleton {
             settings.pumpApply();
         }
     }
+    Timer {
+        id: applyTimeout
+        interval: 10000
+        repeat: false
+        onTriggered: {
+            if (monApply.running) {
+                monApply.running = false;
+                settings.lastApplyMsg = "Timed out: " + monApply.jobLabel;
+                settings.pumpApply();
+            }
+        }
+    }
     Process {
         id: idleWriter
         onExited: exitCode => {
-            if (exitCode === 0)
-                Quickshell.execDetached(["sh", "-c", "pkill -x hypridle 2>/dev/null; sleep 0.2; hypridle >/dev/null 2>&1 &"]);
+            if (settings.idleDirty) {
+                settings.idleDirty = false;
+                settings.doWriteIdleConf();
+                return;
+            }
+            if (exitCode !== 0) {
+                settings.lastApplyMsg = "Idle config write failed";
+                Notifs.notify({app: "settings", summary: "Idle config write failed", body: settings.hypridleFile, timeout: 5000});
+                return;
+            }
+            hypridleRestart.running = true;
+        }
+    }
+    Process {
+        id: hypridleRestart
+        command: ["sh", "-c", "pkill -x hypridle 2>/dev/null; sleep 0.2; command -v hypridle >/dev/null || exit 0; hypridle >/dev/null 2>&1 &"]
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                Notifs.notify({app: "settings", summary: "hypridle restart failed", body: "check hypridle.conf", timeout: 5000});
         }
     }
 }

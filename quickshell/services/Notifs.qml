@@ -22,9 +22,13 @@ Singleton {
         return n?.hints ? n.hints["x-canonical-private-synchronous"] : undefined;
     }
     function isOwnFeedback(app: string): bool {
-        return app === "dnd" || app === "caffeine" || app === "screenshot";
+        if (app === "dnd" || app === "caffeine" || app === "screenshot")
+            return true;
+        return app === "volume" || app === "brightness" || app === "media" || app === "power" || app === "emoji" || app === "clipboard" || app === "settings";
     }
     function bypassesDnd(n): bool {
+        if (n?.qsInternal === true)
+            return true;
         if (notifs.isOwnFeedback(n?.appName ?? ""))
             return true;
         return n?.urgency === NotificationUrgency.Critical;
@@ -220,6 +224,8 @@ Singleton {
             summary: o.summary ?? "",
             body: o.body ?? "",
             urgency: o.urgency ?? NotificationUrgency.Normal,
+            transient: false,
+            resident: false,
             hints: hints,
             actions: o.actions ?? [],
             image: "",
@@ -230,7 +236,8 @@ Singleton {
             tracked: false,
             dismiss: () => {},
             closed: {
-                connect: () => {}
+                connect: () => {},
+                disconnect: () => {}
             }
         });
     }
@@ -238,6 +245,10 @@ Singleton {
         persistTimer.restart();
     }
     function persistHistory(): void {
+        if (saver.running) {
+            persistTimer.restart();
+            return;
+        }
         const data = notifs.history.slice(0, Palette.historyMax).map(h => ({
                     app: h?.app ?? "",
                     summary: h?.summary ?? "",
@@ -247,7 +258,7 @@ Singleton {
                     time: h?.time instanceof Date ? h.time.getTime() : Date.now(),
                     syncId: h?.syncId ?? null
                 }));
-        saver.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" > "$2"', "qs", JSON.stringify(data), notifs.historyFile];
+        saver.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" > "$2.tmp"; mv -f "$2.tmp" "$2"', "qs", JSON.stringify(data), notifs.historyFile];
         saver.running = true;
     }
     Timer {

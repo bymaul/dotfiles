@@ -67,7 +67,7 @@ Rectangle {
                 rawIcon: card.rawIcon
             }
             Column {
-                width: parent.width - (cardIcon.hasIcon ? cardIcon.width + 8 : 0) - (closeBox.width + 8)
+                width: parent.width - (cardIcon.showIcon ? cardIcon.width + 8 : 0) - (closeBox.width + 8)
                 spacing: 2
                 Text {
                     width: parent.width

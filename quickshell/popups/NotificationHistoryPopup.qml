@@ -142,7 +142,7 @@ BasePopup {
                                 rawIcon: historyCard.rawIcon
                             }
                             Column {
-                                width: parent.width - (historyIcon.hasIcon ? 32 : 0)
+                                width: parent.width - (historyIcon.showIcon ? 32 : 0)
                                 spacing: 2
                                 Row {
                                     width: parent.width

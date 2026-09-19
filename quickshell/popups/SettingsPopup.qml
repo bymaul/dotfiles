@@ -6,8 +6,9 @@ import "../Palette.js" as Palette
 BasePopup {
     id: root
     implicitWidth: Palette.settingsWidth
-    implicitHeight: 16 + tabRow.height + Palette.popupSpacing + root.contentHeight() + Palette.popupSpacing + hint.implicitHeight
+    implicitHeight: Math.min(16 + tabRow.height + Palette.popupSpacing + root.contentHeight() + Palette.popupSpacing + hint.implicitHeight, (Screen.height ?? 800) - 60)
     property int tab: 0
+    property int maxMonListH: 380
     function cancelOrClose(): void {
         if (root.openDropdown >= 0 || root.openMonRes !== "")
             root.closeDrop();
@@ -388,6 +389,8 @@ BasePopup {
     property int monBlockH: 22 + 3 * Palette.rowHeight + 3 * Palette.listSpacing
     property int monCount: Services.Settings.monitors.length
     property int monFootH: Palette.rowHeight + Palette.listSpacing + 14
+    property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Palette.popupSpacing
+    property int monListH: Math.min(root.monFullH, root.maxMonListH)
 
     property int mainSelH: 22 + Palette.popupSpacing + mainSelFlow.height
     function contentHeight(): int {
@@ -399,8 +402,20 @@ BasePopup {
             return 11 * Palette.rowHeight + 10 * Palette.listSpacing + Palette.popupSpacing + 30;
         if (root.monCount === 0)
             return root.mainSelH + Palette.popupSpacing + 30;
-        return root.mainSelH + Palette.popupSpacing + root.monCount * root.monBlockH + (root.monCount - 1) * Palette.popupSpacing + Palette.popupSpacing + root.monFootH;
+        return root.mainSelH + Palette.popupSpacing + root.monListH + Palette.popupSpacing + root.monFootH;
     }
+    function ensureMonVisible(): void {
+        try {
+            if (root.tab !== 3)
+                return;
+            if (typeof monList === "undefined" || !monList || monList.count === 0)
+                return;
+            const mi = Math.floor(root.selectedIndex / 3);
+            if (mi >= 0 && mi < monList.count)
+                monList.positionViewAtIndex(mi, ListView.Contain);
+        } catch (_) {}
+    }
+    onSelectedIndexChanged: root.ensureMonVisible()
 
     PopupCard {
         Row {
@@ -880,13 +895,20 @@ BasePopup {
                 font.family: Palette.font
                 font.pixelSize: Palette.px10
             }
-            Repeater {
+            ListView {
+                id: monList
+                visible: root.monCount > 0
+                width: parent.width
+                height: root.monListH
+                clip: true
+                spacing: Palette.popupSpacing
                 model: Services.Settings.monitors
                 delegate: Column {
                     required property var modelData
                     required property int index
                     readonly property string monName: String(modelData.name ?? "")
-                    width: parent.width
+                    width: ListView.view.width
+                    height: root.monBlockH
                     spacing: Palette.listSpacing
                     Text {
                         width: parent.width

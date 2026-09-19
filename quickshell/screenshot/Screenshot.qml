@@ -24,13 +24,17 @@ Scope {
     }
     Component.onCompleted: mkdir.running = true
     function capture(mode: string): void {
+        if (captureWin.visible || picker.visible || winProbe.running)
+            return;
         root.pendingMode = mode;
         if (root.dirsReady)
             root.startPending();
-        else
+        else if (!mkdir.running)
             mkdir.running = true;
     }
     function startPending(): void {
+        if (winProbe.running)
+            return;
         if (root.pendingMode === "area") {
             picker.pickMode = "area";
             picker.visible = true;
@@ -204,8 +208,10 @@ Scope {
         }
     }
     function finishShot(file: string): void {
-        copyProc.file = file;
-        copyProc.running = true;
+        if (!copyProc.running) {
+            copyProc.command = ["sh", "-c", 'wl-copy -t image/png < "$1"', "qs", file];
+            copyProc.running = true;
+        }
         Services.Notifs.notify({
             app: "screenshot",
             summary: "Screenshot",
@@ -218,8 +224,6 @@ Scope {
     }
     Process {
         id: copyProc
-        property string file: ""
-        command: ["sh", "-c", "wl-copy -t image/png < \"$1\"", "qs", copyProc.file]
         onExited: exitCode => {
             if (exitCode !== 0)
                 Services.Notifs.notify({app: "screenshot", summary: "Clipboard copy failed", body: "wl-copy failed, file kept", timeout: 5000});

@@ -28,7 +28,7 @@ Row {
         if (ws)
             ws.activate();
         else
-            Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.focus({workspace = ${id}})`]);
+            Quickshell.execDetached(["hyprctl", "dispatch", "workspace", String(id)]);
     }
     Repeater {
         model: slotIds

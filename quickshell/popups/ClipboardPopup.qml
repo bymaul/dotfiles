@@ -117,13 +117,29 @@ BasePopup {
         Quickshell.execDetached(["cliphist", "wipe"]);
     }
     function copySelection(entry: var): void {
-        if (!entry || copyProbe.running)
+        if (!entry)
             return;
+        if (copyProbe.running) {
+            root.queuedCopy = entry;
+            return;
+        }
         root.pendingCopy = entry;
+        root.queuedCopy = null;
         copyProbe.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist decode | wl-copy', "qs", entry.line];
         copyProbe.running = true;
+        copyTimeout.restart();
     }
     property var pendingCopy: null
+    property var queuedCopy: null
+    Timer {
+        id: copyTimeout
+        interval: 8000
+        repeat: false
+        onTriggered: {
+            if (copyProbe.running)
+                copyProbe.running = false;
+        }
+    }
     Process {
         id: deleteProbe
         onExited: exitCode => {
@@ -141,8 +157,15 @@ BasePopup {
     Process {
         id: copyProbe
         onExited: exitCode => {
+            copyTimeout.stop();
             const entry = root.pendingCopy;
             root.pendingCopy = null;
+            if (root.queuedCopy !== null) {
+                const next = root.queuedCopy;
+                root.queuedCopy = null;
+                root.copySelection(next);
+                return;
+            }
             if (exitCode !== 0) {
                 Services.Notifs.notify({app: "clipboard", summary: "Copy failed", body: "cliphist decode or wl-copy failed", timeout: 5000});
                 return;

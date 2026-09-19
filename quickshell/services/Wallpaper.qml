@@ -12,6 +12,8 @@ Singleton {
     readonly property string homeDir: Quickshell.env("HOME") ?? ""
     readonly property var candidates: (root.homeDir !== "" ? [root.homeDir + "/dotfiles/wallpapers/wallpaper.jpg"] : []).concat([Quickshell.shellDir + "/wallpaper.jpg"])
     function probeNext(): void {
+        if (probe.running)
+            return;
         if (root.probeIndex >= root.candidates.length) {
             console.warn("[wallpaper] no wallpaper found, tried: " + root.candidates.join(", "));
             return;
@@ -22,10 +24,14 @@ Singleton {
     // Called by Settings: explicit pick wins, empty resets to auto-probe.
     function applyOverride(path: string): void {
         if (path === "") {
+            if (probe.running)
+                probe.running = false;
             root.probeIndex = 0;
             root.source = "";
             root.probeNext();
         } else if (typeof path === "string" && path !== "") {
+            if (probe.running)
+                probe.running = false;
             root.source = "file://" + path;
         }
     }
