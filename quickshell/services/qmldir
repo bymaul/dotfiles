@@ -1,4 +1,7 @@
 singleton EmojiHistory 1.0 EmojiHistory.qml
+singleton HyprBridge 1.0 HyprBridge.qml
+singleton IdleManager 1.0 IdleManager.qml
+singleton Theme 1.0 Theme.qml
 singleton LaunchHistory 1.0 LaunchHistory.qml
 singleton Media 1.0 Media.qml
 singleton Modes 1.0 Modes.qml
@@ -8,3 +11,4 @@ singleton Power 1.0 Power.qml
 singleton RunMode 1.0 RunMode.qml
 singleton Settings 1.0 Settings.qml
 singleton Wallpaper 1.0 Wallpaper.qml
+singleton Wifi 1.0 Wifi.qml

@@ -3,7 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
-import "../Palette.js" as Palette
 Singleton {
     id: notifs
     property var toasts: []
@@ -49,11 +48,11 @@ Singleton {
     function shelveToasts(): void {
         if (notifs.toasts.length === 0)
             return;
-        notifs.pending = [...notifs.toasts, ...notifs.pending].slice(0, Palette.toastMax);
+        notifs.pending = [...notifs.toasts, ...notifs.pending].slice(0, Theme.toastMax);
         notifs.toasts = [];
     }
     function flushPending(): void {
-        const room = Math.max(0, Palette.toastMax - notifs.toasts.length);
+        const room = Math.max(0, Theme.toastMax - notifs.toasts.length);
         notifs.toasts = [...notifs.pending.slice(0, room), ...notifs.toasts];
         notifs.pending = notifs.pending.slice(room);
         notifs.readCount = notifs.history.length;
@@ -64,13 +63,55 @@ Singleton {
         try {
             n.dismiss();
         } catch (_) {}
+        notifs.detachClosed(n);
+    }
+    function detachClosed(n): void {
+        if (!n || !n._qsOnClosed)
+            return;
+        try {
+            n.closed.disconnect(n._qsOnClosed);
+        } catch (_) {}
+        n._qsOnClosed = null;
+    }
+    function releaseHistoryLive(n): void {
+        if (!n)
+            return;
+        let changed = false;
+        for (const h of notifs.history) {
+            if (h && h.live === n) {
+                h.live = null;
+                changed = true;
+            }
+        }
+        if (changed) {
+            notifs.history = notifs.history.slice();
+            notifs.schedulePersist();
+        }
+    }
+    function trackClosed(n): void {
+        if (!n || n._qsOnClosed)
+            return;
+        try {
+            n._qsOnClosed = function () {
+                notifs.toasts = notifs.toasts.filter(t => t !== n);
+                notifs.pending = notifs.pending.filter(t => t !== n);
+                notifs.releaseHistoryLive(n);
+                notifs.detachClosed(n);
+            };
+            n.closed.connect(n._qsOnClosed);
+        } catch (_) {
+            n._qsOnClosed = null;
+        }
     }
     function dropLive(item): void {
         if (!item || !item.live)
             return;
-        notifs.safeDismiss(item.live);
+        const n = item.live;
+        item.live = null;
+        notifs.safeDismiss(n);
     }
     function forgetLive(n): void {
+        notifs.detachClosed(n);
         notifs.history = notifs.history.filter(h => h.live !== n);
         notifs.pending = notifs.pending.filter(t => t !== n);
         notifs.readCount = Math.min(notifs.readCount, notifs.history.length);
@@ -164,24 +205,21 @@ Singleton {
             let next = [notifs.snapshot(notification), ...notifs.history];
             if (syncId !== undefined)
                 next = [next[0], ...next.slice(1).filter(h => h.syncId !== syncId)];
-            for (const h of next.slice(Palette.historyMax))
+            for (const h of next.slice(Theme.historyMax))
                 notifs.dropLive(h);
-            notifs.history = next.slice(0, Palette.historyMax);
+            notifs.history = next.slice(0, Theme.historyMax);
             notifs.schedulePersist();
         }
         notification.tracked = true;
-        notification.closed.connect(() => {
-            notifs.toasts = notifs.toasts.filter(t => t !== notification);
-            notifs.pending = notifs.pending.filter(t => t !== notification);
-        });
+        notifs.trackClosed(notification);
         if (Modes.dndActive && !notifs.bypassesDnd(notification))
             return;
         if (notifs.suppressToasts) {
             if (syncId === undefined || (notification.actions ?? []).length > 0)
-                notifs.pending = [notification, ...notifs.pending].slice(0, Palette.toastMax);
+                notifs.pending = [notification, ...notifs.pending].slice(0, Theme.toastMax);
             return;
         }
-        const next = [notification, ...notifs.toasts].slice(0, Palette.toastMax);
+        const next = [notification, ...notifs.toasts].slice(0, Theme.toastMax);
         const dropped = notifs.toasts.filter(t => !next.includes(t));
         notification.qsToastId = ++notifs.toastSeq;
         notifs.toasts = next;
@@ -200,7 +238,7 @@ Singleton {
                 cur.body = o.body ?? "";
                 cur.urgency = o.urgency ?? NotificationUrgency.Normal;
                 cur.appIcon = o.icon ?? "";
-                cur.expireTimeout = o.timeout ?? Palette.toastTimeout;
+                cur.expireTimeout = o.timeout ?? Theme.toastTimeout;
                 cur.hints = {};
                 if (o.value !== undefined)
                     cur.hints["value"] = o.value;
@@ -230,7 +268,7 @@ Singleton {
             actions: o.actions ?? [],
             image: "",
             appIcon: o.icon ?? "",
-            expireTimeout: o.timeout ?? Palette.toastTimeout,
+            expireTimeout: o.timeout ?? Theme.toastTimeout,
             qsInternal: true,
             qsSyncKey: o.syncId,
             tracked: false,
@@ -249,7 +287,7 @@ Singleton {
             persistTimer.restart();
             return;
         }
-        const data = notifs.history.slice(0, Palette.historyMax).map(h => ({
+        const data = notifs.history.slice(0, Theme.historyMax).map(h => ({
                     app: h?.app ?? "",
                     summary: h?.summary ?? "",
                     body: h?.body ?? "",
@@ -279,7 +317,7 @@ Singleton {
                     const arr = JSON.parse(text);
                     if (!Array.isArray(arr))
                         return;
-                    const restored = arr.slice(0, Palette.historyMax).map(e => ({
+                    const restored = arr.slice(0, Theme.historyMax).map(e => ({
                                 app: String(e?.app ?? ""),
                                 summary: String(e?.summary ?? ""),
                                 body: String(e?.body ?? ""),
@@ -289,7 +327,7 @@ Singleton {
                                 syncId: e?.syncId ?? undefined,
                                 live: null
                             }));
-                    notifs.history = [...notifs.history, ...restored].slice(0, Palette.historyMax);
+                    notifs.history = [...notifs.history, ...restored].slice(0, Theme.historyMax);
                     notifs.readCount = notifs.history.length;
                 } catch (_) {}
             }

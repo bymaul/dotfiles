@@ -1,5 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
+import "../services" as Services
 Item {
     id: root
     required property real value
@@ -9,29 +9,29 @@ Item {
     height: 24
     readonly property real fraction: {
         const range = root.maximum - root.minimum;
-        return range <= 0 ? 0 : Palette.clamp01((root.value - root.minimum) / range);
+        return range <= 0 ? 0 : Services.Theme.clamp01((root.value - root.minimum) / range);
     }
     function setFromMouse(mouse: var): void {
-        root.sliderMoved(root.minimum + Palette.clamp01(mouse.x / root.width) * (root.maximum - root.minimum));
+        root.sliderMoved(root.minimum + Services.Theme.clamp01(mouse.x / root.width) * (root.maximum - root.minimum));
     }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: root.width
         height: 3
-        color: Palette.onAccent
+        color: Services.Theme.onAccent
     }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: root.width * root.fraction
         height: 3
-        color: Palette.accent
+        color: Services.Theme.accent
     }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         x: root.width * root.fraction - 2
         width: 4
         height: 14
-        color: Palette.fg
+        color: Services.Theme.fg
     }
     MouseArea {
         anchors.fill: parent
@@ -42,7 +42,7 @@ Item {
         }
         onWheel: event => {
             const step = (event.angleDelta.y > 0 ? 0.05 : -0.05) * (root.maximum - root.minimum);
-            root.sliderMoved(Palette.clamp(root.value + step, root.minimum, root.maximum));
+            root.sliderMoved(Services.Theme.clamp(root.value + step, root.minimum, root.maximum));
         }
     }
 }

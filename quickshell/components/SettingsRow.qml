@@ -1,6 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
-
+import "../services" as Services
 Rectangle {
     id: root
     required property string title
@@ -10,8 +9,8 @@ Rectangle {
     default property alias control: slot.data
     signal hovered
     width: parent.width
-    height: Palette.rowHeight
-    color: root.selected ? Palette.activeBg : Palette.surface
+    height: Services.Theme.rowHeight
+    color: root.selected ? Services.Theme.activeBg : Services.Theme.surface
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -28,9 +27,9 @@ Rectangle {
         }
         width: root.titleWidth
         text: root.title
-        color: Palette.fg
-        font.family: Palette.font
-        font.pixelSize: Palette.px12
+        color: Services.Theme.fg
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px12
         elide: Text.ElideRight
     }
     Item {
@@ -52,8 +51,8 @@ Rectangle {
         }
         visible: root.value !== ""
         text: root.value
-        color: Palette.dim
-        font.family: Palette.font
-        font.pixelSize: Palette.px12
+        color: Services.Theme.dim
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px12
     }
 }

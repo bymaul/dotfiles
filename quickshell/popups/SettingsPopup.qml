@@ -1,12 +1,10 @@
 import QtQuick
 import "../components"
 import "../services" as Services
-import "../Palette.js" as Palette
-
 BasePopup {
     id: root
-    implicitWidth: Palette.settingsWidth
-    implicitHeight: Math.min(16 + tabRow.height + Palette.popupSpacing + root.contentHeight() + Palette.popupSpacing + hint.implicitHeight, (Screen.height ?? 800) - 60)
+    implicitWidth: Services.Theme.settingsWidth
+    implicitHeight: Math.min(16 + tabRow.height + Services.Theme.popupSpacing + root.contentHeight() + Services.Theme.popupSpacing + hint.implicitHeight, (Screen.height ?? 800) - 60)
     property int tab: 0
     property int maxMonListH: 380
     function cancelOrClose(): void {
@@ -103,7 +101,7 @@ BasePopup {
         return root.monCount * 3;
     }
     function clampSelection(): void {
-        selectedIndex = Palette.clamp(selectedIndex, 0, Math.max(0, root.itemCount() - 1));
+        selectedIndex = Services.Theme.clamp(selectedIndex, 0, Math.max(0, root.itemCount() - 1));
     }
     function syncWallCursor(): void {
         root.clampSelection();
@@ -332,7 +330,7 @@ BasePopup {
             root.closeDrop();
             return;
         }
-        root.applyDropValue(i, opts[Palette.clamp(root.dropCursor, 0, opts.length - 1)]);
+        root.applyDropValue(i, opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
         root.closeDrop();
     }
     function toggleMonDrop(name: string): void {
@@ -366,7 +364,7 @@ BasePopup {
             root.closeDrop();
             return;
         }
-        root.commitMonRes(name, modes[Palette.clamp(root.dropCursor, 0, modes.length - 1)]);
+        root.commitMonRes(name, modes[Services.Theme.clamp(root.dropCursor, 0, modes.length - 1)]);
     }
 
     function fmtTimeout(s: int): string {
@@ -385,24 +383,24 @@ BasePopup {
     }
 
     property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
-    property int wpListH: root.wpCount * Palette.listRowHeight + Math.max(0, root.wpCount - 1) * Palette.listSpacing
-    property int monBlockH: 22 + 3 * Palette.rowHeight + 3 * Palette.listSpacing
+    property int wpListH: root.wpCount * Services.Theme.listRowHeight + Math.max(0, root.wpCount - 1) * Services.Theme.listSpacing
+    property int monBlockH: 22 + 3 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
     property int monCount: Services.Settings.monitors.length
-    property int monFootH: Palette.rowHeight + Palette.listSpacing + 14
-    property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Palette.popupSpacing
+    property int monFootH: Services.Theme.rowHeight + Services.Theme.listSpacing + 14
+    property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Services.Theme.popupSpacing
     property int monListH: Math.min(root.monFullH, root.maxMonListH)
 
-    property int mainSelH: 22 + Palette.popupSpacing + mainSelFlow.height
+    property int mainSelH: 22 + Services.Theme.popupSpacing + mainSelFlow.height
     function contentHeight(): int {
         if (root.tab === 0)
-            return Palette.listRowHeight + Palette.listSpacing + root.wpListH;
+            return Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH;
         if (root.tab === 1)
-            return 6 * Palette.rowHeight + 5 * Palette.listSpacing;
+            return 6 * Services.Theme.rowHeight + 5 * Services.Theme.listSpacing;
         if (root.tab === 2)
-            return 11 * Palette.rowHeight + 10 * Palette.listSpacing + Palette.popupSpacing + 30;
+            return 11 * Services.Theme.rowHeight + 10 * Services.Theme.listSpacing + Services.Theme.popupSpacing + 30;
         if (root.monCount === 0)
-            return root.mainSelH + Palette.popupSpacing + 30;
-        return root.mainSelH + Palette.popupSpacing + root.monListH + Palette.popupSpacing + root.monFootH;
+            return root.mainSelH + Services.Theme.popupSpacing + 30;
+        return root.mainSelH + Services.Theme.popupSpacing + root.monListH + Services.Theme.popupSpacing + root.monFootH;
     }
     function ensureMonVisible(): void {
         try {
@@ -421,8 +419,8 @@ BasePopup {
         Row {
             id: tabRow
             width: parent.width
-            height: Palette.rowHeight
-            spacing: Palette.popupSpacing
+            height: Services.Theme.rowHeight
+            spacing: Services.Theme.popupSpacing
             PopupButton {
                 label: "Appearance"
                 columns: 4
@@ -456,15 +454,15 @@ BasePopup {
         Column {
             visible: root.tab === 0
             width: parent.width
-            spacing: Palette.listSpacing
+            spacing: Services.Theme.listSpacing
             Rectangle {
                 width: parent.width
-                height: Palette.listRowHeight
+                height: Services.Theme.listRowHeight
                 readonly property bool current: Services.Settings.wallpaperOverride === ""
                 readonly property bool selected: root.tab === 0 && root.selectedIndex === 0
-                color: selected ? Palette.activeBg : current ? Palette.activeBg : autoHover.containsMouse ? Palette.hoverBg : "transparent"
+                color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : autoHover.containsMouse ? Services.Theme.hoverBg : "transparent"
                 border.width: (!selected && current) ? 1 : 0
-                border.color: Palette.accent
+                border.color: Services.Theme.accent
                 Text {
                     anchors {
                         fill: parent
@@ -473,9 +471,9 @@ BasePopup {
                     }
                     verticalAlignment: Text.AlignVCenter
                     text: (parent.current ? "✓  " : "") + "Auto (default)"
-                    color: parent.selected ? Palette.fg : parent.current ? Palette.accent : autoHover.containsMouse ? Palette.fg : Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : autoHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
                 }
                 MouseArea {
@@ -498,7 +496,7 @@ BasePopup {
                 width: parent.width
                 height: root.wpListH
                 clip: true
-                spacing: Palette.listSpacing
+                spacing: Services.Theme.listSpacing
                 model: Services.Settings.wallpapers.slice(0, 4)
                 onCountChanged: root.syncWallCursor()
                 delegate: Rectangle {
@@ -507,10 +505,10 @@ BasePopup {
                     readonly property bool current: modelData === Services.Settings.wallpaperOverride
                     readonly property bool selected: wallList.currentIndex === index
                     width: ListView.view.width
-                    height: Palette.listRowHeight
-                    color: selected ? Palette.activeBg : current ? Palette.activeBg : rowHover.containsMouse ? Palette.hoverBg : "transparent"
+                    height: Services.Theme.listRowHeight
+                    color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : rowHover.containsMouse ? Services.Theme.hoverBg : "transparent"
                     border.width: (!selected && current) ? 1 : 0
-                    border.color: Palette.accent
+                    border.color: Services.Theme.accent
                     Text {
                         anchors {
                             fill: parent
@@ -519,9 +517,9 @@ BasePopup {
                         }
                         verticalAlignment: Text.AlignVCenter
                         text: (parent.current ? "✓  " : "") + String(modelData).split("/").pop()
-                        color: parent.selected ? Palette.fg : parent.current ? Palette.accent : rowHover.containsMouse ? Palette.fg : Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px12
+                        color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : rowHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
                         elide: Text.ElideRight
                     }
                     MouseArea {
@@ -548,7 +546,7 @@ BasePopup {
         Column {
             visible: root.tab === 1
             width: parent.width
-            spacing: Palette.listSpacing
+            spacing: Services.Theme.listSpacing
             SettingsRow {
                 title: "Blur"
                 value: Services.Settings.blurEnabled ? "On" : "Off"
@@ -622,7 +620,7 @@ BasePopup {
         Column {
             visible: root.tab === 2
             width: parent.width
-            spacing: Palette.listSpacing
+            spacing: Services.Theme.listSpacing
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 0
                 onHovered: root.selectedIndex = 0
@@ -848,30 +846,30 @@ BasePopup {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 text: "Idle rows write hypridle.conf. Lid close needs logind: bin/qs-power-logind. Power key applies instantly."
-                color: Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px10
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px10
             }
         }
 
         Column {
             visible: root.tab === 3
             width: parent.width
-            spacing: Palette.popupSpacing
+            spacing: Services.Theme.popupSpacing
             Text {
                 width: parent.width
                 height: 22
                 verticalAlignment: Text.AlignVCenter
                 text: "Main display"
-                color: Palette.fg
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
+                color: Services.Theme.fg
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
                 elide: Text.ElideRight
             }
             Flow {
                 id: mainSelFlow
                 width: parent.width
-                spacing: Palette.popupSpacing
+                spacing: Services.Theme.popupSpacing
                 Repeater {
                     model: ["auto"].concat(Services.Settings.monitors.map(m => String(m?.name ?? "")).filter(n => n !== ""))
                     delegate: PopupButton {
@@ -891,9 +889,9 @@ BasePopup {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 text: "No monitors found. Is hyprctl reachable?"
-                color: Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px10
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px10
             }
             ListView {
                 id: monList
@@ -901,7 +899,7 @@ BasePopup {
                 width: parent.width
                 height: root.monListH
                 clip: true
-                spacing: Palette.popupSpacing
+                spacing: Services.Theme.popupSpacing
                 model: Services.Settings.monitors
                 delegate: Column {
                     required property var modelData
@@ -909,15 +907,15 @@ BasePopup {
                     readonly property string monName: String(modelData.name ?? "")
                     width: ListView.view.width
                     height: root.monBlockH
-                    spacing: Palette.listSpacing
+                    spacing: Services.Theme.listSpacing
                     Text {
                         width: parent.width
                         height: 22
                         verticalAlignment: Text.AlignVCenter
                         text: Services.Settings.monitorSummary(monName)
-                        color: Palette.fg
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px12
+                        color: Services.Theme.fg
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
                         elide: Text.ElideRight
                     }
                     SettingsRow {
@@ -991,9 +989,9 @@ BasePopup {
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
                 text: Services.Settings.lastApplyMsg
-                color: Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px10
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px10
             }
         }
 

@@ -1,17 +1,10 @@
 import QtQuick
 import Quickshell.Bluetooth
 import "../components"
-import "../Palette.js" as Palette
-Item {
+import "../services" as Services
+BarIcon {
     required property var bar
-    implicitWidth: icon.width
-    implicitHeight: icon.height
-    width: icon.width
-    height: icon.height
-    BarIcon {
-        id: icon
-        glyph: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
-        glyphColor: Bluetooth.defaultAdapter?.enabled ? Palette.fg : Palette.dim
-        onClicked: bar.toggleControl()
-    }
+    glyph: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
+    glyphColor: Bluetooth.defaultAdapter?.enabled ? Services.Theme.fg : Services.Theme.dim
+    onClicked: bar.toggleControl()
 }

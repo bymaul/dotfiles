@@ -4,8 +4,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
 import Quickshell.Services.Notifications
-import "../Palette.js" as Palette
-
 Singleton {
     id: power
 
@@ -131,28 +129,70 @@ Singleton {
         return s;
     }
 
+    function levelColor(pct100: real): color {
+        if (pct100 < 10)
+            return Theme.danger;
+        if (pct100 < 20)
+            return Theme.warn;
+        return Theme.fg;
+    }
+
     property bool lidPresent: false
     property bool lidClosed: false
+    property string lidStatePath: ""
     Timer {
+        id: lidTimer
         interval: 10000
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: lidProbe.running = true
+        onTriggered: {
+            if (power.lidStatePath !== "")
+                lidState.reload();
+            else if (!lidDiscover.running)
+                lidDiscover.running = true;
+        }
+    }
+    FileView {
+        id: lidState
+        path: power.lidStatePath
+        printErrors: false
+        onLoaded: {
+            const t = lidState.text();
+            if (t.includes("missing") || t === "") {
+                power.lidPresent = false;
+                return;
+            }
+            power.lidPresent = true;
+            power.lidClosed = t.includes("closed");
+        }
+        onLoadFailed: {
+            power.lidPresent = false;
+        }
     }
     Process {
-        id: lidProbe
-        command: ["sh", "-c", "cat /proc/acpi/button/lid/*/state 2>/dev/null || echo missing"]
+        id: lidDiscover
+        command: ["sh", "-c", "for f in /proc/acpi/button/lid/*/state; do [ -r \"$f\" ] && echo \"$f\" && exit 0; done; echo missing"]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (text.includes("missing")) {
+                const p = text.trim().split("\n").filter(s => s !== "")[0] ?? "";
+                if (p === "" || p === "missing") {
                     power.lidPresent = false;
+                    power.lidStatePath = "";
+                    lidTimer.running = false;
                     return;
                 }
-                power.lidPresent = true;
-                power.lidClosed = text.includes("closed");
+                power.lidStatePath = p;
+                lidState.reload();
             }
         }
+        onExited: exitCode => {
+            if (exitCode !== 0) {
+                power.lidPresent = false;
+                lidTimer.running = false;
+            }
+        }
+        Component.onCompleted: lidDiscover.running = true
     }
 
     property bool xfceBlocking: false
@@ -187,12 +227,12 @@ Singleton {
         if (name !== "powersaver" && name !== "balanced" && name !== "performance")
             return;
         if (name === "performance" && !PowerProfiles.hasPerformanceProfile) {
-            Notifs.notify({app: "power", summary: "No performance profile", body: "This system only offers balanced / power-saver", syncId: "power-profile", timeout: Palette.osdTimeout});
+            Notifs.notify({app: "power", summary: "No performance profile", body: "This system only offers balanced / power-saver", syncId: "power-profile", timeout: Theme.osdTimeout});
             return;
         }
         PowerProfiles.profile = name === "performance" ? PowerProfile.Performance : name === "powersaver" ? PowerProfile.PowerSaver : PowerProfile.Balanced;
         if (!quiet)
-            Notifs.notify({app: "power", summary: "Profile: " + name, syncId: "power-profile", timeout: Palette.osdTimeout});
+            Notifs.notify({app: "power", summary: "Profile: " + name, syncId: "power-profile", timeout: Theme.osdTimeout});
     }
     function cycleProfile(): void {
         const order = ["balanced", "powersaver", "performance"];

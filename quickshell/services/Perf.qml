@@ -54,29 +54,22 @@ Singleton {
         repeat: true
         triggeredOnStart: true
         onTriggered: {
-            if (!probe.running)
-                probe.running = true;
-            probeTimeout.restart();
+            statView.reload();
+            memView.reload();
         }
     }
-    Timer {
-        id: probeTimeout
-        interval: 5000
-        repeat: false
-        onTriggered: {
-            if (probe.running)
-                probe.running = false;
-        }
+    FileView {
+        id: statView
+        path: "/proc/stat"
+        printErrors: false
+        onLoaded: perf.parseStat(statView.text())
+        onLoadFailed: {}
     }
-    Process {
-        id: probe
-        command: ["sh", "-c", "grep '^cpu ' /proc/stat; grep -E '^(MemTotal|MemAvailable):' /proc/meminfo"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                perf.parseStat(text);
-                perf.parseMem(text);
-            }
-        }
-        onExited: probeTimeout.stop()
+    FileView {
+        id: memView
+        path: "/proc/meminfo"
+        printErrors: false
+        onLoaded: perf.parseMem(memView.text())
+        onLoadFailed: {}
     }
 }

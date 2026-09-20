@@ -4,7 +4,6 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Io
 import "../services" as Services
-import "../Palette.js" as Palette
 Scope {
     id: root
     readonly property string shotDir: (Quickshell.env("HOME") ?? "/tmp") + "/Pictures/Screenshots"
@@ -281,7 +280,7 @@ Scope {
         }
         Timer {
             id: grabTimer
-            interval: Palette.grabDelay
+            interval: Services.Theme.grabDelay
             running: picker.visible
             repeat: false
             onTriggered: focusGrab.active = true
@@ -291,10 +290,10 @@ Scope {
         }
         function acceptSelection(): void {
             const n = picker.normalized;
-            const x1 = Palette.clamp(n.x, 0, picker.width);
-            const y1 = Palette.clamp(n.y, 0, picker.height);
-            const x2 = Palette.clamp(n.x + n.width, 0, picker.width);
-            const y2 = Palette.clamp(n.y + n.height, 0, picker.height);
+            const x1 = Services.Theme.clamp(n.x, 0, picker.width);
+            const y1 = Services.Theme.clamp(n.y, 0, picker.height);
+            const x2 = Services.Theme.clamp(n.x + n.width, 0, picker.width);
+            const y2 = Services.Theme.clamp(n.y + n.height, 0, picker.height);
             const r = Qt.rect(x1, y1, Math.max(0, x2 - x1), Math.max(0, y2 - y1));
             if (r.width < 4 || r.height < 4) {
                 picker.close();
@@ -335,7 +334,7 @@ Scope {
         }
         Rectangle {
             anchors.fill: parent
-            color: Palette.bg
+            color: Services.Theme.bg
             opacity: 0.75
             visible: picker.stillReady
         }
@@ -371,16 +370,16 @@ Scope {
             visible: picker.selecting || (picker.stillReady && picker.normalized.width > 0)
             color: "transparent"
             border.width: 1
-            border.color: Palette.accent
+            border.color: Services.Theme.accent
         }
         Text {
             x: Math.min(picker.normalized.x, picker.width - 80)
             y: picker.normalized.y > 26 ? picker.normalized.y - 22 : picker.normalized.y + picker.normalized.height + 4
             visible: picker.selecting && picker.normalized.width > 0 && picker.normalized.height > 0
             text: Math.round(picker.normalized.width * root.lastScale) + "x" + Math.round(picker.normalized.height * root.lastScale)
-            color: Palette.fg
-            font.family: Palette.font
-            font.pixelSize: Palette.px12
+            color: Services.Theme.fg
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
         }
         Item {
             id: cropBox
@@ -414,9 +413,9 @@ Scope {
             }
             visible: picker.stillReady && !picker.selecting && picker.pickMode === "area"
             text: "drag to select · esc cancels"
-            color: Palette.dim
-            font.family: Palette.font
-            font.pixelSize: Palette.px12
+            color: Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
         }
         Shortcut {
             sequence: "Escape"

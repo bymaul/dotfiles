@@ -1,14 +1,14 @@
 import QtQuick
 import Quickshell
-import "../Palette.js" as Palette
+import "../services" as Services
 Item {
     id: root
     required property var context
     component Label: Text {
         width: parent.width
         horizontalAlignment: Text.AlignHCenter
-        font.family: Palette.font
-        font.pixelSize: Palette.px12
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px12
     }
     SystemClock {
         id: clock
@@ -16,7 +16,7 @@ Item {
     }
     Rectangle {
         anchors.fill: parent
-        color: Palette.bg
+        color: Services.Theme.bg
         Column {
             anchors.centerIn: parent
             width: 300
@@ -25,24 +25,24 @@ Item {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: Qt.formatDateTime(clock.date, "HH:mm")
-                color: Palette.fg
-                font.family: Palette.font
+                color: Services.Theme.fg
+                font.family: Services.Theme.font
                 font.pixelSize: 64
             }
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: Qt.formatDateTime(clock.date, "dddd, d MMMM")
-                color: Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px14
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px14
             }
             Rectangle {
                 width: parent.width
-                height: Palette.rowHeight
-                color: Palette.surface
+                height: Services.Theme.rowHeight
+                color: Services.Theme.surface
                 border.width: 1
-                border.color: root.context.showFailure ? Palette.danger : Palette.border
+                border.color: root.context.showFailure ? Services.Theme.danger : Services.Theme.border
                 TextInput {
                     id: field
                     anchors {
@@ -51,10 +51,10 @@ Item {
                         rightMargin: 10
                     }
                     verticalAlignment: TextInput.AlignVCenter
-                    color: Palette.fg
+                    color: Services.Theme.fg
                     echoMode: TextInput.Password
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     enabled: !root.context.unlockInProgress
                     onTextChanged: root.context.currentText = text
                     Keys.onReturnPressed: root.context.tryUnlock()
@@ -88,17 +88,17 @@ Item {
             Label {
                 visible: root.context.showFailure
                 text: "Incorrect password"
-                color: Palette.danger
+                color: Services.Theme.danger
             }
             Label {
                 visible: root.context.authMessage !== ""
                 text: root.context.authMessage
-                color: Palette.warn
+                color: Services.Theme.warn
                 wrapMode: Text.WordWrap
             }
             Label {
                 text: root.context.unlockInProgress ? "Unlocking..." : "Enter password to unlock"
-                color: Palette.dim
+                color: Services.Theme.dim
             }
         }
     }

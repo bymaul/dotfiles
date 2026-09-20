@@ -2,11 +2,11 @@ import QtQuick
 import Quickshell
 import Quickshell.Networking
 import "../components"
-import "../Palette.js" as Palette
+import "../services" as Services
 BasePopup {
     id: root
-    implicitWidth: Palette.popupWidth
-    implicitHeight: (root.authTarget === null ? wifiList.height : authCol.height) + 36 + 36 + Palette.popupSpacing * 3 + 16 + hint.implicitHeight
+    implicitWidth: Services.Theme.popupWidth
+    implicitHeight: (root.authTarget === null ? wifiList.height : authCol.height) + 36 + 36 + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
     Shortcut { sequence: "j"; enabled: root.visible && root.authTarget === null; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "k"; enabled: root.visible && root.authTarget === null; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "Down"; enabled: root.visible && root.authTarget === null; onActivated: root.stepSelection(1) }
@@ -52,20 +52,16 @@ BasePopup {
     }
     function stepSelection(dir: int): void {
         headIndex = -1;
-        if (wifiList.count === 0)
-            return;
-        wifiList.currentIndex = Palette.clamp(wifiList.currentIndex + dir, 0, wifiList.count - 1);
-        wifiList.positionViewAtIndex(wifiList.currentIndex, ListView.Contain);
+        stepListView(wifiList, dir);
     }
     function selectRow(i: int): void {
         headIndex = -1;
-        wifiList.currentIndex = Palette.clamp(i, 0, Math.max(0, wifiList.count - 1));
-        wifiList.positionViewAtIndex(wifiList.currentIndex, ListView.Contain);
+        selectInList(wifiList, i);
     }
     function moveHeader(dir: int): void {
         if (headIndex < 0)
             return;
-        headIndex = Palette.clamp(headIndex + dir, 0, 1);
+        headIndex = Services.Theme.clamp(headIndex + dir, 0, 1);
     }
     function focusNext(): void {
         headIndex = headIndex >= 1 ? -1 : headIndex + 1;
@@ -85,7 +81,7 @@ BasePopup {
         root.activateNetwork(root.selectedNetwork());
     }
     function selectedNetwork(): var {
-        const nets = bar.wifiDevice?.networks?.values ?? [];
+        const nets = Services.Wifi.device?.networks?.values ?? [];
         if (wifiList.currentIndex < 0 || wifiList.currentIndex >= nets.length)
             return null;
         return nets[wifiList.currentIndex];
@@ -127,9 +123,9 @@ BasePopup {
     }
     function resolveAuthNetwork(): var {
         const name = root.authTarget?.name;
-        if (!name || !bar.wifiDevice?.networks)
+        if (!name || !Services.Wifi.device?.networks)
             return root.authTarget;
-        return (bar.wifiDevice.networks.values ?? []).find(n => n && n.name === name) ?? root.authTarget;
+        return (Services.Wifi.device.networks.values ?? []).find(n => n && n.name === name) ?? root.authTarget;
     }
     function doConnect(): void {
         if (root.pendingNetwork)
@@ -167,21 +163,21 @@ BasePopup {
             net.forget();
     }
     function toggleScan(): void {
-        if (!bar.wifiDevice)
+        if (!Services.Wifi.device)
             return;
-        bar.wifiDevice.scannerEnabled = !bar.wifiDevice.scannerEnabled;
-        if (bar.wifiDevice.scannerEnabled)
+        Services.Wifi.device.scannerEnabled = !Services.Wifi.device.scannerEnabled;
+        if (Services.Wifi.device.scannerEnabled)
             scanTimeout.restart();
         else
             scanTimeout.stop();
     }
     Timer {
         id: scanTimeout
-        interval: Palette.scanTimeout
+        interval: Services.Theme.scanTimeout
         repeat: false
         onTriggered: {
-            if (bar.wifiDevice)
-                bar.wifiDevice.scannerEnabled = false;
+            if (Services.Wifi.device)
+                Services.Wifi.device.scannerEnabled = false;
         }
     }
     function toggleWifiEnabled(): void {
@@ -190,7 +186,7 @@ BasePopup {
     PopupCard {
         Rectangle {
             width: parent.width
-            height: Palette.rowHeight
+            height: Services.Theme.rowHeight
             color: "transparent"
             Text {
                 anchors {
@@ -199,17 +195,17 @@ BasePopup {
                     leftMargin: 10
                 }
                 width: parent.width - 20
-                text: bar.connectedWifi ? "󰤨 " + bar.connectedWifi.name : (bar.wifiDevice?.networks?.values ?? []).find(n => n && n.state === ConnectionState.Connecting) ? "󰤭 Connecting..." : Networking.wifiEnabled ? "󰤭 Not connected" : "󰤯 Wi-Fi off"
-                color: bar.connectedWifi ? Palette.fg : Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
+                text: Services.Wifi.connected ? "󰤨 " + Services.Wifi.connected.name : (Services.Wifi.device?.networks?.values ?? []).find(n => n && n.state === ConnectionState.Connecting) ? "󰤭 Connecting..." : Networking.wifiEnabled ? "󰤭 Not connected" : "󰤯 Wi-Fi off"
+                color: Services.Wifi.connected ? Services.Theme.fg : Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
                 elide: Text.ElideRight
             }
         }
         Row {
             width: parent.width
-            height: Palette.rowHeight
-            spacing: Palette.popupSpacing
+            height: Services.Theme.rowHeight
+            spacing: Services.Theme.popupSpacing
             PopupButton {
                 label: Networking.wifiEnabled ? "󰖪  Disable" : "󰖩  Enable"
                 selected: root.headIndex === 0
@@ -217,7 +213,7 @@ BasePopup {
                 onClicked: root.toggleWifiEnabled()
             }
             PopupButton {
-                label: bar.wifiDevice?.scannerEnabled ? "󰑓  Scanning..." : "󰑐  Scan"
+                label: Services.Wifi.device?.scannerEnabled ? "󰑓  Scanning..." : "󰑐  Scan"
                 selected: root.headIndex === 1
                 onHovered: root.headIndex = 1
                 onClicked: root.toggleScan()
@@ -227,74 +223,52 @@ BasePopup {
             id: wifiList
             visible: root.authTarget === null
             width: parent.width
-            height: Palette.listHeight(Palette.listVisible)
+            height: Services.Theme.listHeight(Services.Theme.listVisible)
             clip: true
-            model: bar.wifiDevice?.networks ?? null
-            spacing: Palette.listSpacing
-            onCountChanged: {
-                if (currentIndex >= count)
-                    currentIndex = Math.max(0, count - 1);
-            }
-            delegate: Rectangle {
+            model: Services.Wifi.device?.networks ?? null
+            spacing: Services.Theme.listSpacing
+            onCountChanged: clampListView(wifiList)
+            delegate: ResultRow {
+                id: row
                 required property var modelData
                 required property int index
-                readonly property bool selected: wifiList.currentIndex === index
-                width: wifiList.width
-                height: Palette.listRowHeight
-                color: selected ? Palette.activeBg : rowArea.containsMouse ? Palette.hoverBg : (modelData.connected ? Palette.activeBg : "transparent")
-                border.width: (!selected && modelData.connected) ? 1 : 0
-                border.color: Palette.accent
-                    MouseArea {
-                        id: rowArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                root.selectRow(index);
-                        }
-                        onClicked: root.activateNetwork(modelData)
-                    }
+                selected: wifiList.currentIndex === index
+                highlighted: modelData.connected
+                rowHeight: Services.Theme.listRowHeight
+                selectedColor: Services.Theme.activeBg
+                onHovered: root.selectRow(index)
+                onClicked: root.activateNetwork(modelData)
                 Row {
                     anchors {
                         fill: parent
                         leftMargin: 8
                         rightMargin: 8
                     }
-                    spacing: Palette.popupSpacing
+                    spacing: Services.Theme.popupSpacing
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 18
-                        text: {
-                            const s = modelData.signalStrength;
-                            if (s >= Palette.sigHigh)
-                                return "󰤨";
-                            if (s >= Palette.sigMed)
-                                return "󰤥";
-                            if (s >= Palette.sigLow)
-                                return "󰤢";
-                            return "󰤟";
-                        }
-                        color: selected ? Palette.fg : modelData.connected ? Palette.accent : rowArea.containsMouse ? Palette.fg : Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px13
+                        text: Services.Wifi.signalGlyph(modelData.signalStrength)
+                        color: row.selected ? Services.Theme.fg : modelData.connected ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px13
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 82
                         text: modelData.name || "Hidden network"
-                        color: selected ? Palette.fg : (modelData.connected || rowArea.containsMouse) ? Palette.fg : Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px12
+                        color: row.selected ? Services.Theme.fg : (modelData.connected || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
                         elide: Text.ElideRight
                     }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 16
                         text: "󰌾"
-                        color: selected ? Palette.fg : rowArea.containsMouse ? Palette.fg : Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px12
+                        color: row.selected ? Services.Theme.fg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
                         visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
                     }
                     Text {
@@ -302,9 +276,9 @@ BasePopup {
                         width: 24
                         horizontalAlignment: Text.AlignHCenter
                         text: "󰅖"
-                        color: selected ? Palette.fg : forgetArea.containsMouse ? Palette.fg : Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px13
+                        color: row.selected ? Services.Theme.fg : forgetArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px13
                         visible: modelData.known && !modelData.connected
                         MouseArea {
                             id: forgetArea
@@ -324,13 +298,13 @@ BasePopup {
             id: authCol
             visible: root.authTarget !== null
             width: parent.width
-            spacing: Palette.popupSpacing
+            spacing: Services.Theme.popupSpacing
             Text {
                 width: parent.width
                 text: "  " + (root.authTarget?.name ?? "Wi-Fi password")
-                color: Palette.fg
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
+                color: Services.Theme.fg
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
                 elide: Text.ElideRight
             }
             Text {
@@ -338,17 +312,17 @@ BasePopup {
                 visible: root.authError !== ""
                 height: visible ? implicitHeight : 0
                 text: root.authError
-                color: root.pendingNetwork ? Palette.dim : Palette.danger
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
+                color: root.pendingNetwork ? Services.Theme.dim : Services.Theme.danger
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
                 wrapMode: Text.WordWrap
             }
             Rectangle {
                 width: parent.width
-                height: Palette.rowHeight
-                color: Palette.surface
+                height: Services.Theme.rowHeight
+                color: Services.Theme.surface
                 border.width: 1
-                border.color: Palette.border
+                border.color: Services.Theme.border
                 TextInput {
                     id: field
                     anchors {
@@ -357,17 +331,17 @@ BasePopup {
                         rightMargin: 10
                     }
                     verticalAlignment: TextInput.AlignVCenter
-                    color: Palette.fg
+                    color: Services.Theme.fg
                     echoMode: TextInput.Password
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     Keys.onReturnPressed: root.doConnect()
                     Keys.onEnterPressed: root.doConnect()
                 }
             }
             Row {
                 width: parent.width
-                spacing: Palette.popupSpacing
+                spacing: Services.Theme.popupSpacing
                 PopupButton {
                     label: "Cancel"
                     selected: root.selectedButton === 0

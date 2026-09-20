@@ -1,6 +1,5 @@
 import QtQuick
 import "../services" as Services
-import "../Palette.js" as Palette
 Item {
     id: root
     required property var bar
@@ -11,9 +10,9 @@ Item {
     Text {
         anchors.centerIn: parent
         text: ""
-        color: root.hasUnread ? Palette.accent : Palette.dim
-        font.family: Palette.font
-        font.pixelSize: Palette.px13
+        color: root.hasUnread ? Services.Theme.accent : Services.Theme.dim
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px13
     }
     Rectangle {
         anchors {
@@ -26,7 +25,7 @@ Item {
         height: 7
         radius: 3.5
         visible: root.hasUnread
-        color: Palette.accent
+        color: Services.Theme.accent
     }
     MouseArea {
         anchors.fill: parent

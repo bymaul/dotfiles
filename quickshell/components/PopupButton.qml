@@ -1,5 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
+import "../services" as Services
 Rectangle {
     id: root
     required property string label
@@ -8,16 +8,16 @@ Rectangle {
     property int columns: 2
     signal clicked
     signal hovered
-    width: (parent.width - (columns - 1) * Palette.popupSpacing) / columns
-    height: Palette.rowHeight
+    width: (parent.width - (columns - 1) * Services.Theme.popupSpacing) / columns
+    height: Services.Theme.rowHeight
     readonly property bool lit: root.accent || root.selected
-    color: root.lit ? Palette.accent : hover.containsMouse ? Palette.hoverBg : Palette.surface
+    color: root.lit ? Services.Theme.accent : hover.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
     Text {
         anchors.centerIn: parent
         text: root.label
-        color: root.lit ? Palette.onAccent : Palette.fg
-        font.family: Palette.font
-        font.pixelSize: Palette.px12
+        color: root.lit ? Services.Theme.onAccent : Services.Theme.fg
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px12
     }
     MouseArea {
         id: hover

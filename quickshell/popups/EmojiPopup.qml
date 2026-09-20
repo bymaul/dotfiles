@@ -3,12 +3,11 @@ import Quickshell
 import "../components"
 import "../services" as Services
 import "../emoji/emoji.js" as EmojiData
-import "../Palette.js" as Palette
 BasePopup {
     id: root
     anchorMode: "middle"
-    implicitWidth: Palette.settingsWidth
-    implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + resultGrid.cellHeight * root.gridRows + hint.implicitHeight
+    implicitWidth: Services.Theme.settingsWidth
+    implicitHeight: 16 + Services.Theme.rowHeight + Services.Theme.popupSpacing * 2 + resultGrid.cellHeight * root.gridRows + hint.implicitHeight
     readonly property int gridCols: 10
     readonly property int gridRows: 9
     function escArmed(): bool {
@@ -70,10 +69,7 @@ BasePopup {
     }
     function stepSelection(dir: int, stride: int): void {
         root.flushRefilter();
-        if (resultGrid.count === 0)
-            return;
-        resultGrid.currentIndex = Palette.clamp(resultGrid.currentIndex + dir * (stride ?? 1), 0, resultGrid.count - 1);
-        resultGrid.positionViewAtIndex(resultGrid.currentIndex, GridView.Contain);
+        stepListView(resultGrid, dir, stride);
         root.selMoved = true;
     }
     function flushRefilter(): void {
@@ -84,7 +80,7 @@ BasePopup {
     }
     Timer {
         id: refilterTimer
-        interval: Palette.refilterDelay
+        interval: Services.Theme.refilterDelay
         repeat: false
         onTriggered: {
             if (root.visible)
@@ -162,16 +158,16 @@ BasePopup {
             return;
         Services.EmojiHistory.record(entry.ch);
         Quickshell.execDetached(["sh", "-c", 'printf %s "$1" | wl-copy; printf %s "$1" | cliphist store', "qs", entry.ch]);
-        Services.Notifs.notify({app: "emoji", summary: "Copied " + entry.ch + " " + entry.name, syncId: "emoji", timeout: Palette.osdTimeout});
+        Services.Notifs.notify({app: "emoji", summary: "Copied " + entry.ch + " " + entry.name, syncId: "emoji", timeout: Services.Theme.osdTimeout});
         bar.closePopups();
     }
     PopupCard {
         Rectangle {
             width: parent.width
-            height: Palette.rowHeight
+            height: Services.Theme.rowHeight
             color: "transparent"
             border.width: 1
-            border.color: Palette.border
+            border.color: Services.Theme.border
             TextInput {
                 id: queryField
                 anchors {
@@ -180,9 +176,9 @@ BasePopup {
                     rightMargin: 10
                 }
                 verticalAlignment: TextInput.AlignVCenter
-                color: Palette.fg
-                font.family: Palette.font
-                font.pixelSize: Palette.px13
+                color: Services.Theme.fg
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px13
                 onTextChanged: {
                     root.selMoved = false;
                     refilterTimer.restart();
@@ -202,17 +198,14 @@ BasePopup {
             model: root.entries
             cellWidth: width / root.gridCols
             cellHeight: 42
-            onCountChanged: {
-                if (currentIndex >= count)
-                    currentIndex = Math.max(0, count - 1);
-            }
+            onCountChanged: clampListView(resultGrid)
             delegate: Rectangle {
                 required property var modelData
                 required property int index
                 readonly property bool selected: resultGrid.currentIndex === index
                 width: GridView.view.cellWidth
                 height: GridView.view.cellHeight
-                color: selected ? Palette.accent : cellArea.containsMouse ? Palette.hoverBg : "transparent"
+                color: selected ? Services.Theme.accent : cellArea.containsMouse ? Services.Theme.hoverBg : "transparent"
                 MouseArea {
                     id: cellArea
                     anchors.fill: parent

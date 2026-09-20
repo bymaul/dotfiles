@@ -2,11 +2,11 @@ import QtQuick
 import Quickshell
 import Quickshell.Bluetooth
 import "../components"
-import "../Palette.js" as Palette
+import "../services" as Services
 BasePopup {
     id: root
-    implicitWidth: Palette.popupWidth
-    implicitHeight: 36 + Palette.listHeight(Palette.listVisible) + Palette.popupSpacing * 3 + 16 + hint.implicitHeight
+    implicitWidth: Services.Theme.popupWidth
+    implicitHeight: 36 + Services.Theme.listHeight(Services.Theme.listVisible) + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepSelection(1) }
@@ -32,20 +32,16 @@ BasePopup {
     }
     function stepSelection(dir: int): void {
         headIndex = -1;
-        if (btList.count === 0)
-            return;
-        btList.currentIndex = Palette.clamp(btList.currentIndex + dir, 0, btList.count - 1);
-        btList.positionViewAtIndex(btList.currentIndex, ListView.Contain);
+        stepListView(btList, dir);
     }
     function selectRow(i: int): void {
         headIndex = -1;
-        btList.currentIndex = Palette.clamp(i, 0, Math.max(0, btList.count - 1));
-        btList.positionViewAtIndex(btList.currentIndex, ListView.Contain);
+        selectInList(btList, i);
     }
     function moveHeader(dir: int): void {
         if (headIndex < 0)
             return;
-        headIndex = Palette.clamp(headIndex + dir, 0, 1);
+        headIndex = Services.Theme.clamp(headIndex + dir, 0, 1);
     }
     function focusNext(): void {
         headIndex = headIndex >= 1 ? -1 : headIndex + 1;
@@ -98,7 +94,7 @@ BasePopup {
     }
     Timer {
         id: scanTimeout
-        interval: Palette.scanTimeout
+        interval: Services.Theme.scanTimeout
         repeat: false
         onTriggered: {
             if (Bluetooth.defaultAdapter)
@@ -134,8 +130,8 @@ BasePopup {
     PopupCard {
         Row {
             width: parent.width
-            height: Palette.rowHeight
-            spacing: Palette.popupSpacing
+            height: Services.Theme.rowHeight
+            spacing: Services.Theme.popupSpacing
             PopupButton {
                 label: Bluetooth.defaultAdapter?.enabled ? "󰂲  Disable" : "󰂯  Enable"
                 selected: root.headIndex === 0
@@ -151,52 +147,39 @@ BasePopup {
         }
         Item {
             width: parent.width
-            height: Palette.listHeight(Palette.listVisible)
+            height: Services.Theme.listHeight(Services.Theme.listVisible)
             ListView {
                 id: btList
                 anchors.fill: parent
                 clip: true
                 model: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.devices : null
-                spacing: Palette.listSpacing
-                onCountChanged: {
-                    if (currentIndex >= count)
-                        currentIndex = Math.max(0, count - 1);
-                }
-                delegate: Rectangle {
+                spacing: Services.Theme.listSpacing
+                onCountChanged: clampListView(btList)
+                delegate: ResultRow {
+                    id: row
                     required property var modelData
                     required property int index
-                    readonly property bool selected: btList.currentIndex === index
+                    selected: btList.currentIndex === index
+                    highlighted: row.connected
+                    rowHeight: Services.Theme.listRowHeight
+                    selectedColor: Services.Theme.activeBg
                     readonly property bool connected: modelData.state === BluetoothDeviceState.Connected
-                    width: btList.width
-                    height: Palette.listRowHeight
-                    color: selected ? Palette.activeBg : rowArea.containsMouse ? Palette.hoverBg : (connected ? Palette.activeBg : "transparent")
-                    border.width: (!selected && connected) ? 1 : 0
-                    border.color: Palette.accent
-                    MouseArea {
-                        id: rowArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                root.selectRow(index);
-                        }
-                        onClicked: root.activateDevice(modelData)
-                    }
+                    onHovered: root.selectRow(index)
+                    onClicked: root.activateDevice(modelData)
                     Row {
                         anchors {
                             fill: parent
                             leftMargin: 8
                             rightMargin: 8
                         }
-                        spacing: Palette.popupSpacing
+                        spacing: Services.Theme.popupSpacing
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 18
                             text: modelData.connected ? "󰂯" : "󰂲"
-                            color: selected ? Palette.fg : modelData.connected ? Palette.accent : rowArea.containsMouse ? Palette.fg : Palette.dim
-                            font.family: Palette.font
-                            font.pixelSize: Palette.px13
+                            color: row.selected ? Services.Theme.fg : modelData.connected ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                            font.family: Services.Theme.font
+                            font.pixelSize: Services.Theme.px13
                         }
                         Column {
                             anchors.verticalCenter: parent.verticalCenter
@@ -205,17 +188,17 @@ BasePopup {
                             Text {
                                 width: parent.width
                                 text: modelData.name || "Unknown device"
-                                color: selected ? Palette.fg : (modelData.connected || rowArea.containsMouse) ? Palette.fg : Palette.dim
-                                font.family: Palette.font
-                                font.pixelSize: Palette.px12
+                                color: row.selected ? Services.Theme.fg : (modelData.connected || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
+                                font.family: Services.Theme.font
+                                font.pixelSize: Services.Theme.px12
                                 elide: Text.ElideRight
                             }
                             Text {
                                 width: parent.width
                                 text: root.statusText(modelData)
-                                color: selected ? Palette.fg : rowArea.containsMouse ? Palette.fg : Palette.dim
-                                font.family: Palette.font
-                                font.pixelSize: Palette.px10
+                                color: row.selected ? Services.Theme.fg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                                font.family: Services.Theme.font
+                                font.pixelSize: Services.Theme.px10
                             }
                         }
                         Text {
@@ -223,9 +206,9 @@ BasePopup {
                             width: 24
                             horizontalAlignment: Text.AlignHCenter
                             text: "󰅖"
-                            color: selected ? Palette.fg : forgetArea.containsMouse ? Palette.fg : Palette.dim
-                            font.family: Palette.font
-                            font.pixelSize: Palette.px13
+                            color: row.selected ? Services.Theme.fg : forgetArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                            font.family: Services.Theme.font
+                            font.pixelSize: Services.Theme.px13
                             visible: modelData.paired && !modelData.connected
                             MouseArea {
                                 id: forgetArea
@@ -245,9 +228,9 @@ BasePopup {
                 anchors.centerIn: parent
                 visible: !(Bluetooth.defaultAdapter?.enabled ?? true)
                 text: "󰂲  Bluetooth is off"
-                color: Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
             }
         }
         HintText {

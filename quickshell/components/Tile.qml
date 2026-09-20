@@ -1,5 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
+import "../services" as Services
 Rectangle {
     id: root
     required property string glyph
@@ -13,8 +13,8 @@ Rectangle {
     signal clicked
     signal hovered
     width: root.wide ? parent.width : (parent.width - 8) / columns
-    height: Palette.tileHeight
-    color: !root.available ? "transparent" : root.accentButton ? Palette.accent : root.selected ? Palette.accent : root.active ? Palette.activeBg : hover.containsMouse ? Palette.hoverBg : Palette.surface
+    height: Services.Theme.tileHeight
+    color: !root.available ? "transparent" : root.accentButton ? Services.Theme.accent : root.selected ? Services.Theme.accent : root.active ? Services.Theme.activeBg : hover.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
     opacity: root.available ? 1 : 0.45
     Column {
         anchors.centerIn: parent
@@ -22,16 +22,16 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.glyph
-            color: !root.available ? Palette.dim : root.accentButton ? Palette.onAccent : root.selected ? Palette.onAccent : root.active ? Palette.accent : hover.containsMouse ? Palette.fg : Palette.dim
-            font.family: Palette.font
-            font.pixelSize: Palette.px14
+            color: !root.available ? Services.Theme.dim : root.accentButton ? Services.Theme.onAccent : root.selected ? Services.Theme.onAccent : root.active ? Services.Theme.accent : hover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px14
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.label
-            color: !root.available ? Palette.dim : root.accentButton ? Palette.onAccent : root.selected ? Palette.onAccent : (root.active || hover.containsMouse) ? Palette.fg : Palette.dim
-            font.family: Palette.font
-            font.pixelSize: Palette.px10
+            color: !root.available ? Services.Theme.dim : root.accentButton ? Services.Theme.onAccent : root.selected ? Services.Theme.onAccent : (root.active || hover.containsMouse) ? Services.Theme.fg : Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px10
         }
     }
     MouseArea {

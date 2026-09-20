@@ -2,13 +2,12 @@ import QtQuick
 import Quickshell
 import "../components"
 import "../services" as Services
-import "../Palette.js" as Palette
 BasePopup {
     id: root
     anchorMode: "middle"
     focusTarget: queryField
-    implicitWidth: Palette.launcherWidth
-    implicitHeight: 16 + Palette.rowHeight + Palette.popupSpacing * 2 + Palette.listHeight(Palette.listVisible) + hint.implicitHeight
+    implicitWidth: Services.Theme.launcherWidth
+    implicitHeight: 16 + Services.Theme.rowHeight + Services.Theme.popupSpacing * 2 + Services.Theme.listHeight(Services.Theme.listVisible) + hint.implicitHeight
     function quitArmed(): bool {
         return !queryField.activeFocus;
     }
@@ -67,10 +66,7 @@ BasePopup {
     }
     function stepSelection(dir: int): void {
         root.flushRefilter();
-        if (resultList.count === 0)
-            return;
-        resultList.currentIndex = Palette.clamp(resultList.currentIndex + dir, 0, resultList.count - 1);
-        resultList.positionViewAtIndex(resultList.currentIndex, ListView.Contain);
+        stepListView(resultList, dir);
         root.selMoved = true;
     }
     function flushRefilter(): void {
@@ -81,7 +77,7 @@ BasePopup {
     }
     Timer {
         id: refilterTimer
-        interval: Palette.refilterDelay
+        interval: Services.Theme.refilterDelay
         repeat: false
         onTriggered: {
             if (root.visible)
@@ -129,7 +125,8 @@ BasePopup {
         let qi = 0;
         let out = "";
         for (let ti = 0; ti < raw.length; ti++) {
-            const c = root.escHtml(raw[ti]);
+            const ch = raw[ti];
+            const c = ch === "&" ? "&amp;" : ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : ch === '"' ? "&quot;" : ch;
             if (qi < query.length && lower[ti] === query[qi]) {
                 out += "<u>" + c + "</u>";
                 qi++;
@@ -144,9 +141,12 @@ BasePopup {
         const query = String(q ?? "");
         if (query === "")
             return root.escHtml(raw);
-        const i = raw.toLowerCase().indexOf(query);
-        if (i >= 0)
-            return root.escHtml(raw.slice(0, i)) + "<u>" + root.escHtml(raw.slice(i, i + query.length)) + "</u>" + root.escHtml(raw.slice(i + query.length));
+        const low = raw.toLowerCase();
+        const i = low.indexOf(query);
+        if (i >= 0) {
+            const esc = root.escHtml;
+            return esc(raw.slice(0, i)) + "<u>" + esc(raw.slice(i, i + query.length)) + "</u>" + esc(raw.slice(i + query.length));
+        }
         return root.hlFuzzy(raw, query);
     }
     function entryKey(e): string {
@@ -164,16 +164,28 @@ BasePopup {
     function refilterApps(q: string): void {
         const apps = root.appsCache ?? [];
         const out = [];
+        const empty = q === "";
         for (const app of apps) {
             const name = app.name ?? app.genericName ?? "";
             if (name === "")
                 continue;
-            const haystacks = [app.name ?? "", app.genericName ?? "", app.comment ?? ""].concat(app.keywords ?? []);
             let best = 4;
-            for (const h of haystacks) {
-                best = Math.min(best, root.matchScore(String(h ?? ""), q));
-                if (best === 0)
-                    break;
+            if (empty) {
+                best = 1;
+            } else {
+                best = root.matchScore(String(app.name ?? ""), q);
+                if (best !== 0)
+                    best = Math.min(best, root.matchScore(String(app.genericName ?? ""), q));
+                if (best !== 0)
+                    best = Math.min(best, root.matchScore(String(app.comment ?? ""), q));
+                if (best !== 0) {
+                    const kws = app.keywords ?? [];
+                    for (const h of kws) {
+                        best = Math.min(best, root.matchScore(String(h ?? ""), q));
+                        if (best === 0)
+                            break;
+                    }
+                }
             }
             if (best < 4) {
                 const appKey = "app:" + (app.id ?? name);
@@ -181,22 +193,26 @@ BasePopup {
             }
         }
         root.sortScored(out);
-        root.applyResults(out.slice(0, Palette.resultMax));
+        root.applyResults(out.slice(0, Services.Theme.resultMax));
     }
     function refilterRun(q: string): void {
         const out = [];
+        const seen = new Set();
         for (const b of Services.RunMode.binaries ?? []) {
             const score = root.matchScoreLn(b.ln ?? "", q);
-            if (score < 4)
+            if (score < 4) {
+                seen.add(b.name);
                 out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, score: score, use: Services.LaunchHistory.countFor("bin:" + b.name), last: Services.LaunchHistory.lastFor("bin:" + b.name)});
+            }
         }
-        root.sortScored(out);
         for (const c of Services.LaunchHistory.recentCmds(root.runQuery, 5)) {
-            if (!out.some(e => e.name === c.name))
+            if (!seen.has(c.name)) {
+                seen.add(c.name);
                 out.push({name: c.name, ln: c.name.toLowerCase(), key: c.key, score: 1, use: c.use, last: c.last, isCmd: true});
+            }
         }
         root.sortScored(out);
-        root.applyResults(out.slice(0, Palette.resultMax));
+        root.applyResults(out.slice(0, Services.Theme.resultMax));
     }
     function applyResults(out: var): void {
         let idx = 0;
@@ -264,11 +280,10 @@ BasePopup {
         if (/\s/.test(rest))
             return null;
         const q = String(rest ?? "").toLowerCase();
-        const apps = [];
-        for (const app of root.appsCache ?? []) {
+        const cache = root.appsCache ?? [];
+        for (const app of cache) {
             if (!app)
                 continue;
-            apps.push(app);
             const rawCmd = Array.isArray(app.command) ? app.command : (typeof app.command === "string" ? [app.command] : []);
             const cmd = rawCmd.length > 0 ? rawCmd[0] : "";
             const base = String(cmd).split("/").pop().toLowerCase();
@@ -277,7 +292,9 @@ BasePopup {
             if (String(app.name ?? "").toLowerCase() === q)
                 return app;
         }
-        for (const app of apps) {
+        for (const app of cache) {
+            if (!app)
+                continue;
             const rawCmd = Array.isArray(app.command) ? app.command : (typeof app.command === "string" ? [app.command] : []);
             const cmd = rawCmd.length > 0 ? rawCmd[0] : "";
             const base = String(cmd).split("/").pop().toLowerCase();
@@ -340,10 +357,10 @@ BasePopup {
     PopupCard {
         Rectangle {
             width: parent.width
-            height: Palette.rowHeight
+            height: Services.Theme.rowHeight
             color: "transparent"
             border.width: 1
-            border.color: root.runMode ? Palette.accent : Palette.border
+            border.color: root.runMode ? Services.Theme.accent : Services.Theme.border
             TextInput {
                 id: queryField
                 anchors {
@@ -352,9 +369,9 @@ BasePopup {
                     rightMargin: 10
                 }
                 verticalAlignment: TextInput.AlignVCenter
-                color: Palette.fg
-                font.family: Palette.font
-                font.pixelSize: Palette.px13
+                color: Services.Theme.fg
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px13
                 onTextChanged: {
                     root.selMoved = false;
                     refilterTimer.restart();
@@ -368,38 +385,24 @@ BasePopup {
         ListView {
             id: resultList
             width: parent.width
-            height: Palette.listHeight(Palette.listVisible)
+            height: Services.Theme.listHeight(Services.Theme.listVisible)
             clip: true
             model: root.entries
-            spacing: Palette.listSpacing
-            onCountChanged: {
-                if (currentIndex >= count)
-                    currentIndex = Math.max(0, count - 1);
-            }
-            delegate: Rectangle {
+            spacing: Services.Theme.listSpacing
+            onCountChanged: clampListView(resultList)
+            delegate: ResultRow {
                 required property var modelData
                 required property int index
-                readonly property bool selected: resultList.currentIndex === index
-                width: resultList.width
-                height: Palette.rowHeight
-                color: selected ? Palette.accent : rowArea.containsMouse ? Palette.hoverBg : "transparent"
-                MouseArea {
-                    id: rowArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onContainsMouseChanged: {
-                        if (containsMouse) {
-                            resultList.currentIndex = index;
-                            resultList.positionViewAtIndex(index, ListView.Contain);
-                            root.selMoved = true;
-                        }
-                    }
-                    onClicked: {
-                        resultList.currentIndex = index;
-                        root.selMoved = true;
-                        root.launch();
-                    }
+                selected: resultList.currentIndex === index
+                onHovered: {
+                    resultList.currentIndex = index;
+                    resultList.positionViewAtIndex(index, ListView.Contain);
+                    root.selMoved = true;
+                }
+                onClicked: {
+                    resultList.currentIndex = index;
+                    root.selMoved = true;
+                    root.launch();
                 }
                 Text {
                     anchors {
@@ -410,9 +413,9 @@ BasePopup {
                     width: parent.width - 20
                     textFormat: Text.RichText
                     text: (modelData.isCmd ? "> " : "") + root.hlName(modelData.name, root.hlQuery())
-                    color: selected ? Palette.onAccent : rowArea.containsMouse ? Palette.fg : Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: parent.selected ? Services.Theme.onAccent : parent.isHovered ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
                 }
             }

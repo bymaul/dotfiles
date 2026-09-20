@@ -1,5 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
+import "../services" as Services
 Row {
     id: root
     required property int choice
@@ -8,7 +8,7 @@ Row {
     signal picked(int index)
     signal hovered(int index)
     width: parent.width
-    spacing: Palette.popupSpacing
+    spacing: Services.Theme.popupSpacing
     PopupButton {
         label: root.noLabel
         columns: 2

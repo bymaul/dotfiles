@@ -2,15 +2,14 @@ import QtQuick
 import Quickshell
 import "../components"
 import "../services" as Services
-import "../Palette.js" as Palette
 BasePopup {
     id: root
     required property var panel
     useGrab: false
-    extraTop: panel.height + Palette.popupSpacing
-    implicitWidth: Palette.popupWidth
+    extraTop: panel.height + Services.Theme.popupSpacing
+    implicitWidth: Services.Theme.popupWidth
     readonly property int listCap: Math.max(96, Math.round(Screen.height / 2) - 32 - 8)
-    implicitHeight: Palette.rowHeight + (Services.Notifs.history.length > 0 ? Palette.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0)
+    implicitHeight: Services.Theme.rowHeight + (Services.Notifs.history.length > 0 ? Services.Theme.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0)
     visible: panel.visible && Services.Notifs.history.length > 0
     function close(): void {
         panel.close();
@@ -27,7 +26,7 @@ BasePopup {
     }
     Timer {
         id: polishTimer
-        interval: Palette.focusDelay
+        interval: Services.Theme.focusDelay
         repeat: false
         onTriggered: {
             if (root.visible)
@@ -44,11 +43,11 @@ BasePopup {
             left: parent.left
             right: parent.right
         }
-        spacing: Palette.popupSpacing
+        spacing: Services.Theme.popupSpacing
         Rectangle {
             width: parent.width
-            height: Palette.rowHeight
-            color: Palette.bg
+            height: Services.Theme.rowHeight
+            color: Services.Theme.bg
             Row {
                 anchors {
                     fill: parent
@@ -59,9 +58,9 @@ BasePopup {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 60
                     text: "Notifications (" + Services.Notifs.history.length + ")"
-                    color: Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
                 }
                 Text {
@@ -70,9 +69,9 @@ BasePopup {
                     horizontalAlignment: Text.AlignRight
                     text: "Clear"
                     readonly property bool selected: root.panel.selectedKind() === "clear"
-                    color: selected ? Palette.accent : clearArea.containsMouse ? Palette.fg : Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: selected ? Services.Theme.accent : clearArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     font.underline: selected
                     MouseArea {
                         id: clearArea
@@ -98,7 +97,7 @@ BasePopup {
                 clip: true
                 cacheBuffer: 10000
                 model: Services.Notifs.history
-                spacing: Palette.popupSpacing
+                spacing: Services.Theme.popupSpacing
                 delegate: Rectangle {
                     id: historyCard
                     required property var modelData
@@ -107,9 +106,9 @@ BasePopup {
                     readonly property string rawIcon: modelData.icon ?? ""
                     width: historyList.width
                     height: content.height + 16
-                    color: selected ? Palette.activeBg : cardArea.containsMouse ? Palette.hoverBg : Palette.bg
+                    color: selected ? Services.Theme.activeBg : cardArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.bg
                     border.width: modelData.critical ? 1 : 0
-                    border.color: Palette.danger
+                    border.color: Services.Theme.danger
                     MouseArea {
                         id: cardArea
                         anchors.fill: parent
@@ -151,9 +150,9 @@ BasePopup {
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: parent.width - 80
                                         text: modelData.summary || modelData.app || ""
-                                        color: Palette.fg
-                                        font.family: Palette.font
-                                        font.pixelSize: Palette.px12
+                                        color: Services.Theme.fg
+                                        font.family: Services.Theme.font
+                                        font.pixelSize: Services.Theme.px12
                                         elide: Text.ElideRight
                                     }
                                     Text {
@@ -161,9 +160,9 @@ BasePopup {
                                         width: 44
                                         horizontalAlignment: Text.AlignRight
                                         text: modelData.time ? Qt.formatDateTime(modelData.time, "HH:mm") : ""
-                                        color: Palette.dim
-                                        font.family: Palette.font
-                                        font.pixelSize: Palette.px10
+                                        color: Services.Theme.dim
+                                        font.family: Services.Theme.font
+                                        font.pixelSize: Services.Theme.px10
                                     }
                                     Item {
                                         anchors.verticalCenter: parent.verticalCenter
@@ -172,9 +171,9 @@ BasePopup {
                                         Text {
                                             anchors.centerIn: parent
                                             text: "󰅖"
-                                            color: histCloseArea.containsMouse ? Palette.fg : Palette.dim
-                                            font.family: Palette.font
-                                            font.pixelSize: Palette.px12
+                                            color: histCloseArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                                            font.family: Services.Theme.font
+                                            font.pixelSize: Services.Theme.px12
                                         }
                                         MouseArea {
                                             id: histCloseArea
@@ -189,9 +188,9 @@ BasePopup {
                                     width: parent.width
                                     visible: (modelData.body ?? "") !== ""
                                     text: modelData.body ?? ""
-                                    color: Palette.dim
-                                    font.family: Palette.font
-                                    font.pixelSize: Palette.px12
+                                    color: Services.Theme.dim
+                                    font.family: Services.Theme.font
+                                    font.pixelSize: Services.Theme.px12
                                     textFormat: Text.RichText
                                     wrapMode: Text.WordWrap
                                 }
@@ -207,14 +206,14 @@ BasePopup {
                                             readonly property bool focused: historyCard.selected && root.panel.actionIndex === index
                                             width: actionLabel.width + 16
                                             height: 24
-                                            color: focused ? Palette.accent : actionArea.containsMouse ? Palette.hoverBg : Palette.surface
+                                            color: focused ? Services.Theme.accent : actionArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
                                             Text {
                                                 id: actionLabel
                                                 anchors.centerIn: parent
                                                 text: modelData.text
-                                                color: parent.focused ? Palette.onAccent : Palette.fg
-                                                font.family: Palette.font
-                                                font.pixelSize: Palette.px12
+                                                color: parent.focused ? Services.Theme.onAccent : Services.Theme.fg
+                                                font.family: Services.Theme.font
+                                                font.pixelSize: Services.Theme.px12
                                             }
                                             MouseArea {
                                                 id: actionArea

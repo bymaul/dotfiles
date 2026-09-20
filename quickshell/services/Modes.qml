@@ -2,14 +2,13 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../Palette.js" as Palette
 Singleton {
     id: modes
     property bool caffeineActive: false
     property bool dndActive: false
     function setCaffeine(on: bool): void {
         modes.caffeineActive = on;
-        Notifs.notify({app: "caffeine", summary: on ? "Caffeine on" : "Caffeine off", syncId: "caffeine", timeout: Palette.osdTimeout});
+        Notifs.notify({app: "caffeine", summary: on ? "Caffeine on" : "Caffeine off", syncId: "caffeine", timeout: Theme.osdTimeout});
     }
     function toggleCaffeine(): void {
         if (!modes.caffeineActive) {
@@ -20,7 +19,7 @@ Singleton {
     }
     function toggleDnd(): void {
         modes.dndActive = !modes.dndActive;
-        Notifs.notify({app: "dnd", summary: modes.dndActive ? "DND on" : "DND off", syncId: "dnd", timeout: Palette.osdTimeout});
+        Notifs.notify({app: "dnd", summary: modes.dndActive ? "DND on" : "DND off", syncId: "dnd", timeout: Theme.osdTimeout});
     }
     Process {
         id: inhibitProc
@@ -29,7 +28,7 @@ Singleton {
         onExited: exitCode => {
             if (modes.caffeineActive && exitCode !== 0) {
                 modes.caffeineActive = false;
-                Notifs.notify({app: "caffeine", summary: "Caffeine failed", body: "inhibitor exited, turned off", timeout: Palette.osdTimeout});
+                Notifs.notify({app: "caffeine", summary: "Caffeine failed", body: "inhibitor exited, turned off", timeout: Theme.osdTimeout});
             }
         }
     }
@@ -40,7 +39,7 @@ Singleton {
             if (caffeineCheck.running)
                 return;
             if (exitCode !== 0)
-                Notifs.notify({app: "caffeine", summary: "Caffeine unavailable", body: "systemd-inhibit not found", timeout: Palette.osdTimeout});
+                Notifs.notify({app: "caffeine", summary: "Caffeine unavailable", body: "systemd-inhibit not found", timeout: Theme.osdTimeout});
             else if (!modes.caffeineActive)
                 modes.setCaffeine(true);
         }

@@ -1,6 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
-
+import "../services" as Services
 Item {
     id: root
     required property bool on
@@ -16,16 +15,16 @@ Item {
         width: 44
         height: 22
         radius: 11
-        color: root.on ? Palette.accent : Palette.hoverBg
+        color: root.on ? Services.Theme.accent : Services.Theme.hoverBg
         border.width: 1
-        border.color: root.on ? Palette.accent : Palette.dim
+        border.color: root.on ? Services.Theme.accent : Services.Theme.dim
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             x: root.on ? 24 : 2
             width: 18
             height: 18
             radius: 9
-            color: root.on ? Palette.onAccent : Palette.dim
+            color: root.on ? Services.Theme.onAccent : Services.Theme.dim
         }
         MouseArea {
             anchors.fill: parent

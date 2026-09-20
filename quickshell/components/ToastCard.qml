@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell.Services.Notifications
 import "../services" as Services
-import "../Palette.js" as Palette
 Rectangle {
     id: card
     required property var notification
@@ -10,13 +9,13 @@ Rectangle {
         if (card.notification?.qsInternal === true && !cardArea.containsMouse)
             expiryTimer.restart();
     }
-    width: Palette.popupWidth
+    width: Services.Theme.popupWidth
     height: content.height + 16
-    color: Palette.bg
+    color: Services.Theme.bg
     border.width: 1
     border.color: {
         card.seq;
-        return card.notification.urgency === NotificationUrgency.Critical || (card.notification.appName === "volume" && card.notification.summary === "Muted") ? Palette.danger : Palette.dim;
+        return card.notification.urgency === NotificationUrgency.Critical || (card.notification.appName === "volume" && card.notification.summary === "Muted") ? Services.Theme.danger : Services.Theme.dim;
     }
     readonly property var valueHint: {
         card.seq;
@@ -46,7 +45,7 @@ Rectangle {
     }
     Timer {
         id: expiryTimer
-        interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Palette.toastTimeout
+        interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Services.Theme.toastTimeout
         running: !(card.notification.resident === true)
         onTriggered: Services.Notifs.dismissToast(card.notification)
     }
@@ -75,9 +74,9 @@ Rectangle {
                         card.seq;
                         return card.notification.summary;
                     }
-                    color: Palette.fg
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: Services.Theme.fg
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
                 }
                 Text {
@@ -87,9 +86,9 @@ Rectangle {
                         card.seq;
                         return card.notification.body;
                     }
-                    color: Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     textFormat: Text.RichText
                     wrapMode: Text.WordWrap
                 }
@@ -102,9 +101,9 @@ Rectangle {
                 Text {
                     anchors.centerIn: parent
                     text: "󰅖"
-                    color: closeArea.containsMouse ? Palette.fg : Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: closeArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                 }
                 MouseArea {
                     id: closeArea
@@ -119,11 +118,11 @@ Rectangle {
             width: parent.width
             height: 3
             visible: card.hasProgress
-            color: Palette.onAccent
+            color: Services.Theme.onAccent
             Rectangle {
-                width: parent.width * Palette.clamp01(Number(card.valueHint) / 100)
+                width: parent.width * Services.Theme.clamp01(Number(card.valueHint) / 100)
                 height: parent.height
-                color: Palette.accent
+                color: Services.Theme.accent
                 Behavior on width {
                     NumberAnimation {
                         duration: 120
@@ -141,14 +140,14 @@ Rectangle {
                     required property var modelData
                     width: actionLabel.width + 16
                     height: 24
-                    color: hover.containsMouse ? Palette.hoverBg : Palette.surface
+                    color: hover.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
                     Text {
                         id: actionLabel
                         anchors.centerIn: parent
                         text: modelData.text
-                        color: Palette.fg
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px12
+                        color: Services.Theme.fg
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
                     }
                     MouseArea {
                         id: hover

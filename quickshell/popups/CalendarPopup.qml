@@ -1,12 +1,12 @@
 import QtQuick
 import Quickshell
 import "../components"
-import "../Palette.js" as Palette
+import "../services" as Services
 BasePopup {
     id: root
     required property var clock
     anchorMode: "center"
-    implicitWidth: Palette.popupWidth
+    implicitWidth: Services.Theme.popupWidth
     implicitHeight: 256
     property date viewDate: new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.stepMonth(-1) }
@@ -63,9 +63,9 @@ BasePopup {
                 width: 26
                 horizontalAlignment: Text.AlignHCenter
                 text: "󰅁"
-                color: navLeft.containsMouse ? Palette.fg : Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px14
+                color: navLeft.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px14
                 MouseArea {
                     id: navLeft
                     anchors.fill: parent
@@ -79,18 +79,18 @@ BasePopup {
                 width: parent.width - 52
                 horizontalAlignment: Text.AlignHCenter
                 text: Qt.formatDateTime(root.viewDate, "MMMM yyyy")
-                color: Palette.fg
-                font.family: Palette.font
-                font.pixelSize: Palette.px13
+                color: Services.Theme.fg
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px13
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 26
                 horizontalAlignment: Text.AlignHCenter
                 text: "󰅂"
-                color: navRight.containsMouse ? Palette.fg : Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px14
+                color: navRight.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px14
                 MouseArea {
                     id: navRight
                     anchors.fill: parent
@@ -104,9 +104,9 @@ BasePopup {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: Qt.formatDateTime(clock.date, "dddd, dd MMMM yyyy")
-            color: Palette.dim
-            font.family: Palette.font
-            font.pixelSize: Palette.px11
+            color: Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px11
         }
         Row {
             width: parent.width
@@ -118,9 +118,9 @@ BasePopup {
                     width: parent.width / 7
                     horizontalAlignment: Text.AlignHCenter
                     text: modelData
-                    color: Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px11
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px11
                 }
             }
         }
@@ -134,13 +134,13 @@ BasePopup {
                     required property var modelData
                     width: parent.width / 7
                     height: 26
-                    color: modelData > 0 && root.isToday(modelData) ? Palette.accent : "transparent"
+                    color: modelData > 0 && root.isToday(modelData) ? Services.Theme.accent : "transparent"
                     Text {
                         anchors.centerIn: parent
                         text: modelData === 0 ? "" : modelData
-                        color: modelData > 0 && root.isToday(modelData) ? Palette.onAccent : Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px12
+                        color: modelData > 0 && root.isToday(modelData) ? Services.Theme.onAccent : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
                     }
                 }
             }

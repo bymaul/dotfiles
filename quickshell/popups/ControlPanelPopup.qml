@@ -5,12 +5,12 @@ import Quickshell.Bluetooth
 import Quickshell.Networking
 import "../components"
 import "../services" as Services
-import "../Palette.js" as Palette
 BasePopup {
     id: root
-    useGrab: false
-    implicitWidth: Palette.popupWidth
-    implicitHeight: (Services.Media.brightnessAvailable ? 258 : 214) + (root.mprisPlayer !== null ? Palette.rowHeight + Palette.popupSpacing : 0)
+    property var historyWindow: null
+    extraGrabWindows: root.historyWindow != null ? [root.historyWindow] : []
+    implicitWidth: Services.Theme.popupWidth
+    implicitHeight: (Services.Media.brightnessAvailable ? 258 : 214) + (root.mprisPlayer !== null ? Services.Theme.rowHeight + Services.Theme.popupSpacing : 0)
     PanelNavKeys {
         host: root
         panel: root
@@ -63,7 +63,7 @@ BasePopup {
         return root.firstHistIdx() + Services.Notifs.history.length;
     }
     function clampSelection(): void {
-        selectedIndex = Palette.clamp(selectedIndex, 0, root.itemCount() - 1);
+        selectedIndex = Services.Theme.clamp(selectedIndex, 0, root.itemCount() - 1);
         root.clampAction();
     }
     function selectedActions(): var {
@@ -79,7 +79,7 @@ BasePopup {
         if (root.selectedKind() !== "history" || root.actionCount() === 0)
             actionIndex = -1;
         else
-            actionIndex = Palette.clamp(actionIndex, -1, root.actionCount() - 1);
+            actionIndex = Services.Theme.clamp(actionIndex, -1, root.actionCount() - 1);
     }
     function selectIndex(i: int): void {
         if (selectedIndex === i && actionIndex === -1)
@@ -102,7 +102,7 @@ BasePopup {
             return;
         selectedIndex = root.mprisIdx();
         actionIndex = -1;
-        mprisCol = Palette.clamp(col, 0, 2);
+        mprisCol = Services.Theme.clamp(col, 0, 2);
         root.clampSelection();
     }
     Connections {
@@ -167,7 +167,7 @@ BasePopup {
     function adjustVolume(delta: real): void {
         const audio = root.audioSink?.audio;
         if (audio)
-            audio.volume = Palette.clamp(audio.volume + delta, 0, Palette.volumeMax);
+            audio.volume = Services.Theme.clamp(audio.volume + delta, 0, Services.Theme.volumeMax);
     }
     function toggleVolumeMute(): void {
         const audio = root.audioSink?.audio;
@@ -182,11 +182,11 @@ BasePopup {
     function adjustSelected(dir: int): void {
         const kind = root.selectedKind();
         if (kind === "brightness")
-            Services.Media.setBrightness(Services.Media.brightness + dir * Palette.brightnessStep, true);
+            Services.Media.setBrightness(Services.Media.brightness + dir * Services.Theme.brightnessStep, true);
         else if (kind === "volume")
-            root.adjustVolume(dir * Palette.volumeStep);
+            root.adjustVolume(dir * Services.Theme.volumeStep);
         else if (kind === "mpris")
-            mprisCol = Palette.clamp(mprisCol + dir, 0, 2);
+            mprisCol = Services.Theme.clamp(mprisCol + dir, 0, 2);
         else if (kind === "history")
             root.moveAction(dir);
         else
@@ -313,8 +313,8 @@ BasePopup {
         Rectangle {
             visible: Services.Media.brightnessAvailable
             width: parent.width
-            height: visible ? Palette.rowHeight : 0
-            color: root.selectedIndex === 0 ? Palette.activeBg : Palette.surface
+            height: visible ? Services.Theme.rowHeight : 0
+            color: root.selectedIndex === 0 ? Services.Theme.activeBg : Services.Theme.surface
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
@@ -334,9 +334,9 @@ BasePopup {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 24
                     text: "󰃟"
-                    color: Palette.fg
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px14
+                    color: Services.Theme.fg
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px14
                 }
                 SliderBar {
                     anchors.verticalCenter: parent.verticalCenter
@@ -349,16 +349,16 @@ BasePopup {
                     width: 36
                     horizontalAlignment: Text.AlignRight
                     text: Math.round(Services.Media.brightness) + "%"
-                    color: Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                 }
             }
         }
         Rectangle {
             width: parent.width
-            height: Palette.rowHeight
-            color: root.selectedIndex === root.volumeIdx() ? Palette.activeBg : Palette.surface
+            height: Services.Theme.rowHeight
+            color: root.selectedIndex === root.volumeIdx() ? Services.Theme.activeBg : Services.Theme.surface
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
@@ -378,9 +378,9 @@ BasePopup {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 24
                     text: root.audioSink?.audio?.muted ? "󰝟" : "󰕾"
-                    color: Palette.fg
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px14
+                    color: Services.Theme.fg
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px14
                     MouseArea {
                         anchors.fill: parent
                         onClicked: root.toggleVolumeMute()
@@ -389,7 +389,7 @@ BasePopup {
                 SliderBar {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 80
-                    maximum: Palette.volumeMax
+                    maximum: Services.Theme.volumeMax
                     value: root.audioSink?.audio?.volume ?? 0
                     onSliderMoved: value => {
                         const audio = root.audioSink?.audio;
@@ -402,17 +402,17 @@ BasePopup {
                     width: 36
                     horizontalAlignment: Text.AlignRight
                     text: Math.round((root.audioSink?.audio?.volume ?? 0) * 100) + "%"
-                    color: Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                 }
             }
         }
         Rectangle {
             visible: root.mprisPlayer !== null
             width: parent.width
-            height: visible ? Palette.rowHeight : 0
-            color: root.selectedKind() === "mpris" ? Palette.activeBg : Palette.surface
+            height: visible ? Services.Theme.rowHeight : 0
+            color: root.selectedKind() === "mpris" ? Services.Theme.activeBg : Services.Theme.surface
             readonly property bool mprisSelected: root.selectedKind() === "mpris"
             MouseArea {
                 anchors.fill: parent
@@ -434,15 +434,15 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: "󰒮"
-                    color: parent.parent.mprisSelected && root.mprisCol === 0 ? Palette.onAccent : Palette.fg
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px14
+                    color: parent.parent.mprisSelected && root.mprisCol === 0 ? Services.Theme.onAccent : Services.Theme.fg
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px14
                     Rectangle {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
                         visible: parent.parent.parent.mprisSelected && root.mprisCol === 0
-                        color: Palette.accent
+                        color: Services.Theme.accent
                         z: -1
                     }
                     MouseArea {
@@ -461,15 +461,15 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: (root.mprisPlayer?.isPlaying ?? false) ? "󰏤" : "󰐊"
-                    color: parent.parent.mprisSelected && root.mprisCol === 1 ? Palette.onAccent : Palette.fg
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px14
+                    color: parent.parent.mprisSelected && root.mprisCol === 1 ? Services.Theme.onAccent : Services.Theme.fg
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px14
                     Rectangle {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
                         visible: parent.parent.parent.mprisSelected && root.mprisCol === 1
-                        color: Palette.accent
+                        color: Services.Theme.accent
                         z: -1
                     }
                     MouseArea {
@@ -488,15 +488,15 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: "󰒭"
-                    color: parent.parent.mprisSelected && root.mprisCol === 2 ? Palette.onAccent : Palette.fg
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px14
+                    color: parent.parent.mprisSelected && root.mprisCol === 2 ? Services.Theme.onAccent : Services.Theme.fg
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px14
                     Rectangle {
                         anchors.centerIn: parent
                         width: 24
                         height: 24
                         visible: parent.parent.parent.mprisSelected && root.mprisCol === 2
-                        color: Palette.accent
+                        color: Services.Theme.accent
                         z: -1
                     }
                     MouseArea {
@@ -515,19 +515,19 @@ BasePopup {
                     width: parent.width - 78
                     elide: Text.ElideRight
                     text: (root.mprisPlayer?.trackTitle || root.mprisPlayer?.identity || "Unknown") + (root.mprisPlayer?.trackArtist ? " - " + root.mprisPlayer.trackArtist : "")
-                    color: Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                 }
             }
         }
         Grid {
             columns: 3
-            columnSpacing: Palette.listSpacing
-            rowSpacing: Palette.listSpacing
+            columnSpacing: Services.Theme.listSpacing
+            rowSpacing: Services.Theme.listSpacing
             width: parent.width
             ToggleTile {
-                glyph: Networking.wifiEnabled ? (bar.connectedWifi ? "󰤨" : "󰤭") : "󰤯"
+                glyph: Networking.wifiEnabled ? (Services.Wifi.connected ? "󰤨" : "󰤭") : "󰤯"
                 label: "Wi-Fi"
                 active: Networking.wifiEnabled
                 selected: root.selectedIndex === root.firstTileIdx() + 0

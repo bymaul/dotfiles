@@ -1,17 +1,16 @@
 import QtQuick
 import Quickshell.Services.UPower
-import "../Palette.js" as Palette
+import "../services" as Services
 Item {
     id: root
-    visible: root.laptopBattery != null
+    visible: Services.Power.hasBattery
     anchors.verticalCenter: parent.verticalCenter
     implicitWidth: label.width
     implicitHeight: label.height
     width: label.width
     height: label.height
-    property var laptopBattery: (UPower.devices?.values ?? []).find(device => device && device.isLaptopBattery) ?? null
-    readonly property real level: root.laptopBattery?.percentage ?? 0
-    readonly property bool charging: root.laptopBattery?.state === UPowerDeviceState.Charging
+    readonly property real level: Services.Power.level
+    readonly property bool charging: Services.Power.battery?.state === UPowerDeviceState.Charging
     Text {
         id: label
         text: {
@@ -31,15 +30,8 @@ Item {
                 icon = "󰁺";
             return `${icon} ${Math.round(p)}%`;
         }
-        color: {
-            const p = root.level * 100;
-            if (p < 10)
-                return Palette.danger;
-            if (p < 20)
-                return Palette.warn;
-            return Palette.fg;
-        }
-        font.family: Palette.font
-        font.pixelSize: Palette.px13
+        color: Services.Power.levelColor(root.level * 100)
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px13
     }
 }

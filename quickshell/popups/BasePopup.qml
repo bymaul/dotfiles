@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import "../Palette.js" as Palette
+import "../services" as Services
 PopupWindow {
     id: base
     required property var bar
@@ -10,6 +10,8 @@ PopupWindow {
     property bool useGrab: true
     property bool preventClose: false
     property var returnTo: null
+    property var extraGrabWindows: []
+    readonly property var effectiveGrabWindows: [base].concat(extraGrabWindows ?? [])
     property Item focusTarget: null
     property double openedAt: 0
     function focusTargetNow(): void {
@@ -44,6 +46,24 @@ PopupWindow {
     function cancelOrClose(): void {
         base.close();
     }
+    function stepListView(view, dir: int, stride: int): void {
+        if (!view || view.count === 0)
+            return;
+        view.currentIndex = Services.Theme.clamp(view.currentIndex + dir * (stride ?? 1), 0, view.count - 1);
+        view.positionViewAtIndex(view.currentIndex, ListView.Contain);
+    }
+    function clampListView(view): void {
+        if (!view)
+            return;
+        if (view.currentIndex >= view.count)
+            view.currentIndex = Math.max(0, view.count - 1);
+    }
+    function selectInList(view, i: int): void {
+        if (!view)
+            return;
+        view.currentIndex = Services.Theme.clamp(i, 0, Math.max(0, view.count - 1));
+        view.positionViewAtIndex(view.currentIndex, ListView.Contain);
+    }
     Shortcut {
         sequence: "Escape"
         enabled: base.visible && base.escArmed()
@@ -55,8 +75,8 @@ PopupWindow {
         onActivated: base.close()
     }
     anchor.window: bar
-    anchor.rect.x: (base.anchorMode === "center" || base.anchorMode === "middle") ? bar.width / 2 - width / 2 : bar.width - width - Palette.popupMargin
-    anchor.rect.y: base.anchorMode === "middle" ? Math.max(bar.height + Palette.popupTopGap, Screen.height / 2 - height / 2) : bar.height + Palette.popupTopGap + base.extraTop
+    anchor.rect.x: (base.anchorMode === "center" || base.anchorMode === "middle") ? bar.width / 2 - width / 2 : bar.width - width - Services.Theme.popupMargin
+    anchor.rect.y: base.anchorMode === "middle" ? Math.max(bar.height + Services.Theme.popupTopGap, Screen.height / 2 - height / 2) : bar.height + Services.Theme.popupTopGap + base.extraTop
     visible: false
     color: "transparent"
     onVisibleChanged: {
@@ -72,7 +92,7 @@ PopupWindow {
     }
     HyprlandFocusGrab {
         id: grab
-        windows: [base]
+        windows: base.effectiveGrabWindows
         onActiveChanged: {
             if (grab.active && base.visible) {
                 base.focusAttempts = 0;
@@ -123,7 +143,7 @@ PopupWindow {
     }
     Timer {
         id: grabTimer
-        interval: Palette.grabDelay
+        interval: Services.Theme.grabDelay
         running: false
         repeat: false
         onTriggered: grab.active = true

@@ -1,11 +1,11 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import "../Palette.js" as Palette
+import "../services" as Services
 Row {
     anchors {
         left: parent.left
-        leftMargin: Palette.popupMargin
+        leftMargin: Services.Theme.popupMargin
         verticalCenter: parent.verticalCenter
     }
     spacing: 4
@@ -40,14 +40,14 @@ Row {
             height: 25
             Rectangle {
                 anchors.fill: parent
-                color: isFocused ? Palette.surface : "transparent"
+                color: isFocused ? Services.Theme.surface : "transparent"
             }
             Text {
                 anchors.centerIn: parent
                 text: ws?.name || modelData
-                color: isFocused ? Palette.white : Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
+                color: isFocused ? Services.Theme.white : Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
             }
             MouseArea {
                 anchors.fill: parent

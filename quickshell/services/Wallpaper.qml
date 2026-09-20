@@ -10,7 +10,19 @@ Singleton {
     property string source: ""
     property int probeIndex: 0
     readonly property string homeDir: Quickshell.env("HOME") ?? ""
-    readonly property var candidates: (root.homeDir !== "" ? [root.homeDir + "/dotfiles/wallpapers/wallpaper.jpg"] : []).concat([Quickshell.shellDir + "/wallpaper.jpg"])
+    readonly property var candidates: {
+        const out = [];
+        if (root.homeDir !== "") {
+            for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+                out.push(root.homeDir + "/dotfiles/wallpapers/wallpaper." + ext);
+            }
+            for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+                out.push(root.homeDir + "/Pictures/Wallpapers/wallpaper." + ext);
+            }
+        }
+        out.push(Quickshell.shellDir + "/wallpaper.jpg");
+        return out;
+    }
     function probeNext(): void {
         if (probe.running)
             return;

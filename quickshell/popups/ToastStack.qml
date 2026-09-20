@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.Wayland
 import "../components"
 import "../services" as Services
-import "../Palette.js" as Palette
 PanelWindow {
     id: root
     required property var bar
@@ -12,12 +11,12 @@ PanelWindow {
         top: true
         right: true
     }
-    margins.top: Palette.popupTopGap
-    margins.right: Palette.popupMargin
+    margins.top: Services.Theme.popupTopGap
+    margins.right: Services.Theme.popupMargin
     exclusiveZone: 0
     readonly property bool parked: root.bar.rightPopupBottom > 0
-    readonly property int stackWidth: root.parked ? root.bar.rightPopupWidth : Palette.toastWidth
-    readonly property int parkOffset: root.parked ? root.bar.rightPopupBottom + Palette.popupSpacing - Palette.popupTopGap : 0
+    readonly property int stackWidth: root.parked ? root.bar.rightPopupWidth : Services.Theme.toastWidth
+    readonly property int parkOffset: root.parked ? root.bar.rightPopupBottom + Services.Theme.popupSpacing - Services.Theme.popupTopGap : 0
     implicitWidth: root.stackWidth
     implicitHeight: root.parkOffset + toastList.contentHeight
     visible: true
@@ -36,7 +35,7 @@ PanelWindow {
         height: contentHeight
         clip: true
         interactive: false
-        spacing: Palette.popupSpacing
+        spacing: Services.Theme.popupSpacing
         model: Services.Notifs.toasts
         delegate: ToastCard {
             required property var modelData

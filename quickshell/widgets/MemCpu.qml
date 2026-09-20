@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../services" as Services
-import "../Palette.js" as Palette
 Item {
     id: root
     required property var bar
@@ -12,18 +11,18 @@ Item {
     height: row.height
     Row {
         id: row
-        spacing: Palette.groupSpacing
+        spacing: Services.Theme.groupSpacing
         Text {
             text: Services.Perf.memUsed > 0 ? " " + Services.Perf.memUsed.toFixed(1) + "G" : " --G"
-            color: Palette.fg
-            font.family: Palette.font
-            font.pixelSize: Palette.px13
+            color: Services.Theme.fg
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px13
         }
         Text {
             text: "󰍛 " + Services.Perf.cpuUsage + "%"
-            color: Palette.fg
-            font.family: Palette.font
-            font.pixelSize: Palette.px13
+            color: Services.Theme.fg
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px13
         }
     }
     MouseArea {

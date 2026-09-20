@@ -2,11 +2,10 @@ import QtQuick
 import Quickshell
 import "../components"
 import "../services" as Services
-import "../Palette.js" as Palette
 BasePopup {
     id: root
-    implicitWidth: Palette.popupWidth
-    implicitHeight: 16 + statusText.height + Palette.popupSpacing + (xfceWarn.visible ? xfceWarn.height + Palette.popupSpacing : 0) + powerGrid.height + Palette.popupSpacing + hint.implicitHeight
+    implicitWidth: Services.Theme.popupWidth
+    implicitHeight: 16 + statusText.height + Services.Theme.popupSpacing + (xfceWarn.visible ? xfceWarn.height + Services.Theme.popupSpacing : 0) + powerGrid.height + Services.Theme.popupSpacing + hint.implicitHeight
     Shortcut { sequence: "s"; enabled: root.visible; onActivated: root.powerOff() }
     Shortcut { sequence: "r"; enabled: root.visible; onActivated: root.reboot() }
     Shortcut { sequence: "u"; enabled: root.visible; onActivated: root.suspend() }
@@ -48,9 +47,9 @@ BasePopup {
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight
             text: Services.Power.statusLine
-            color: Palette.dim
-            font.family: Palette.font
-            font.pixelSize: Palette.px12
+            color: Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
         }
         Text {
             id: xfceWarn
@@ -59,16 +58,16 @@ BasePopup {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
             text: "xfce4-power-manager is still running and blocks logind - uninstall it"
-            color: Palette.danger
-            font.family: Palette.font
-            font.pixelSize: Palette.px11
+            color: Services.Theme.danger
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px11
         }
         Grid {
             id: powerGrid
             width: parent.width
             columns: 2
-            columnSpacing: Palette.popupSpacing
-            rowSpacing: Palette.popupSpacing
+            columnSpacing: Services.Theme.popupSpacing
+            rowSpacing: Services.Theme.popupSpacing
             ActionTile { glyph: "󰐥"; label: "Power off"; onActionClicked: root.powerOff() }
             ActionTile { glyph: "󰜉"; label: "Reboot"; onActionClicked: root.reboot() }
             ActionTile { glyph: "󰤄"; label: "Suspend"; onActionClicked: root.suspend() }

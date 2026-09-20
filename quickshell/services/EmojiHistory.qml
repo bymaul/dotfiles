@@ -7,7 +7,6 @@ Singleton {
     property var recents: []
     property bool loaded: false
     property bool loading: false
-    property var pendingWrite: null
     readonly property string historyFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
         const home = Quickshell.env("HOME") ?? "";
@@ -24,13 +23,10 @@ Singleton {
         if (typeof ch !== "string" || ch === "")
             return;
         emojiHistory.recents = [ch].concat(emojiHistory.recents.filter(c => c !== ch)).slice(0, 30);
-        const payload = JSON.stringify(emojiHistory.recents);
-        if (writer.running) {
-            emojiHistory.pendingWrite = payload;
-            return;
-        }
-        writer.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s" "$1" > "$2"', "qs", payload, emojiHistory.historyFile];
-        writer.running = true;
+        writer.write(emojiHistory.historyFile, JSON.stringify(emojiHistory.recents), false);
+    }
+    AtomicWriter {
+        id: writer
     }
     Process {
         id: reader
@@ -66,17 +62,6 @@ Singleton {
             if (emojiHistory.loading) {
                 emojiHistory.loading = false;
                 emojiHistory.loaded = true;
-            }
-        }
-    }
-    Process {
-        id: writer
-        onExited: {
-            if (emojiHistory.pendingWrite !== null) {
-                const payload = emojiHistory.pendingWrite;
-                emojiHistory.pendingWrite = null;
-                writer.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s" "$1" > "$2"', "qs", payload, emojiHistory.historyFile];
-                writer.running = true;
             }
         }
     }

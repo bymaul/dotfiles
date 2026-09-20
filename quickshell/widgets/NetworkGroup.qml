@@ -1,5 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
+import "../services" as Services
 Item {
     id: root
     required property var bar
@@ -9,7 +9,7 @@ Item {
     height: row.height
     Row {
         id: row
-        spacing: Palette.groupSpacing
+        spacing: Services.Theme.groupSpacing
         WifiIcon {
             bar: root.bar
         }

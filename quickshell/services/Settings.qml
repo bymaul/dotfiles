@@ -121,59 +121,13 @@ Singleton {
         }
     }
 
-    property var hyprPending: ({})
-    function hypr(key: string, value: string): void {
-        settings.queueHypr(key, value);
-    }
-    function hyprNow(key: string, value: string): void {
-        Quickshell.execDetached(["hyprctl", "eval", settings.luaFor(key, value)]);
-    }
-    function queueHypr(key: string, value: string): void {
-        const pending = Object.assign({}, settings.hyprPending);
-        pending[key] = value;
-        settings.hyprPending = pending;
-        hyprDebounce.restart();
-    }
-    Timer {
-        id: hyprDebounce
-        interval: 150
-        repeat: false
-        onTriggered: {
-            const pending = settings.hyprPending;
-            settings.hyprPending = {};
-            for (const key of Object.keys(pending))
-                settings.hyprNow(key, pending[key]);
-        }
-    }
-    function luaVal(v: string): string {
-        if (v === "true" || v === "false")
-            return v;
-        if (v !== "" && !isNaN(Number(v)))
-            return v;
-        return settings.luaStr(v);
-    }
-    function luaStr(v: string): string {
-        return '"' + String(v ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ") + '"';
-    }
-    function luaFor(key: string, value: string): string {
-        const parts = key.split(":");
-        let inner = settings.luaVal(value);
-        for (let i = parts.length - 1; i >= 0; i--) {
-            if (i === parts.length - 1)
-                inner = parts[i] + " = " + inner;
-            else
-                inner = parts[i] + " = {" + inner + "}";
-        }
-        return "hl.config({" + inner + "})";
-    }
-
     function applyAll(): void {
-        settings.hypr("decoration:blur:enabled", settings.blurEnabled ? "true" : "false");
+        HyprBridge.hypr("decoration:blur:enabled", settings.blurEnabled ? "true" : "false");
         settings.applyTransparency();
-        settings.hypr("animations:enabled", settings.animEnabled ? "true" : "false");
-        settings.hypr("input:sensitivity", String(settings.sensitivity));
-        settings.hypr("input:touchpad:scroll_factor", String(settings.touchScroll));
-        settings.hypr("input:touchpad:natural_scroll", settings.naturalScroll ? "true" : "false");
+        HyprBridge.hypr("animations:enabled", settings.animEnabled ? "true" : "false");
+        HyprBridge.hypr("input:sensitivity", String(settings.sensitivity));
+        HyprBridge.hypr("input:touchpad:scroll_factor", String(settings.touchScroll));
+        HyprBridge.hypr("input:touchpad:natural_scroll", settings.naturalScroll ? "true" : "false");
         Wallpaper.applyOverride(settings.wallpaperOverride);
     }
     function applyScannedMonitors(): void {
@@ -196,14 +150,14 @@ Singleton {
 
     function setBlurEnabled(on: bool): void {
         settings.blurEnabled = on;
-        settings.hypr("decoration:blur:enabled", on ? "true" : "false");
+        HyprBridge.hypr("decoration:blur:enabled", on ? "true" : "false");
         settings.scheduleSave();
     }
     function applyTransparency(): void {
         if (settings.transparentFx)
-            Quickshell.execDetached(["hyprctl", "eval", "hl.config({decoration = {active_opacity = 0.9, inactive_opacity = 0.87}})"]);
+            HyprBridge.eval("hl.config({decoration = {active_opacity = 0.9, inactive_opacity = 0.87}})");
         else
-            Quickshell.execDetached(["hyprctl", "eval", "hl.config({decoration = {active_opacity = 1.0, inactive_opacity = 1.0}})"]);
+            HyprBridge.eval("hl.config({decoration = {active_opacity = 1.0, inactive_opacity = 1.0}})");
     }
     function setTransparentFx(on: bool): void {
         settings.transparentFx = on;
@@ -212,22 +166,22 @@ Singleton {
     }
     function setAnimEnabled(on: bool): void {
         settings.animEnabled = on;
-        settings.hypr("animations:enabled", on ? "true" : "false");
+        HyprBridge.hypr("animations:enabled", on ? "true" : "false");
         settings.scheduleSave();
     }
     function setSensitivity(v: real): void {
         settings.sensitivity = Math.round(Math.max(-1, Math.min(1, v)) * 10) / 10;
-        settings.hypr("input:sensitivity", String(settings.sensitivity));
+        HyprBridge.hypr("input:sensitivity", String(settings.sensitivity));
         settings.scheduleSave();
     }
     function setTouchScroll(v: real): void {
         settings.touchScroll = Math.round(Math.max(0.1, Math.min(2, v)) * 10) / 10;
-        settings.hypr("input:touchpad:scroll_factor", String(settings.touchScroll));
+        HyprBridge.hypr("input:touchpad:scroll_factor", String(settings.touchScroll));
         settings.scheduleSave();
     }
     function setNaturalScroll(on: bool): void {
         settings.naturalScroll = on;
-        settings.hypr("input:touchpad:natural_scroll", on ? "true" : "false");
+        HyprBridge.hypr("input:touchpad:natural_scroll", on ? "true" : "false");
         settings.scheduleSave();
     }
 
@@ -316,13 +270,13 @@ Singleton {
                 settings.scheduleSave();
                 return;
             }
-            settings.applyTracked(name + " disabled", 'hl.monitor({output = ' + settings.luaStr(name) + ', disabled = true})', q, name);
+            settings.applyTracked(name + " disabled", 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = true})', q, name);
             return;
         }
         const scale = String(settings.monitorScale(name));
         const res = String(settings.monitorRes(name));
         const desc = name + " -> " + res + " x" + scale;
-        settings.applyTracked(desc, 'hl.monitor({output = ' + settings.luaStr(name) + ', disabled = false, mode = ' + settings.luaStr(res) + ', position = "auto", scale = ' + settings.luaStr(scale) + '})', q, name);
+        settings.applyTracked(desc, 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = false, mode = ' + HyprBridge.luaStr(res) + ', position = "auto", scale = ' + HyprBridge.luaStr(scale) + '})', q, name);
     }
     function applyTracked(label: string, code: string, quiet: bool, key: string): void {
         const k = typeof key === "string" && key !== "" ? key : label;
@@ -451,65 +405,7 @@ Singleton {
         settings.scheduleSave();
     }
     function writeIdleConf(): void {
-        idleDebounce.restart();
-    }
-    function doWriteIdleConf(): void {
-        if (idleWriter.running) {
-            settings.idleDirty = true;
-            return;
-        }
-        const L = [];
-        L.push("general {");
-        L.push("    lock_cmd = qs ipc call bar lock");
-        L.push("    before_sleep_cmd = loginctl lock-session");
-        L.push("    after_sleep_cmd = hyprctl dispatch dpms on");
-        L.push("}");
-        L.push("");
-        if (settings.dimTimeout > 0) {
-            L.push("listener {");
-            L.push("    timeout = " + settings.dimTimeout);
-            L.push("    on-timeout = brightnessctl -s set 10");
-            L.push("    on-resume = brightnessctl -r");
-            L.push("}");
-            L.push("");
-            L.push("listener {");
-            L.push("    timeout = " + settings.dimTimeout);
-            L.push("    on-timeout = brightnessctl -sd rgb:kbd_backlight set 0");
-            L.push("    on-resume = brightnessctl -rd rgb:kbd_backlight");
-            L.push("}");
-            L.push("");
-        }
-        if (settings.lockTimeout > 0) {
-            L.push("listener {");
-            L.push("    timeout = " + settings.lockTimeout);
-            L.push("    on-timeout = loginctl lock-session");
-            L.push("}");
-            L.push("");
-        }
-        if (settings.screenOffTimeout > 0) {
-            L.push("listener {");
-            L.push("    timeout = " + settings.screenOffTimeout);
-            L.push("    on-timeout = hyprctl dispatch dpms off");
-            L.push("    on-resume = hyprctl dispatch dpms on");
-            L.push("}");
-            L.push("");
-        }
-        if (settings.suspendTimeout > 0) {
-            L.push("listener {");
-            L.push("    timeout = " + settings.suspendTimeout);
-            L.push("    on-timeout = systemctl suspend");
-            L.push("}");
-            L.push("");
-        }
-        idleWriter.command = ["sh", "-c", 'mkdir -p "$(dirname "$1")"; printf "%s\\n" "$2" > "$1.tmp"; mv -f "$1.tmp" "$1"', "qs", settings.hypridleFile, L.join("\n")];
-        idleWriter.running = true;
-    }
-    property bool idleDirty: false
-    Timer {
-        id: idleDebounce
-        interval: 500
-        repeat: false
-        onTriggered: settings.doWriteIdleConf()
+        IdleManager.request(settings.dimTimeout, settings.lockTimeout, settings.screenOffTimeout, settings.suspendTimeout, settings.hypridleFile);
     }
 
     property bool saveQueued: false
@@ -642,30 +538,6 @@ Singleton {
                 settings.lastApplyMsg = "Timed out: " + monApply.jobLabel;
                 settings.pumpApply();
             }
-        }
-    }
-    Process {
-        id: idleWriter
-        onExited: exitCode => {
-            if (settings.idleDirty) {
-                settings.idleDirty = false;
-                settings.doWriteIdleConf();
-                return;
-            }
-            if (exitCode !== 0) {
-                settings.lastApplyMsg = "Idle config write failed";
-                Notifs.notify({app: "settings", summary: "Idle config write failed", body: settings.hypridleFile, timeout: 5000});
-                return;
-            }
-            hypridleRestart.running = true;
-        }
-    }
-    Process {
-        id: hypridleRestart
-        command: ["sh", "-c", "pkill -x hypridle 2>/dev/null; sleep 0.2; command -v hypridle >/dev/null || exit 0; hypridle >/dev/null 2>&1 &"]
-        onExited: exitCode => {
-            if (exitCode !== 0)
-                Notifs.notify({app: "settings", summary: "hypridle restart failed", body: "check hypridle.conf", timeout: 5000});
         }
     }
 }

@@ -4,12 +4,11 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import "../components"
 import "../services" as Services
-import "../Palette.js" as Palette
 BasePopup {
     id: root
     anchorMode: "middle"
-    implicitWidth: Palette.settingsWidth
-    implicitHeight: 16 + title.implicitHeight + Palette.rowHeight + Palette.popupSpacing * 3 + Palette.listHeight(Palette.listVisible) + hint.implicitHeight
+    implicitWidth: Services.Theme.settingsWidth
+    implicitHeight: 16 + title.implicitHeight + Services.Theme.rowHeight + Services.Theme.popupSpacing * 3 + Services.Theme.listHeight(Services.Theme.listVisible) + hint.implicitHeight
     function cancelOrClose(): void {
         if (root.wipeConfirm)
             root.wipeConfirm = false;
@@ -71,10 +70,7 @@ BasePopup {
     }
     function stepSelection(dir: int): void {
         root.wipeConfirm = false;
-        if (clipList.count === 0)
-            return;
-        clipList.currentIndex = Palette.clamp(clipList.currentIndex + dir, 0, clipList.count - 1);
-        clipList.positionViewAtIndex(clipList.currentIndex, ListView.Contain);
+        stepListView(clipList, dir);
     }
     function confirm(): void {
         if (root.wipeConfirm)
@@ -178,7 +174,7 @@ BasePopup {
     }
     Timer {
         id: pasteTimer
-        interval: Palette.grabDelay
+        interval: Services.Theme.grabDelay
         repeat: false
         onTriggered: root.pasteIntoActive()
     }
@@ -212,45 +208,32 @@ BasePopup {
             x: 10
             width: parent.width - 10
             text: "󰅇 Paste from history"
-            color: Palette.fg
-            font.family: Palette.font
-            font.pixelSize: Palette.px12
+            color: Services.Theme.fg
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
             elide: Text.ElideRight
         }
         ListView {
             id: clipList
             width: parent.width
-            height: Palette.listHeight(Palette.listVisible)
+            height: Services.Theme.listHeight(Services.Theme.listVisible)
             clip: true
             model: root.entries
-            spacing: Palette.listSpacing
-            onCountChanged: {
-                if (currentIndex >= count)
-                    currentIndex = Math.max(0, count - 1);
-            }
-            delegate: Rectangle {
+            spacing: Services.Theme.listSpacing
+            onCountChanged: clampListView(clipList)
+            delegate: ResultRow {
+                id: row
                 required property var modelData
                 required property int index
-                readonly property bool selected: clipList.currentIndex === index
-                width: clipList.width
-                height: Palette.rowHeight
-                color: selected ? Palette.accent : rowArea.containsMouse ? Palette.hoverBg : "transparent"
-                MouseArea {
-                    id: rowArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onContainsMouseChanged: {
-                        if (containsMouse) {
-                            root.wipeConfirm = false;
-                            clipList.currentIndex = index;
-                            clipList.positionViewAtIndex(index, ListView.Contain);
-                        }
-                    }
-                    onClicked: {
-                        clipList.currentIndex = index;
-                        root.pasteSelected();
-                    }
+                selected: clipList.currentIndex === index
+                onHovered: {
+                    root.wipeConfirm = false;
+                    clipList.currentIndex = index;
+                    clipList.positionViewAtIndex(index, ListView.Contain);
+                }
+                onClicked: {
+                    clipList.currentIndex = index;
+                    root.pasteSelected();
                 }
                 Text {
                     anchors {
@@ -260,9 +243,9 @@ BasePopup {
                     }
                     width: parent.width - 56
                     text: modelData.preview !== "" ? modelData.preview : "󰆏 Image"
-                    color: selected ? Palette.onAccent : rowArea.containsMouse ? Palette.fg : Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: row.selected ? Services.Theme.onAccent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
                 }
                 MouseArea {
@@ -279,24 +262,24 @@ BasePopup {
                     Text {
                         anchors.centerIn: parent
                         text: "󰅖"
-                        color: selected ? Palette.onAccent : deleteArea.containsMouse ? Palette.fg : Palette.dim
-                        font.family: Palette.font
-                        font.pixelSize: Palette.px12
+                        color: row.selected ? Services.Theme.onAccent : deleteArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
                     }
                 }
             }
         }
         Rectangle {
             width: parent.width
-            height: Palette.rowHeight
-            color: Palette.surface
+            height: Services.Theme.rowHeight
+            color: Services.Theme.surface
             Text {
                 anchors.centerIn: parent
                 visible: !root.wipeConfirm
                 text: "Wipe history"
-                color: Palette.dim
-                font.family: Palette.font
-                font.pixelSize: Palette.px12
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
             }
             MouseArea {
                 anchors.fill: parent

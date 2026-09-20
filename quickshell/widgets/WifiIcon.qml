@@ -1,31 +1,19 @@
 import QtQuick
 import Quickshell.Networking
 import "../components"
-import "../Palette.js" as Palette
-Item {
+import "../services" as Services
+BarIcon {
+    id: root
     required property var bar
-    implicitWidth: icon.width
-    implicitHeight: icon.height
-    width: icon.width
-    height: icon.height
-    readonly property bool connected: bar.connectedWifi != null
-    readonly property real level: connected ? Number(bar.connectedWifi.signalStrength ?? 0) || 0 : 0
-    BarIcon {
-        id: icon
-        glyph: {
-            if (!Networking.wifiEnabled)
-                return "󰤭";
-            if (!parent.connected)
-                return "󰤯";
-            if (parent.level >= Palette.sigHigh)
-                return "󰤨";
-            if (parent.level >= Palette.sigMed)
-                return "󰤥";
-            if (parent.level >= Palette.sigLow)
-                return "󰤢";
-            return "󰤟";
-        }
-        glyphColor: (!Networking.wifiEnabled || !parent.connected) ? Palette.dim : Palette.fg
-        onClicked: bar.toggleControl()
+    readonly property bool connected: Services.Wifi.connected != null
+    readonly property real level: connected ? Number(Services.Wifi.connected.signalStrength ?? 0) || 0 : 0
+    glyph: {
+        if (!Networking.wifiEnabled)
+            return "󰤭";
+        if (!root.connected)
+            return "󰤯";
+        return Services.Wifi.signalGlyph(root.level);
     }
+    glyphColor: (!Networking.wifiEnabled || !root.connected) ? Services.Theme.dim : Services.Theme.fg
+    onClicked: bar.toggleControl()
 }

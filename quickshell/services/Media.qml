@@ -4,7 +4,6 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import Quickshell.Services.Mpris
-import "../Palette.js" as Palette
 Singleton {
     id: media
     property var sink: Pipewire.defaultAudioSink
@@ -16,7 +15,7 @@ Singleton {
     property bool brightnessAvailable: true
     property bool brightnessPollEnabled: true
     function osd(opts): void {
-        Notifs.notify(Object.assign({timeout: Palette.osdTimeout}, opts));
+        Notifs.notify(Object.assign({timeout: Theme.osdTimeout}, opts));
     }
     function volumeToast(): void {
         const audio = media.sink?.audio;
@@ -53,14 +52,14 @@ Singleton {
     function adjustVolume(delta: real): void {
         const audio = media.sink?.audio;
         if (audio)
-            audio.volume = Palette.clamp(audio.volume + delta, 0, Palette.volumeMax);
+            audio.volume = Theme.clamp(audio.volume + delta, 0, Theme.volumeMax);
         media.volumeToast();
     }
     function volumeUp(): void {
-        media.adjustVolume(Palette.volumeStep);
+        media.adjustVolume(Theme.volumeStep);
     }
     function volumeDown(): void {
-        media.adjustVolume(-Palette.volumeStep);
+        media.adjustVolume(-Theme.volumeStep);
     }
     function toggleVolumeMute(): void {
         const audio = media.sink?.audio;
@@ -118,7 +117,7 @@ Singleton {
     }
     property int pendingBrightness: -1
     function setBrightness(pct: real, quiet: bool): void {
-        const clamped = Math.round(Palette.clamp(pct, Palette.brightnessMin, 100));
+        const clamped = Math.round(Theme.clamp(pct, Theme.brightnessMin, 100));
         media.brightness = clamped;
         media.brightnessPollEnabled = true;
         media.pendingBrightness = clamped;
@@ -139,14 +138,14 @@ Singleton {
         }
     }
     function brightnessUp(): void {
-        media.setBrightness(media.brightness + Palette.brightnessStep, false);
+        media.setBrightness(media.brightness + Theme.brightnessStep, false);
     }
     function brightnessDown(): void {
-        media.setBrightness(media.brightness - Palette.brightnessStep, false);
+        media.setBrightness(media.brightness - Theme.brightnessStep, false);
     }
     function markBrightnessUnavailable(): void {
         media.brightnessAvailable = false;
-        media.brightnessPollEnabled = true;
+        media.brightnessPollEnabled = false;
     }
     Timer {
         id: brightnessPoll
@@ -171,7 +170,7 @@ Singleton {
     }
     Process {
         id: brightnessProbe
-        command: ["sh", "-c", "command -v brightnessctl >/dev/null && brightnessctl -m || exit 1"]
+        command: ["brightnessctl", "-m"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = String(text ?? "").split("\n").map(l => l.trim()).filter(l => l !== "");
@@ -182,6 +181,7 @@ Singleton {
                     if (!isNaN(pct)) {
                         media.brightness = pct;
                         media.brightnessAvailable = true;
+                        media.brightnessPollEnabled = true;
                         return;
                     }
                 }

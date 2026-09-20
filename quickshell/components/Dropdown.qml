@@ -1,6 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
-
+import "../services" as Services
 Item {
     id: root
     required property var options
@@ -15,12 +14,12 @@ Item {
     signal optionClicked(string value)
     signal optionHovered(int index)
     width: parent.width
-    height: Palette.rowHeight
+    height: Services.Theme.rowHeight
     function menuHeight(): int {
         const n = Math.min(root.options.length, root.maxVisible);
         if (n <= 0)
             return 0;
-        return n * Palette.rowHeight + (n - 1) * Palette.listSpacing + 8;
+        return n * Services.Theme.rowHeight + (n - 1) * Services.Theme.listSpacing + 8;
     }
     onCursorChanged: {
         if (root.open)
@@ -33,8 +32,8 @@ Item {
     Rectangle {
         id: header
         width: parent.width
-        height: Palette.rowHeight
-        color: root.open ? Palette.activeBg : root.selected ? Palette.accent : headerHover.containsMouse ? Palette.hoverBg : Palette.surface
+        height: Services.Theme.rowHeight
+        color: root.open ? Services.Theme.activeBg : root.selected ? Services.Theme.accent : headerHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
         Text {
             id: headerLabel
             anchors {
@@ -46,9 +45,9 @@ Item {
             }
             verticalAlignment: Text.AlignVCenter
             text: root.current
-            color: root.open ? Palette.fg : root.selected ? Palette.onAccent : Palette.fg
-            font.family: Palette.font
-            font.pixelSize: Palette.px12
+            color: root.open ? Services.Theme.fg : root.selected ? Services.Theme.onAccent : Services.Theme.fg
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
             elide: Text.ElideRight
         }
         Text {
@@ -64,9 +63,9 @@ Item {
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignRight
             text: root.open ? "▴" : "▾"
-            color: root.open ? Palette.dim : root.selected ? Palette.onAccent : Palette.dim
-            font.family: Palette.font
-            font.pixelSize: Palette.px12
+            color: root.open ? Services.Theme.dim : root.selected ? Services.Theme.onAccent : Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
         }
         MouseArea {
             id: headerHover
@@ -83,17 +82,17 @@ Item {
         visible: root.open && root.enabled && root.options.length > 0
         width: parent.width
         height: root.menuHeight()
-        y: root.openUp ? -(root.menuHeight() + Palette.listSpacing) : Palette.rowHeight + Palette.listSpacing
+        y: root.openUp ? -(root.menuHeight() + Services.Theme.listSpacing) : Services.Theme.rowHeight + Services.Theme.listSpacing
         z: 100
-        color: Palette.bg
+        color: Services.Theme.bg
         border.width: 1
-        border.color: Palette.border
+        border.color: Services.Theme.border
         ListView {
             id: optList
             anchors.fill: parent
             anchors.margins: 4
             clip: true
-            spacing: Palette.listSpacing
+            spacing: Services.Theme.listSpacing
             model: root.options
             currentIndex: root.cursor
             delegate: Rectangle {
@@ -102,8 +101,8 @@ Item {
                 readonly property bool isCurrent: modelData === root.current
                 readonly property bool isCursor: index === root.cursor
                 width: ListView.view.width
-                height: Palette.rowHeight
-                color: isCursor ? Palette.accent : optHover.containsMouse ? Palette.hoverBg : isCurrent ? Palette.activeBg : Palette.surface
+                height: Services.Theme.rowHeight
+                color: isCursor ? Services.Theme.accent : optHover.containsMouse ? Services.Theme.hoverBg : isCurrent ? Services.Theme.activeBg : Services.Theme.surface
                 Text {
                     anchors {
                         fill: parent
@@ -112,9 +111,9 @@ Item {
                     }
                     verticalAlignment: Text.AlignVCenter
                     text: (parent.isCurrent ? "✓  " : "") + modelData
-                    color: parent.isCursor ? Palette.onAccent : parent.isCurrent ? Palette.accent : optHover.containsMouse ? Palette.fg : Palette.dim
-                    font.family: Palette.font
-                    font.pixelSize: Palette.px12
+                    color: parent.isCursor ? Services.Theme.onAccent : parent.isCurrent ? Services.Theme.accent : optHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
                 }
                 MouseArea {

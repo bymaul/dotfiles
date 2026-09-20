@@ -1,14 +1,14 @@
 import QtQuick
-import "../Palette.js" as Palette
+import "../services" as Services
 Rectangle {
     id: root
     anchors.fill: parent
     default property alias content: column.data
-    color: Palette.bg
+    color: Services.Theme.bg
     Column {
         id: column
         anchors.fill: parent
-        anchors.margins: Palette.popupPadding
-        spacing: Palette.popupSpacing
+        anchors.margins: Services.Theme.popupPadding
+        spacing: Services.Theme.popupSpacing
     }
 }

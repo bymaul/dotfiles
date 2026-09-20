@@ -1,10 +1,10 @@
 import QtQuick
-import "../Palette.js" as Palette
+import "../services" as Services
 Item {
     id: root
     required property string glyph
-    property color glyphColor: Palette.fg
-    property int pixelSize: Palette.px13
+    property color glyphColor: Services.Theme.fg
+    property int pixelSize: Services.Theme.px13
     signal clicked
     implicitWidth: label.width
     implicitHeight: label.height
@@ -14,7 +14,7 @@ Item {
         id: label
         text: root.glyph
         color: root.glyphColor
-        font.family: Palette.font
+        font.family: Services.Theme.font
         font.pixelSize: root.pixelSize
     }
     MouseArea {
