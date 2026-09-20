@@ -23,7 +23,15 @@ Row {
         return (Hyprland.workspaces?.values ?? []).find(ws => ws && ws.id === id) ?? null;
     }
     function activateSlot(id: int): void {
-        Hyprland.dispatch("workspace " + String(id));
+        const target = workspaceById(id);
+        if (target && typeof target.activate === "function") {
+            target.activate();
+            return;
+        }
+        if (Hyprland.usingLua)
+            Hyprland.dispatch(`hl.dsp.focus({ workspace = ${id} })`);
+        else
+            Hyprland.dispatch("workspace " + String(id));
     }
     Repeater {
         model: slotIds
