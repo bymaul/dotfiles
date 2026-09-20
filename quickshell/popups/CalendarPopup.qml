@@ -138,7 +138,7 @@ BasePopup {
                     Text {
                         anchors.centerIn: parent
                         text: modelData === 0 ? "" : modelData
-                        color: modelData > 0 && root.isToday(modelData) ? Services.Theme.onAccent : Services.Theme.dim
+                        color: modelData > 0 && root.isToday(modelData) ? Services.Theme.accentFg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                     }

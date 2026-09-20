@@ -211,7 +211,7 @@ BasePopup {
                                                 id: actionLabel
                                                 anchors.centerIn: parent
                                                 text: modelData.text
-                                                color: parent.focused ? Services.Theme.onAccent : Services.Theme.fg
+                                                color: parent.focused ? Services.Theme.accentFg : Services.Theme.fg
                                                 font.family: Services.Theme.font
                                                 font.pixelSize: Services.Theme.px12
                                             }

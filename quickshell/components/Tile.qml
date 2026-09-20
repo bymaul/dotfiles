@@ -22,14 +22,14 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.glyph
-            color: !root.available ? Services.Theme.dim : root.accentButton ? Services.Theme.onAccent : root.selected ? Services.Theme.onAccent : root.active ? Services.Theme.accent : hover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+            color: !root.available ? Services.Theme.dim : root.accentButton ? Services.Theme.accentFg : root.selected ? Services.Theme.accentFg : root.active ? Services.Theme.accent : hover.containsMouse ? Services.Theme.fg : Services.Theme.dim
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px14
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.label
-            color: !root.available ? Services.Theme.dim : root.accentButton ? Services.Theme.onAccent : root.selected ? Services.Theme.onAccent : (root.active || hover.containsMouse) ? Services.Theme.fg : Services.Theme.dim
+            color: !root.available ? Services.Theme.dim : root.accentButton ? Services.Theme.accentFg : root.selected ? Services.Theme.accentFg : (root.active || hover.containsMouse) ? Services.Theme.fg : Services.Theme.dim
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px10
         }

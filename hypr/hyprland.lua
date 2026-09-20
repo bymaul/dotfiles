@@ -1,5 +1,3 @@
-
-
 hl.monitor({
 	output = "",
 	mode = "preferred",
@@ -7,10 +5,8 @@ hl.monitor({
 	scale = "1.2",
 })
 
-
 local terminal = "kitty"
 local fileManager = "nemo"
-
 
 hl.on("hyprland.start", function()
 	hl.exec_cmd("qs")
@@ -20,12 +16,10 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
 end)
 
-
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QS_ICON_THEME", "Adwaita")
-
 
 hl.config({
 	general = {
@@ -109,14 +103,12 @@ hl.config({
 	},
 })
 
-
 hl.config({
 	misc = {
 		force_default_wallpaper = 0,
 		disable_hyprland_logo = true,
 	},
 })
-
 
 hl.config({
 	input = {
@@ -146,7 +138,6 @@ hl.gesture({
 	direction = "horizontal",
 	action = "workspace",
 })
-
 
 local mainMod = "SUPER"
 local secondMod = "SUPER + SHIFT"
@@ -207,7 +198,6 @@ hl.bind("XF86AudioNext", hl.dsp.global("qs-bar:Media Next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.global("qs-bar:Media Play/Pause"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.global("qs-bar:Media Previous"), { locked = true })
-
 
 hl.window_rule({
 	name = "fix-xwayland-drags",

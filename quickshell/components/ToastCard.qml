@@ -118,7 +118,7 @@ Rectangle {
             width: parent.width
             height: 3
             visible: card.hasProgress
-            color: Services.Theme.onAccent
+            color: Services.Theme.accentFg
             Rectangle {
                 width: parent.width * Services.Theme.clamp01(Number(card.valueHint) / 100)
                 height: parent.height

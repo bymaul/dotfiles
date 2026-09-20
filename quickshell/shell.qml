@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import "widgets"
+import "popups"
 import "lock"
 import "screenshot"
 import "services" as Services

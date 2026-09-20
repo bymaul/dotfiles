@@ -243,7 +243,7 @@ BasePopup {
                     }
                     width: parent.width - 56
                     text: modelData.preview !== "" ? modelData.preview : "󰆏 Image"
-                    color: row.selected ? Services.Theme.onAccent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                    color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
@@ -262,7 +262,7 @@ BasePopup {
                     Text {
                         anchors.centerIn: parent
                         text: "󰅖"
-                        color: row.selected ? Services.Theme.onAccent : deleteArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                        color: row.selected ? Services.Theme.accentFg : deleteArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                     }

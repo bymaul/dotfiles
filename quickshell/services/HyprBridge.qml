@@ -19,9 +19,9 @@ Singleton {
         debounce.restart();
     }
     function now(key: string, value: string): void {
-        bridge.eval(bridge.luaFor(key, value));
+        bridge.evalCode(bridge.luaFor(key, value));
     }
-    function eval(code: string): void {
+    function evalCode(code: string): void {
         Quickshell.execDetached(["hyprctl", "eval", code]);
     }
     Timer {

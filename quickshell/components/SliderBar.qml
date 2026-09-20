@@ -18,7 +18,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         width: root.width
         height: 3
-        color: Services.Theme.onAccent
+        color: Services.Theme.accentFg
     }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter

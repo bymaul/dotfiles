@@ -434,7 +434,7 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: "󰒮"
-                    color: parent.parent.mprisSelected && root.mprisCol === 0 ? Services.Theme.onAccent : Services.Theme.fg
+                    color: parent.parent.mprisSelected && root.mprisCol === 0 ? Services.Theme.accentFg : Services.Theme.fg
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px14
                     Rectangle {
@@ -461,7 +461,7 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: (root.mprisPlayer?.isPlaying ?? false) ? "󰏤" : "󰐊"
-                    color: parent.parent.mprisSelected && root.mprisCol === 1 ? Services.Theme.onAccent : Services.Theme.fg
+                    color: parent.parent.mprisSelected && root.mprisCol === 1 ? Services.Theme.accentFg : Services.Theme.fg
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px14
                     Rectangle {
@@ -488,7 +488,7 @@ BasePopup {
                     width: 20
                     horizontalAlignment: Text.AlignHCenter
                     text: "󰒭"
-                    color: parent.parent.mprisSelected && root.mprisCol === 2 ? Services.Theme.onAccent : Services.Theme.fg
+                    color: parent.parent.mprisSelected && root.mprisCol === 2 ? Services.Theme.accentFg : Services.Theme.fg
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px14
                     Rectangle {

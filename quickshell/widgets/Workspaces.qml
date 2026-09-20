@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 import Quickshell.Hyprland
 import "../services" as Services
 Row {
@@ -24,11 +23,7 @@ Row {
         return (Hyprland.workspaces?.values ?? []).find(ws => ws && ws.id === id) ?? null;
     }
     function activateSlot(id: int): void {
-        const ws = workspaceById(id);
-        if (ws)
-            ws.activate();
-        else
-            Quickshell.execDetached(["hyprctl", "dispatch", "workspace", String(id)]);
+        Hyprland.dispatch("workspace " + String(id));
     }
     Repeater {
         model: slotIds

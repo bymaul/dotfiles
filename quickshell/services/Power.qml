@@ -26,8 +26,39 @@ Singleton {
     property bool seenValid: false
 
     onPctChanged: power.evaluate()
-    onChargingChanged: power.evaluate()
-    onHasBatteryChanged: power.evaluate()
+    onChargingChanged: {
+        power.evaluate();
+        power.chargerToast();
+    }
+    onHasBatteryChanged: {
+        power.evaluate();
+        power.chargerToast();
+    }
+
+    property bool chargerArmed: false
+    function chargerToast(): void {
+        if (!power.hasBattery)
+            return;
+        if (!power.chargerArmed) {
+            power.chargerArmed = true;
+            return;
+        }
+        if (!Settings.loaded)
+            return;
+        const p = power.pct;
+        const charging = power.charging;
+        if (charging)
+            Notifs.notify({app: "power", summary: "Charger connected", body: power.chargerBody(true, p), icon: "battery-good-charging-symbolic", value: p, syncId: "charger", timeout: Theme.osdTimeout});
+        else
+            Notifs.notify({app: "power", summary: "On battery", body: power.chargerBody(false, p), icon: "battery-good-symbolic", value: p, syncId: "charger", timeout: Theme.osdTimeout});
+    }
+    function chargerBody(charging: bool, p: int): string {
+        let s = p + "% · " + (charging ? "Charging" : "Discharging");
+        const t = charging ? power.battery?.timeToFull : power.battery?.timeToEmpty;
+        if (t > 60)
+            s += " · " + power.fmtDur(t) + (charging ? " to full" : " left");
+        return s;
+    }
 
     Connections {
         target: Settings
@@ -42,6 +73,7 @@ Singleton {
         }
         function onLoadedChanged(): void {
             power.evaluate();
+            power.chargerToast();
         }
     }
 

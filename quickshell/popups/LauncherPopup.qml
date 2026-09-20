@@ -413,7 +413,7 @@ BasePopup {
                     width: parent.width - 20
                     textFormat: Text.RichText
                     text: (modelData.isCmd ? "> " : "") + root.hlName(modelData.name, root.hlQuery())
-                    color: parent.selected ? Services.Theme.onAccent : parent.isHovered ? Services.Theme.fg : Services.Theme.dim
+                    color: parent.selected ? Services.Theme.accentFg : parent.isHovered ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight

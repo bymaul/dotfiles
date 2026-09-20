@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 
 // Design tokens. Singleton (not .js) so bindings update live if a
 // value is ever mutated at runtime (e.g. accent, font scale).
@@ -15,7 +16,7 @@ Singleton {
     property string fg: "#cdcdcd"
     property string dim: "#878787"
     property string accent: "#aeaed1"
-    property string onAccent: "#141415"
+    property string accentFg: "#141415"
     property string white: "#ffffff"
     property string warn: "#f3be7c"
     property string danger: "#d8647e"

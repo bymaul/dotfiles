@@ -155,9 +155,9 @@ Singleton {
     }
     function applyTransparency(): void {
         if (settings.transparentFx)
-            HyprBridge.eval("hl.config({decoration = {active_opacity = 0.9, inactive_opacity = 0.87}})");
+            HyprBridge.evalCode("hl.config({decoration = {active_opacity = 0.9, inactive_opacity = 0.87}})");
         else
-            HyprBridge.eval("hl.config({decoration = {active_opacity = 1.0, inactive_opacity = 1.0}})");
+            HyprBridge.evalCode("hl.config({decoration = {active_opacity = 1.0, inactive_opacity = 1.0}})");
     }
     function setTransparentFx(on: bool): void {
         settings.transparentFx = on;

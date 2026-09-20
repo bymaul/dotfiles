@@ -24,7 +24,7 @@ Item {
             width: 18
             height: 18
             radius: 9
-            color: root.on ? Services.Theme.onAccent : Services.Theme.dim
+            color: root.on ? Services.Theme.accentFg : Services.Theme.dim
         }
         MouseArea {
             anchors.fill: parent

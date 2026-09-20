@@ -160,7 +160,10 @@ PanelWindow {
         Component.onCompleted: depCheck.running = true
     }
 
-    Workspaces {}
+    Workspaces {
+        id: workspaces
+    }
+    WindowTitle {}
     SystemClock {
         id: systemClock
         precision: SystemClock.Minutes

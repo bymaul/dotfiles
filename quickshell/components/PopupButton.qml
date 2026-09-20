@@ -15,7 +15,7 @@ Rectangle {
     Text {
         anchors.centerIn: parent
         text: root.label
-        color: root.lit ? Services.Theme.onAccent : Services.Theme.fg
+        color: root.lit ? Services.Theme.accentFg : Services.Theme.fg
         font.family: Services.Theme.font
         font.pixelSize: Services.Theme.px12
     }

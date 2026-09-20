@@ -45,7 +45,7 @@ Item {
             }
             verticalAlignment: Text.AlignVCenter
             text: root.current
-            color: root.open ? Services.Theme.fg : root.selected ? Services.Theme.onAccent : Services.Theme.fg
+            color: root.open ? Services.Theme.fg : root.selected ? Services.Theme.accentFg : Services.Theme.fg
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px12
             elide: Text.ElideRight
@@ -63,7 +63,7 @@ Item {
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignRight
             text: root.open ? "▴" : "▾"
-            color: root.open ? Services.Theme.dim : root.selected ? Services.Theme.onAccent : Services.Theme.dim
+            color: root.open ? Services.Theme.dim : root.selected ? Services.Theme.accentFg : Services.Theme.dim
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px12
         }
@@ -111,7 +111,7 @@ Item {
                     }
                     verticalAlignment: Text.AlignVCenter
                     text: (parent.isCurrent ? "✓  " : "") + modelData
-                    color: parent.isCursor ? Services.Theme.onAccent : parent.isCurrent ? Services.Theme.accent : optHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                    color: parent.isCursor ? Services.Theme.accentFg : parent.isCurrent ? Services.Theme.accent : optHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
