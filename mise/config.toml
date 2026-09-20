@@ -1,3 +1,4 @@
+# mise tools. After cloning: mise trust && mise install
 [tools]
 go = "latest"
 node = "lts"

@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# dot-doctor - healthcheck for this dotfiles repo. Read-only: never changes anything.
+# Usage: dot-doctor
+set -euo pipefail
+
+ok=0
+fail=0
+pass() { printf '  \033[1;32mok\033[0m %s\n' "$*"; ok=$((ok + 1)); }
+warn() { printf '  \033[1;33mwarn\033[0m %s\n' "$*"; }
+fail_msg() { printf '  \033[1;31mfail\033[0m %s\n' "$*"; fail=$((fail + 1)); }
+
+echo "== required binaries =="
+for bin in hyprctl quickshell kitty nvim tmux zsh lazygit \
+           yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
+           brightnessctl notify-send fastfetch upower loginctl; do
+    if command -v "$bin" >/dev/null 2>&1; then
+        pass "$bin"
+    else
+        fail_msg "$bin missing (sudo pacman -S --needed - < pkglist.txt)"
+    fi
+done
+
+echo "== hyprland version (>= 0.56 for Lua config) =="
+if command -v hyprctl >/dev/null 2>&1; then
+    ver=$(hyprctl version 2>/dev/null | head -n 1 || true)
+    echo "  $ver"
+    if printf '%s' "$ver" | grep -Eq '0\.(5[6-9]|[6-9][0-9])|[1-9][0-9]*\.'; then
+        pass "hyprland version ok"
+    else
+        warn "could not confirm >= 0.56 - check manually"
+    fi
+else
+    fail_msg "hyprctl not found, cannot check version"
+fi
+
+echo "== nerd font =="
+# NOTE: capture first - piping fc-list straight into grep -q trips pipefail
+# (grep quits early, fc-list dies on SIGPIPE with 141).
+families=$(fc-list : family 2>/dev/null || true)
+if grep -qi nerd <<<"$families"; then
+    pass "nerd font found"
+else
+    fail_msg "no Nerd Font found (install one, then re-run)"
+fi
+
+echo "== starship (via zinit) =="
+if command -v starship >/dev/null 2>&1; then
+    pass "starship $(starship --version 2>/dev/null | head -n 1)"
+else
+    fail_msg "starship not on PATH yet - open a fresh zsh to let zinit fetch it"
+fi
+
+echo "== mise tools =="
+if command -v mise >/dev/null 2>&1; then
+    if mise trust --help >/dev/null 2>&1; then
+        if mise ls 2>&1 | grep -Eq 'go|node|pnpm'; then
+            pass "mise tools installed"
+        else
+            warn "mise found but tools missing - run: mise trust && mise install"
+        fi
+    fi
+else
+    fail_msg "mise missing"
+fi
+
+echo "== tmux plugins =="
+if [ -d "${HOME}/.config/tmux/plugins/tpm" ]; then
+    pass "tpm present"
+else
+    warn "tpm missing - re-run ./install.sh"
+fi
+
+echo "== logind drop-in =="
+if command -v qs-power-logind >/dev/null 2>&1; then
+    want=$(qs-power-logind 2>/dev/null | grep -v '^#' || true)
+    conf=/etc/systemd/logind.conf.d/10-quickshell.conf
+    if [ -f "$conf" ] && [ "$(grep -v '^#' "$conf" || true)" = "$want" ]; then
+        pass "$conf in sync"
+    else
+        warn "$conf out of sync - run: qs-power-logind --apply && reboot"
+    fi
+else
+    warn "qs-power-logind not on PATH - re-run ./install.sh bin"
+fi
+
+echo "== symlinks =="
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+if [ -x "$repo/install.sh" ]; then
+    if "$repo/install.sh" --verify >/dev/null 2>&1; then
+        pass "install.sh --verify clean"
+    else
+        warn "link mismatch - run: ./install.sh --dry-run, then ./install.sh"
+    fi
+fi
+
+echo
+echo "doctor: $ok ok, $fail failing"
+[ "$fail" -eq 0 ]

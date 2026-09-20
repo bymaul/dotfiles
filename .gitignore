@@ -3,11 +3,8 @@
 *.swp
 *.tmp
 
-# package managers
+# dependencies (opencode/ has its own scoped ignores for its local-only files)
 node_modules/
-package.json
-package-lock.json
-bun.lock
 
 # tmux plugin clones (managed by tpm / install.sh)
 tmux/plugins/

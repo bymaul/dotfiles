@@ -1,0 +1,33 @@
+# Official Arch repository packages for this dotfiles repo.
+# Install with: sudo pacman -S --needed - < pkglist.txt
+# power-profiles-daemon is optional - only needed for power-profile switching.
+hyprland
+hypridle
+hyprpolkitagent
+quickshell
+kitty
+nemo
+nvim
+tmux
+zsh
+lazygit
+yazi
+eza
+bat
+fd
+btop
+fastfetch
+mise
+pipewire
+brightnessctl
+upower
+libnotify
+wl-clipboard
+cliphist
+jq
+fzf
+rainfrog
+ripgrep
+zoxide
+systemd
+power-profiles-daemon

@@ -1,5 +1,7 @@
 # .zshrc - zsh configuration entry point (interactive shells).
 
+: "${XDG_CACHE_HOME:=$HOME/.cache}"
+: "${XDG_STATE_HOME:=$HOME/.local/state}"
 mkdir -p "$XDG_CACHE_HOME/zsh"
 mkdir -p "$XDG_STATE_HOME/zsh"
 
@@ -28,9 +30,9 @@ compinit -d "$XDG_CACHE_HOME/zsh/zcompdump"
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 zstyle ':completion:*' menu select
 
-# --- Integrations ---
-eval "$(zoxide init zsh)"
-eval "$(mise activate zsh)"
+# --- Integrations (guarded so a fresh checkout without packages still starts) ---
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # --- Config modules ---
 source "$ZDOTDIR/aliases.zsh"

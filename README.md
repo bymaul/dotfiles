@@ -8,20 +8,22 @@ Minimal Hyprland desktop config, managed with plain symlinks.
 
 ```sh
 git clone https://github.com/bymaul/dotfiles ~/dotfiles
-~/dotfiles/install.sh
+cd ~/dotfiles
+sudo pacman -S --needed - < pkglist.txt
+./install.sh
+dot-doctor
 ```
 
 - Each app dir mirrors its location in `$HOME` and is linked in (`~/.config/nvim -> ~/dotfiles/nvim`); new files inside show up automatically.
 - Shared targets (`~`, `~/.config`, `~/.local/bin`) link per-file - re-run `./install.sh` after adding top-level files there.
-- Idempotent and safe to re-run; `./install.sh --remove [packages...]` unlinks again. Anything unmanaged is never touched.
+- Idempotent and safe to re-run; `./install.sh --remove [packages...]` unlinks again. Anything unmanaged is never touched unless you pass `--backup` (moves it to `~/.local/share/dotfiles-backup/<date>/`). Preview with `./install.sh --dry-run`, check with `./install.sh --verify` or `dot-doctor`.
+- After cloning: `mise trust && mise install`.
 
 ## Requirements
 
-```sh
-sudo pacman -S hyprland hypridle hyprpolkitagent kitty nemo nvim tmux zsh lazygit yazi eza bat fd btop fastfetch mise pipewire brightnessctl upower libnotify wl-clipboard cliphist jq systemd power-profiles-daemon
-```
+See `pkglist.txt` (official repos, including `quickshell`).
 
-Plus **quickshell** (Hyprland >= 0.56, Lua config), a **Nerd Font**, and **starship** (installed via `zinit` from GitHub releases on first `zsh` run). power-profiles-daemon is optional - only for power-profile switching.
+Plus a **Nerd Font**, and **starship** (installed via `zinit` from GitHub releases on first `zsh` run). power-profiles-daemon is optional - only for power-profile switching.
 
 ## Power management
 
