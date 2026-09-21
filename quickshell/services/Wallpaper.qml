@@ -28,6 +28,7 @@ Singleton {
             return;
         if (root.probeIndex >= root.candidates.length) {
             console.warn("[wallpaper] no wallpaper found, tried: " + root.candidates.join(", "));
+            Notifs.notify({app: "wallpaper", summary: "No wallpaper found", body: "Add ~/dotfiles/wallpapers/wallpaper.jpg", syncId: "wallpaper", timeout: 8000});
             return;
         }
         probe.command = ["test", "-r", root.candidates[root.probeIndex]];

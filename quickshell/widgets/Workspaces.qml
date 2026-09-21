@@ -11,10 +11,16 @@ Row {
     spacing: 4
     property string screenName: ""
     readonly property var pool: {
-        const all = Hyprland.workspaces?.values ?? [];
+        const all = Hyprland.workspaces && Hyprland.workspaces.values ? Hyprland.workspaces.values : [];
         if (root.screenName === "")
             return all;
-        return all.filter(ws => ws && String(ws.monitor?.name ?? ws.monitor ?? "") === root.screenName);
+        return all.filter(ws => {
+            if (!ws)
+                return false;
+            const m = ws.monitor;
+            const name = m && m.name ? m.name : (typeof m === "string" ? m : "");
+            return String(name) === root.screenName;
+        });
     }
     readonly property var slotIds: {
         const ids = new Set(root.screenName === "" ? [1, 2, 3] : []);
@@ -22,13 +28,16 @@ Row {
             if (ws && ws.id > 0)
                 ids.add(ws.id);
         }
-        const focused = Hyprland.focusedWorkspace?.id ?? 1;
+        const fw = Hyprland.focusedWorkspace;
+        const focused = fw && typeof fw.id === "number" ? fw.id : 1;
         if (typeof focused === "number" && focused > 0 && root.screenName === "")
             ids.add(focused);
         return [...ids].sort((a, b) => a - b);
     }
     function workspaceById(id: int): var {
-        return (Hyprland.workspaces?.values ?? []).find(ws => ws && ws.id === id) ?? null;
+        const all = Hyprland.workspaces && Hyprland.workspaces.values ? Hyprland.workspaces.values : [];
+        const hit = all.find(ws => ws && ws.id === id);
+        return hit ? hit : null;
     }
     function activateSlot(id: int): void {
         const target = workspaceById(id);
@@ -46,7 +55,7 @@ Row {
         delegate: Item {
             required property var modelData
             readonly property var ws: workspaceById(modelData)
-            readonly property bool isFocused: root.screenName === "" ? modelData === (Hyprland.focusedWorkspace?.id ?? -1) : (ws?.active ?? false)
+            readonly property bool isFocused: root.screenName === "" ? modelData === (Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id ? Hyprland.focusedWorkspace.id : -1) : !!(ws && ws.active)
             width: 25
             height: 25
             Rectangle {
@@ -55,7 +64,7 @@ Row {
             }
             Text {
                 anchors.centerIn: parent
-                text: ws?.name || modelData
+                text: ws && ws.name ? ws.name : modelData
                 color: isFocused ? Services.Theme.white : Services.Theme.dim
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px12

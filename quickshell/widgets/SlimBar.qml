@@ -28,7 +28,7 @@ PanelWindow {
     WlrLayershell.namespace: "qs-bar"
     Workspaces {
         id: workspaces
-        screenName: slim.targetScreen?.name ?? ""
+        screenName: slim.targetScreen && slim.targetScreen.name ? slim.targetScreen.name : ""
     }
     WindowTitle {}
 }

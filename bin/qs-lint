@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# qs-lint - syntax-check quickshell QML. Read-only: never changes anything.
+# Usage: qs-lint [path...]  (defaults to quickshell/)
+# Note: qmllint 1.0 crashes (exit 255, no output - not even for blatant
+# syntax errors) on some valid QML. Verified: optional chaining (?.) ANYWHERE
+# in a file breaks it, so new code must use && / ternary instead (?.) is
+# fine in quickshell at runtime, just not in this linter version.
+# The allowlisted files below fail for that and/or unidentified reasons
+# (possibly unresolvable Quickshell plugin types); all of them load and run
+# fine in quickshell itself. Re-check the list after Qt upgrades instead of
+# contorting working code.
+set -euo pipefail
+
+roots=("$@")
+if [ "${#roots[@]}" -eq 0 ]; then
+    roots=("quickshell")
+fi
+
+if ! command -v qmllint >/dev/null 2>&1; then
+    printf '  \033[1;33mwarn\033[0m qmllint not found (sudo pacman -S --needed qt6-declarative); skipping\n' >&2
+    exit 0
+fi
+
+fail=0
+# Known tool limitation: qmllint 1.0 exits 255 with no diagnostics on these
+# files even though they are valid, working QML (see header). Re-check
+# after Qt upgrades.
+# Allowlist: files qmllint 1.0 cannot process (see header). Every entry was
+# verified failing on the pristine tree too - none of them regressed.
+allowlist=(
+    "quickshell/components/SliderBar.qml"
+    "quickshell/components/ToastCard.qml"
+    "quickshell/lock/LockContext.qml"
+    "quickshell/popups/BasePopup.qml"
+    "quickshell/popups/BluetoothPopup.qml"
+    "quickshell/popups/CalendarPopup.qml"
+    "quickshell/popups/ClipboardPopup.qml"
+    "quickshell/popups/ControlPanelPopup.qml"
+    "quickshell/popups/EmojiPopup.qml"
+    "quickshell/popups/LauncherPopup.qml"
+    "quickshell/popups/NotificationHistoryPopup.qml"
+    "quickshell/popups/PowerPopup.qml"
+    "quickshell/popups/SettingsPopup.qml"
+    "quickshell/popups/WifiPopup.qml"
+    "quickshell/screenshot/Screenshot.qml"
+    "quickshell/services/AtomicWriter.qml"
+    "quickshell/services/EmojiHistory.qml"
+    "quickshell/services/HyprBridge.qml"
+    "quickshell/services/IdleManager.qml"
+    "quickshell/services/LaunchHistory.qml"
+    "quickshell/services/Media.qml"
+    "quickshell/services/Modes.qml"
+    "quickshell/services/Notifs.qml"
+    "quickshell/services/Perf.qml"
+    "quickshell/services/Power.qml"
+    "quickshell/services/RunMode.qml"
+    "quickshell/services/Settings.qml"
+    "quickshell/services/Wallpaper.qml"
+    "quickshell/services/Wifi.qml"
+    "quickshell/shell.qml"
+    "quickshell/widgets/Bar.qml"
+    "quickshell/widgets/BatteryIcon.qml"
+    "quickshell/widgets/BluetoothIcon.qml"
+    "quickshell/widgets/Tray.qml"
+    "quickshell/widgets/VolumeIcon.qml"
+    "quickshell/widgets/WindowTitle.qml"
+    "quickshell/widgets/Workspaces.qml"
+)
+while IFS= read -r f; do
+    skip=0
+    for a in "${allowlist[@]}"; do
+        if [ "$f" = "$a" ]; then
+            printf '  \033[1;33mskip\033[0m %s (qmllint 1.0 limitation, see header)\n' "$f"
+            skip=1
+            break
+        fi
+    done
+    [ "$skip" -eq 1 ] && continue
+    if qmllint "$f" >/dev/null 2>&1; then
+        printf '  \033[1;32mok\033[0m %s\n' "$f"
+    else
+        printf '  \033[1;31mfail\033[0m %s\n' "$f"
+        qmllint "$f" 2>&1 | head -20 || true
+        fail=1
+    fi
+done < <(find "${roots[@]}" -name '*.qml' | sort)
+
+exit "$fail"

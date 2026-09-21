@@ -19,7 +19,8 @@ ShellRoot {
     Variants {
         model: {
             const main = Services.Settings.mainScreen(Quickshell.screens);
-            return Quickshell.screens.filter(s => s.name !== (main?.name ?? ""));
+            const mainName = main && main.name ? main.name : "";
+            return Quickshell.screens.filter(s => s.name !== mainName);
         }
         SlimBar {
             required property var modelData

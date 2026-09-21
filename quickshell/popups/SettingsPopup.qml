@@ -7,7 +7,7 @@ BasePopup {
     implicitHeight: Math.min(16 + tabRow.height + Services.Theme.popupSpacing + root.contentHeight() + Services.Theme.popupSpacing + hint.implicitHeight, (Screen.height ?? 800) - 60)
     property int tab: 0
     function cancelOrClose(): void {
-        if (root.openDropdown >= 0 || root.openMonRes !== "" || root.openMonPos !== "" || root.openMainDrop)
+        if (root.openMenu !== null)
             root.closeDrop();
         else
             root.close();
@@ -35,40 +35,24 @@ BasePopup {
         function onLastApplyMsgChanged(): void {
             if (!root.preventClose)
                 return;
-            root.regrab();
-            settleTimer.restart();
-        }
-    }
-    Timer {
-        id: keepGrabTimer
-        interval: 200
-        repeat: true
-        running: root.preventClose && root.visible && root.tab === 3
-        onTriggered: root.regrab()
-    }
-    Timer {
-        id: settleTimer
-        interval: 1500
-        repeat: false
-        onTriggered: {
-            root.preventClose = false;
-            if (root.visible && root.tab === 3)
-                root.regrab();
+            root.kickBusy();
         }
     }
 
     property int selectedIndex: 0
-    property int openDropdown: -1
-    property string openMonRes: ""
-    property string openMonPos: ""
-    property bool openMainDrop: false
+    // Single source of truth for open menus. null when closed, otherwise
+    // {kind: "sys", index} | {kind: "main"} | {kind: "res"|"pos", name}.
+    // The open* properties below are read-only views; write via
+    // openDrop/toggleMonDrop/toggleMonPosDrop/toggleMainDrop/closeDrop only.
+    property var openMenu: null
+    readonly property int openDropdown: root.openMenu && root.openMenu.kind === "sys" ? root.openMenu.index : -1
+    readonly property string openMonRes: root.openMenu && root.openMenu.kind === "res" ? root.openMenu.name : ""
+    readonly property string openMonPos: root.openMenu && root.openMenu.kind === "pos" ? root.openMenu.name : ""
+    readonly property bool openMainDrop: root.openMenu !== null && root.openMenu.kind === "main"
     property int dropCursor: 0
     onTabChanged: {
         root.selectedIndex = 0;
-        root.openDropdown = -1;
-        root.openMonRes = "";
-        root.openMonPos = "";
-        root.openMainDrop = false;
+        root.closeDrop();
         root.syncWallCursor();
     }
     onWpCountChanged: root.syncWallCursor()
@@ -85,26 +69,18 @@ BasePopup {
     onVisibleChanged: {
         if (visible) {
             root.selectedIndex = 0;
-            root.openDropdown = -1;
-            root.openMonRes = "";
-            root.openMonPos = "";
-            root.openMainDrop = false;
+            root.closeDrop();
             root.syncWallCursor();
             Services.Settings.refreshWallpapers();
             Services.Settings.refreshMonitors();
         } else {
-            root.preventClose = false;
-            root.openDropdown = -1;
-            root.openMonRes = "";
-            root.openMonPos = "";
-            root.openMainDrop = false;
-            settleTimer.stop();
+            root.calmBusy();
+            root.closeDrop();
         }
     }
 
     function beginMonitorChange(): void {
-        root.preventClose = true;
-        settleTimer.restart();
+        root.kickBusy();
     }
     function itemCount(): int {
         if (root.tab === 0)
@@ -118,8 +94,8 @@ BasePopup {
     function monLastIndex(): int {
         return root.monFirst + root.monCount * root.monRows;
     }
-    function monDropOpen(): bool {
-        return root.openMainDrop || root.openMonRes !== "" || root.openMonPos !== "";
+    function anyDropOpen(): bool {
+        return root.openMenu !== null;
     }
     function clampSelection(): void {
         selectedIndex = Services.Theme.clamp(selectedIndex, 0, Math.max(0, root.itemCount() - 1));
@@ -375,16 +351,10 @@ BasePopup {
         if (at < 0)
             at = 0;
         root.dropCursor = at;
-        root.openDropdown = i;
-        root.openMonRes = "";
-        root.openMonPos = "";
-        root.openMainDrop = false;
+        root.openMenu = {kind: "sys", index: i};
     }
     function closeDrop(): void {
-        root.openDropdown = -1;
-        root.openMonRes = "";
-        root.openMonPos = "";
-        root.openMainDrop = false;
+        root.openMenu = null;
     }
     function toggleDrop(i: int): void {
         if (root.openDropdown === i)
@@ -418,13 +388,10 @@ BasePopup {
         if (at < 0)
             at = 0;
         root.dropCursor = at;
-        root.openDropdown = -1;
-        root.openMainDrop = false;
-        root.openMonPos = "";
-        root.openMonRes = name;
+        root.openMenu = {kind: "res", name: name};
     }
     function mainOptions(): var {
-        return ["auto"].concat(Services.Settings.monitors.map(m => String(m?.name ?? "")).filter(n => n !== ""));
+        return ["auto"].concat(Services.Settings.monitors.map(m => String(m && m.name ? m.name : "")).filter(n => n !== ""));
     }
     function toggleMonPosDrop(name: string): void {
         if (root.openMonPos === name) {
@@ -436,10 +403,7 @@ BasePopup {
         if (at < 0)
             at = 0;
         root.dropCursor = at;
-        root.openDropdown = -1;
-        root.openMainDrop = false;
-        root.openMonRes = "";
-        root.openMonPos = name;
+        root.openMenu = {kind: "pos", name: name};
     }
     function monPosMoveCursor(dir: int): void {
         const opts = Services.Settings.monitorPosOptions();
@@ -471,10 +435,7 @@ BasePopup {
         if (at < 0)
             at = 0;
         root.dropCursor = at;
-        root.openDropdown = -1;
-        root.openMonRes = "";
-        root.openMonPos = "";
-        root.openMainDrop = true;
+        root.openMenu = {kind: "main"};
     }
     function mainMoveCursor(dir: int): void {
         const opts = root.mainOptions();
@@ -764,7 +725,10 @@ BasePopup {
             spacing: Services.Theme.listSpacing
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 0
-                onHovered: root.selectedIndex = 0
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 0;
+                }
                 title: "Dim display"
                 value: root.fmtTimeout(Services.Settings.dimTimeout)
                 SliderBar {
@@ -778,7 +742,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 1
-                onHovered: root.selectedIndex = 1
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 1;
+                }
                 title: "Lock"
                 value: root.fmtTimeout(Services.Settings.lockTimeout)
                 SliderBar {
@@ -792,7 +759,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 2
-                onHovered: root.selectedIndex = 2
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 2;
+                }
                 title: "Screen off"
                 value: root.fmtTimeout(Services.Settings.screenOffTimeout)
                 SliderBar {
@@ -806,7 +776,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 3
-                onHovered: root.selectedIndex = 3
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 3;
+                }
                 title: "Suspend"
                 value: root.fmtTimeout(Services.Settings.suspendTimeout)
                 SliderBar {
@@ -820,7 +793,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 4
-                onHovered: root.selectedIndex = 4
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 4;
+                }
                 title: "Low battery"
                 value: Services.Settings.lowBatteryPct + "%"
                 SliderBar {
@@ -834,7 +810,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 5
-                onHovered: root.selectedIndex = 5
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 5;
+                }
                 title: "Critical battery"
                 titleWidth: 124
                 value: Services.Settings.criticalBatteryPct + "%"
@@ -849,7 +828,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 6
-                onHovered: root.selectedIndex = 6
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 6;
+                }
                 title: "Critical action"
                 value: ""
                 z: root.openDropdown === 6 ? 100 : 0
@@ -875,7 +857,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 7
-                onHovered: root.selectedIndex = 7
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 7;
+                }
                 title: "Lid close"
                 value: ""
                 z: root.openDropdown === 7 ? 100 : 0
@@ -901,7 +886,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 8
-                onHovered: root.selectedIndex = 8
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 8;
+                }
                 title: "Power button"
                 value: ""
                 z: root.openDropdown === 8 ? 100 : 0
@@ -928,7 +916,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 9
-                onHovered: root.selectedIndex = 9
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 9;
+                }
                 title: "Active profile"
                 value: ""
                 z: root.openDropdown === 9 ? 100 : 0
@@ -956,7 +947,10 @@ BasePopup {
             }
             SettingsRow {
                 selected: root.tab === 2 && root.selectedIndex === 10
-                onHovered: root.selectedIndex = 10
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = 10;
+                }
                 title: "On battery"
                 value: ""
                 z: root.openDropdown === 10 ? 100 : 0
@@ -1001,7 +995,7 @@ BasePopup {
                 visible: root.hasMain
                 selected: root.tab === 3 && root.selectedIndex === 0
                 onHovered: {
-                    if (!root.monDropOpen())
+                    if (!root.anyDropOpen())
                         root.selectedIndex = 0;
                 }
                 title: "Main display"
@@ -1067,7 +1061,7 @@ BasePopup {
                     SettingsRow {
                     selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 0
                     onHovered: {
-                        if (!root.monDropOpen())
+                        if (!root.anyDropOpen())
                             root.selectedIndex = root.monFirst + index * root.monRows + 0;
                     }
                         title: "Enabled"
@@ -1084,7 +1078,7 @@ BasePopup {
                     SettingsRow {
                     selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 1
                     onHovered: {
-                        if (!root.monDropOpen())
+                        if (!root.anyDropOpen())
                             root.selectedIndex = root.monFirst + index * root.monRows + 1;
                     }
                         title: "Scale"
@@ -1104,7 +1098,7 @@ BasePopup {
                     SettingsRow {
                     selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 2
                     onHovered: {
-                        if (!root.monDropOpen())
+                        if (!root.anyDropOpen())
                             root.selectedIndex = root.monFirst + index * root.monRows + 2;
                     }
                         title: "Resolution"
@@ -1134,7 +1128,7 @@ BasePopup {
                     visible: root.monCount > 1
                     selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
                     onHovered: {
-                        if (!root.monDropOpen())
+                        if (!root.anyDropOpen())
                             root.selectedIndex = root.monFirst + index * root.monRows + 3;
                     }
                         title: "Position"
@@ -1168,7 +1162,7 @@ BasePopup {
                 columns: 1
                 selected: root.tab === 3 && root.selectedIndex === root.monLastIndex()
                 onHovered: {
-                    if (!root.monDropOpen())
+                    if (!root.anyDropOpen())
                         root.selectedIndex = root.monLastIndex();
                 }
                 onClicked: {

@@ -61,7 +61,8 @@ BasePopup {
         root.activateDevice(root.selectedDevice());
     }
     function selectedDevice(): var {
-        const devs = Bluetooth.defaultAdapter?.devices.values ?? [];
+        const adapter = Bluetooth.defaultAdapter;
+        const devs = adapter && adapter.devices && adapter.devices.values ? adapter.devices.values : [];
         if (btList.currentIndex < 0 || btList.currentIndex >= devs.length)
             return null;
         return devs[btList.currentIndex];
@@ -133,13 +134,13 @@ BasePopup {
             height: Services.Theme.rowHeight
             spacing: Services.Theme.popupSpacing
             PopupButton {
-                label: Bluetooth.defaultAdapter?.enabled ? "󰂲  Disable" : "󰂯  Enable"
+                label: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled ? "󰂲  Disable" : "󰂯  Enable"
                 selected: root.headIndex === 0
                 onHovered: root.headIndex = 0
                 onClicked: root.toggleAdapter()
             }
             PopupButton {
-                label: Bluetooth.defaultAdapter?.discovering ? "󰑓  Scanning..." : "󰑐  Scan"
+                label: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.discovering ? "󰑓  Scanning..." : "󰑐  Scan"
                 selected: root.headIndex === 1
                 onHovered: root.headIndex = 1
                 onClicked: root.toggleScan()
@@ -226,7 +227,7 @@ BasePopup {
             }
             Text {
                 anchors.centerIn: parent
-                visible: !(Bluetooth.defaultAdapter?.enabled ?? true)
+                visible: Bluetooth.defaultAdapter ? Bluetooth.defaultAdapter.enabled === false : false
                 text: "󰂲  Bluetooth is off"
                 color: Services.Theme.dim
                 font.family: Services.Theme.font

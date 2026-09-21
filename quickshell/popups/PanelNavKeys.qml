@@ -1,4 +1,11 @@
 import QtQuick
+// Shared vim-style keys for panel popups. Use when the popup exposes the
+// panel interface (stepVertical/adjustSelected/focusNext/focusPrev/
+// activateSelected) - ControlPanel and NotificationHistory do.
+// List popups backed by a ListView/GridView (Wifi, Launcher, Clipboard,
+// Emoji, Bluetooth) use BasePopup.stepListView/clampListView/selectInList
+// with their own Shortcuts instead; bespoke models (Settings tabs,
+// Calendar months, Power single-keys) hand-roll.
 Item {
     id: keys
     required property var host

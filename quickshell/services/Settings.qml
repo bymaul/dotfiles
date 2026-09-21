@@ -133,11 +133,16 @@ Singleton {
         Wallpaper.applyOverride(settings.wallpaperOverride);
     }
     function applyScannedMonitors(): void {
-        if (!settings.monitorsReady || !settings.loaded || settings.monitorsApplied)
+        if (!settings.monitorsReady || !settings.loaded)
             return;
-        settings.monitorsApplied = true;
-        for (const name of Object.keys(settings.monitorConfigs))
+        for (const name of Object.keys(settings.monitorConfigs)) {
+            if (settings.appliedMonitors.includes(name))
+                continue;
+            if (!settings.monitorLive(name))
+                continue;
+            settings.appliedMonitors = [...settings.appliedMonitors, name];
             settings.applyMonitor(name, true);
+        }
     }
 
     function setWallpaper(path: string): void {
@@ -264,6 +269,8 @@ Singleton {
         const q = !!quiet;
         if (typeof name !== "string" || name === "")
             return;
+        if (!q && !settings.appliedMonitors.includes(name))
+            settings.appliedMonitors = [...settings.appliedMonitors, name];
         if (!settings.monitorEnabled(name)) {
             if (!settings.canDisableMonitor(name)) {
                 settings.putMonitorCfg(name, {enabled: true});
@@ -374,7 +381,7 @@ Singleton {
         return list.length > 0 ? list[0] : null;
     }
     property bool monitorsReady: false
-    property bool monitorsApplied: false
+    property var appliedMonitors: []
 
     function setDimTimeout(v: real): void {
         settings.dimTimeout = Math.round(Math.max(0, Math.min(600, v)));
@@ -481,6 +488,7 @@ Singleton {
                 if (corrupt) {
                     console.warn("quickshell: settings.json corrupt, keeping defaults; backup at settings.json.corrupt-" + Date.now());
                     Quickshell.execDetached(["sh", "-c", 'cp "$1" "$1.corrupt-$(date +%s)" 2>/dev/null', "qs", settings.settingsFile]);
+                    Notifs.notify({app: "settings", summary: "Settings file corrupt, defaults kept", body: "Backup saved next to settings.json", syncId: "settings-load", timeout: 8000});
                 } else {
                     settings.applyLoaded(parsed);
                 }

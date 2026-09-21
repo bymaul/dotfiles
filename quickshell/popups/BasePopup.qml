@@ -9,6 +9,20 @@ PopupWindow {
     property int extraTop: 0
     property bool useGrab: true
     property bool preventClose: false
+    // Busy protocol for popups that apply async changes (e.g. monitors):
+    // call kickBusy() when a change starts and on each progress signal.
+    // While preventClose is set the grab is kept and outside clicks re-grab
+    // instead of closing; it auto-clears busyMs after the last kick.
+    property int busyMs: 1500
+    function kickBusy(): void {
+        base.preventClose = true;
+        base.regrab();
+        busySettle.restart();
+    }
+    function calmBusy(): void {
+        busySettle.stop();
+        base.preventClose = false;
+    }
     property var returnTo: null
     property var extraGrabWindows: []
     readonly property var effectiveGrabWindows: [base].concat(extraGrabWindows ?? [])
@@ -147,6 +161,23 @@ PopupWindow {
         running: false
         repeat: false
         onTriggered: grab.active = true
+    }
+    Timer {
+        id: busyKeep
+        interval: 200
+        repeat: true
+        running: base.preventClose && base.visible
+        onTriggered: base.regrab()
+    }
+    Timer {
+        id: busySettle
+        interval: base.busyMs
+        repeat: false
+        onTriggered: {
+            base.preventClose = false;
+            if (base.visible)
+                base.regrab();
+        }
     }
     Connections {
         target: Hyprland

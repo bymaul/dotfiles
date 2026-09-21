@@ -6,7 +6,7 @@ Rectangle {
     required property var notification
     property int seq: Services.Notifs.toastSeq
     onSeqChanged: {
-        if (card.notification?.qsInternal === true && !cardArea.containsMouse)
+        if (card.notification && card.notification.qsInternal === true && !cardArea.containsMouse)
             expiryTimer.restart();
     }
     width: Services.Theme.popupWidth
@@ -27,7 +27,7 @@ Rectangle {
         const hit = [notification.image, notification.appIcon].find(s => typeof s === "string" && s !== "");
         return hit ?? "";
     }
-    readonly property var actionList: card.notification?.actions ?? []
+    readonly property var actionList: card.notification && card.notification.actions ? card.notification.actions : []
     MouseArea {
         id: cardArea
         anchors.fill: parent
