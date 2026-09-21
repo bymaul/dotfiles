@@ -6,9 +6,8 @@ BasePopup {
     implicitWidth: Services.Theme.settingsWidth
     implicitHeight: Math.min(16 + tabRow.height + Services.Theme.popupSpacing + root.contentHeight() + Services.Theme.popupSpacing + hint.implicitHeight, (Screen.height ?? 800) - 60)
     property int tab: 0
-    property int maxMonListH: 380
     function cancelOrClose(): void {
-        if (root.openDropdown >= 0 || root.openMonRes !== "")
+        if (root.openDropdown >= 0 || root.openMonRes !== "" || root.openMonPos !== "" || root.openMainDrop)
             root.closeDrop();
         else
             root.close();
@@ -61,21 +60,35 @@ BasePopup {
     property int selectedIndex: 0
     property int openDropdown: -1
     property string openMonRes: ""
+    property string openMonPos: ""
+    property bool openMainDrop: false
     property int dropCursor: 0
     onTabChanged: {
         root.selectedIndex = 0;
         root.openDropdown = -1;
         root.openMonRes = "";
+        root.openMonPos = "";
+        root.openMainDrop = false;
         root.syncWallCursor();
     }
     onWpCountChanged: root.syncWallCursor()
-    onMonCountChanged: root.clampSelection()
+    onMonCountChanged: {
+        if (root.monCount < 2 && (root.openMainDrop || root.openMonPos !== ""))
+            root.closeDrop();
+        if (root.openMonRes !== "" && Services.Settings.monitorLive(root.openMonRes) === null)
+            root.closeDrop();
+        if (root.openMonPos !== "" && Services.Settings.monitorLive(root.openMonPos) === null)
+            root.closeDrop();
+        root.clampSelection();
+    }
 
     onVisibleChanged: {
         if (visible) {
             root.selectedIndex = 0;
             root.openDropdown = -1;
             root.openMonRes = "";
+            root.openMonPos = "";
+            root.openMainDrop = false;
             root.syncWallCursor();
             Services.Settings.refreshWallpapers();
             Services.Settings.refreshMonitors();
@@ -83,6 +96,8 @@ BasePopup {
             root.preventClose = false;
             root.openDropdown = -1;
             root.openMonRes = "";
+            root.openMonPos = "";
+            root.openMainDrop = false;
             settleTimer.stop();
         }
     }
@@ -98,7 +113,13 @@ BasePopup {
             return 6;
         if (root.tab === 2)
             return 11;
-        return root.monCount * 3;
+        return root.monFirst + root.monCount * root.monRows + 1;
+    }
+    function monLastIndex(): int {
+        return root.monFirst + root.monCount * root.monRows;
+    }
+    function monDropOpen(): bool {
+        return root.openMainDrop || root.openMonRes !== "" || root.openMonPos !== "";
     }
     function clampSelection(): void {
         selectedIndex = Services.Theme.clamp(selectedIndex, 0, Math.max(0, root.itemCount() - 1));
@@ -115,20 +136,30 @@ BasePopup {
             root.moveDropCursor(dir);
             return;
         }
+        if (root.tab === 3 && root.openMainDrop) {
+            root.mainMoveCursor(dir);
+            return;
+        }
         if (root.tab === 3 && root.openMonRes !== "") {
             root.monMoveCursor(dir);
+            return;
+        }
+        if (root.tab === 3 && root.openMonPos !== "") {
+            root.monPosMoveCursor(dir);
             return;
         }
         selectedIndex += dir;
         root.syncWallCursor();
     }
     function tabStep(dir: int): void {
-        if (root.openDropdown >= 0)
+        if (root.openDropdown >= 0 || root.openMainDrop || root.openMonRes !== "" || root.openMonPos !== "")
             root.closeDrop();
         root.stepSelection(dir);
     }
     function monitorNameAt(i: int): string {
-        const m = Services.Settings.monitors[Math.floor(i / 3)] ?? null;
+        if (i < root.monFirst || i >= root.monFirst + root.monCount * root.monRows)
+            return "";
+        const m = Services.Settings.monitors[Math.floor((i - root.monFirst) / root.monRows)] ?? null;
         return m && typeof m.name === "string" ? m.name : "";
     }
     function adjustSelected(dir: int): void {
@@ -170,22 +201,46 @@ BasePopup {
             }
             return;
         }
+        if (root.tab === 3 && root.hasMain && root.selectedIndex === 0) {
+            if (root.openMainDrop) {
+                if (dir < 0)
+                    root.closeDrop();
+                else
+                    root.commitMainCursor();
+                return;
+            }
+            root.cycleMainMonitor(dir);
+            return;
+        }
+        if (root.tab === 3 && root.selectedIndex === root.monLastIndex())
+            return;
         const name = root.monitorNameAt(selectedIndex);
         if (name === "")
             return;
         root.beginMonitorChange();
-        const kind = selectedIndex % 3;
+        const kind = (selectedIndex - root.monFirst) % root.monRows;
         if (kind === 0)
             Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
         else if (kind === 1)
             Services.Settings.setMonitorScale(name, Services.Settings.monitorScale(name) + dir * 0.05);
-        else if (root.openMonRes === name) {
-            if (dir < 0)
-                root.closeDrop();
-            else
-                root.commitMonCursor();
-        } else
-            Services.Settings.cycleMonitorRes(name, dir);
+        else if (kind === 2) {
+            if (root.openMonRes === name) {
+                if (dir < 0)
+                    root.closeDrop();
+                else
+                    root.commitMonCursor();
+            } else
+                Services.Settings.cycleMonitorRes(name, dir);
+        } else if (kind === 3) {
+            if (root.openMonPos === name) {
+                if (dir < 0)
+                    root.closeDrop();
+                else
+                    root.commitMonPosCursor();
+            } else
+                Services.Settings.cycleMonitorPos(name, dir);
+        }
+        return;
     }
     function activateSelected(): void {
         if (root.tab === 0) {
@@ -218,17 +273,33 @@ BasePopup {
             }
             return;
         }
+        if (root.tab === 3 && root.hasMain && root.selectedIndex === 0) {
+            if (root.openMainDrop)
+                root.commitMainCursor();
+            else
+                root.toggleMainDrop();
+            return;
+        }
+        if (root.tab === 3 && root.selectedIndex === root.monLastIndex()) {
+            Services.Settings.refreshMonitors();
+            return;
+        }
         const name = root.monitorNameAt(selectedIndex);
         if (name === "")
             return;
         root.beginMonitorChange();
-        if (selectedIndex % 3 === 0)
+        if ((selectedIndex - root.monFirst) % root.monRows === 0)
             Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
-        else if (selectedIndex % 3 === 2) {
+        else if ((selectedIndex - root.monFirst) % root.monRows === 2) {
             if (root.openMonRes === name)
                 root.commitMonCursor();
             else
                 root.toggleMonDrop(name);
+        } else if ((selectedIndex - root.monFirst) % root.monRows === 3) {
+            if (root.openMonPos === name)
+                root.commitMonPosCursor();
+            else
+                root.toggleMonPosDrop(name);
         }
     }
 
@@ -306,10 +377,14 @@ BasePopup {
         root.dropCursor = at;
         root.openDropdown = i;
         root.openMonRes = "";
+        root.openMonPos = "";
+        root.openMainDrop = false;
     }
     function closeDrop(): void {
         root.openDropdown = -1;
         root.openMonRes = "";
+        root.openMonPos = "";
+        root.openMainDrop = false;
     }
     function toggleDrop(i: int): void {
         if (root.openDropdown === i)
@@ -344,7 +419,83 @@ BasePopup {
             at = 0;
         root.dropCursor = at;
         root.openDropdown = -1;
+        root.openMainDrop = false;
+        root.openMonPos = "";
         root.openMonRes = name;
+    }
+    function mainOptions(): var {
+        return ["auto"].concat(Services.Settings.monitors.map(m => String(m?.name ?? "")).filter(n => n !== ""));
+    }
+    function toggleMonPosDrop(name: string): void {
+        if (root.openMonPos === name) {
+            root.closeDrop();
+            return;
+        }
+        const opts = Services.Settings.monitorPosOptions();
+        let at = opts.indexOf(Services.Settings.monitorPos(name));
+        if (at < 0)
+            at = 0;
+        root.dropCursor = at;
+        root.openDropdown = -1;
+        root.openMainDrop = false;
+        root.openMonRes = "";
+        root.openMonPos = name;
+    }
+    function monPosMoveCursor(dir: int): void {
+        const opts = Services.Settings.monitorPosOptions();
+        if (opts.length === 0)
+            return;
+        root.dropCursor = (root.dropCursor + dir + opts.length) % opts.length;
+    }
+    function commitMonPos(name: string, pos: string): void {
+        root.beginMonitorChange();
+        Services.Settings.setMonitorPos(name, pos);
+        root.closeDrop();
+    }
+    function commitMonPosCursor(): void {
+        const name = root.openMonPos;
+        const opts = Services.Settings.monitorPosOptions();
+        if (name === "" || opts.length === 0) {
+            root.closeDrop();
+            return;
+        }
+        root.commitMonPos(name, opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
+    }
+    function toggleMainDrop(): void {
+        if (root.openMainDrop) {
+            root.closeDrop();
+            return;
+        }
+        const opts = root.mainOptions();
+        let at = opts.indexOf(Services.Settings.mainMonitor);
+        if (at < 0)
+            at = 0;
+        root.dropCursor = at;
+        root.openDropdown = -1;
+        root.openMonRes = "";
+        root.openMonPos = "";
+        root.openMainDrop = true;
+    }
+    function mainMoveCursor(dir: int): void {
+        const opts = root.mainOptions();
+        if (opts.length === 0)
+            return;
+        root.dropCursor = (root.dropCursor + dir + opts.length) % opts.length;
+    }
+    function cycleMainMonitor(dir: int): void {
+        const opts = root.mainOptions();
+        if (opts.length === 0)
+            return;
+        Services.Settings.setMainMonitor(root.cycleOpt(opts, Services.Settings.mainMonitor, dir));
+    }
+    function commitMainCursor(): void {
+        const opts = root.mainOptions();
+        if (!root.openMainDrop || opts.length === 0) {
+            root.closeDrop();
+            return;
+        }
+        Services.Settings.setMainMonitor(opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
+        root.closeDrop();
     }
     function monMoveCursor(dir: int): void {
         const modes = Services.Settings.monitorModes(root.openMonRes);
@@ -384,13 +535,15 @@ BasePopup {
 
     property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
     property int wpListH: root.wpCount * Services.Theme.listRowHeight + Math.max(0, root.wpCount - 1) * Services.Theme.listSpacing
-    property int monBlockH: 22 + 3 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
+    property bool hasMain: root.monCount > 1
+    property int monFirst: root.hasMain ? 1 : 0
+    property int monRows: root.monCount > 1 ? 4 : 3
+    property int monBlockH: 22 + root.monRows * Services.Theme.rowHeight + root.monRows * Services.Theme.listSpacing
     property int monCount: Services.Settings.monitors.length
     property int monFootH: Services.Theme.rowHeight + Services.Theme.listSpacing + 14
     property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Services.Theme.popupSpacing
-    property int monListH: Math.min(root.monFullH, root.maxMonListH)
 
-    property int mainSelH: 22 + Services.Theme.popupSpacing + mainSelFlow.height
+    property int mainSelH: root.hasMain ? 22 + Services.Theme.popupSpacing + Services.Theme.rowHeight : 0
     function contentHeight(): int {
         if (root.tab === 0)
             return Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH;
@@ -398,23 +551,11 @@ BasePopup {
             return 6 * Services.Theme.rowHeight + 5 * Services.Theme.listSpacing;
         if (root.tab === 2)
             return 11 * Services.Theme.rowHeight + 10 * Services.Theme.listSpacing + Services.Theme.popupSpacing + 30;
+        const mainH = root.hasMain ? root.mainSelH + Services.Theme.popupSpacing : 0;
         if (root.monCount === 0)
-            return root.mainSelH + Services.Theme.popupSpacing + 30;
-        return root.mainSelH + Services.Theme.popupSpacing + root.monListH + Services.Theme.popupSpacing + root.monFootH;
+            return mainH + 30 + Services.Theme.popupSpacing + root.monFootH;
+        return mainH + root.monFullH + Services.Theme.popupSpacing + root.monFootH;
     }
-    function ensureMonVisible(): void {
-        try {
-            if (root.tab !== 3)
-                return;
-            if (typeof monList === "undefined" || !monList || monList.count === 0)
-                return;
-            const mi = Math.floor(root.selectedIndex / 3);
-            if (mi >= 0 && mi < monList.count)
-                monList.positionViewAtIndex(mi, ListView.Contain);
-        } catch (_) {}
-    }
-    onSelectedIndexChanged: root.ensureMonVisible()
-
     PopupCard {
         Row {
             id: tabRow
@@ -856,29 +997,33 @@ BasePopup {
             visible: root.tab === 3
             width: parent.width
             spacing: Services.Theme.popupSpacing
-            Text {
-                width: parent.width
-                height: 22
-                verticalAlignment: Text.AlignVCenter
-                text: "Main display"
-                color: Services.Theme.fg
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
-                elide: Text.ElideRight
-            }
-            Flow {
-                id: mainSelFlow
-                width: parent.width
-                spacing: Services.Theme.popupSpacing
-                Repeater {
-                    model: ["auto"].concat(Services.Settings.monitors.map(m => String(m?.name ?? "")).filter(n => n !== ""))
-                    delegate: PopupButton {
-                        required property var modelData
-                        label: modelData === "auto" ? "Auto" : modelData
-                        columns: 2
-                        accent: Services.Settings.mainMonitor === modelData
-                        selected: Services.Settings.mainMonitor === modelData
-                        onClicked: Services.Settings.setMainMonitor(modelData)
+            SettingsRow {
+                visible: root.hasMain
+                selected: root.tab === 3 && root.selectedIndex === 0
+                onHovered: {
+                    if (!root.monDropOpen())
+                        root.selectedIndex = 0;
+                }
+                title: "Main display"
+                value: ""
+                z: root.openMainDrop ? 100 : 0
+                Dropdown {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    options: root.mainOptions()
+                    current: Services.Settings.mainMonitor
+                    open: root.openMainDrop
+                    selected: root.tab === 3 && root.selectedIndex === 0
+                    cursor: root.dropCursor
+                    onHeaderClicked: {
+                        root.selectedIndex = 0;
+                        root.toggleMainDrop();
+                    }
+                    onOptionHovered: index => root.dropCursor = index
+                    onOptionClicked: value => {
+                        root.selectedIndex = 0;
+                        Services.Settings.setMainMonitor(value);
+                        root.closeDrop();
                     }
                 }
             }
@@ -893,21 +1038,22 @@ BasePopup {
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px10
             }
-            ListView {
-                id: monList
+            Column {
+                id: monColumn
                 visible: root.monCount > 0
                 width: parent.width
-                height: root.monListH
-                clip: true
                 spacing: Services.Theme.popupSpacing
-                model: Services.Settings.monitors
-                delegate: Column {
-                    required property var modelData
-                    required property int index
-                    readonly property string monName: String(modelData.name ?? "")
-                    width: ListView.view.width
-                    height: root.monBlockH
-                    spacing: Services.Theme.listSpacing
+                z: root.openMonRes !== "" || root.openMonPos !== "" ? 50 : 0
+                Repeater {
+                    model: Services.Settings.monitors
+                    delegate: Column {
+                        required property var modelData
+                        required property int index
+                        readonly property string monName: String(modelData.name ?? "")
+                        width: parent.width
+                        height: root.monBlockH
+                        spacing: Services.Theme.listSpacing
+                        z: root.openMonRes === monName || root.openMonPos === monName ? 100 : 0
                     Text {
                         width: parent.width
                         height: 22
@@ -919,8 +1065,11 @@ BasePopup {
                         elide: Text.ElideRight
                     }
                     SettingsRow {
-                    selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 0
-                    onHovered: root.selectedIndex = Services.Settings.monitorBase(monName) + 0
+                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 0
+                    onHovered: {
+                        if (!root.monDropOpen())
+                            root.selectedIndex = root.monFirst + index * root.monRows + 0;
+                    }
                         title: "Enabled"
                         value: Services.Settings.monitorEnabled(monName) ? "On" : "Off"
                         SettingsSwitch {
@@ -933,8 +1082,11 @@ BasePopup {
                         }
                     }
                     SettingsRow {
-                    selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 1
-                    onHovered: root.selectedIndex = Services.Settings.monitorBase(monName) + 1
+                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 1
+                    onHovered: {
+                        if (!root.monDropOpen())
+                            root.selectedIndex = root.monFirst + index * root.monRows + 1;
+                    }
                         title: "Scale"
                         value: "x" + Services.Settings.monitorScale(monName).toFixed(2).replace(/0$/, "")
                         SliderBar {
@@ -950,8 +1102,11 @@ BasePopup {
                         }
                     }
                     SettingsRow {
-                    selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 2
-                    onHovered: root.selectedIndex = Services.Settings.monitorBase(monName) + 2
+                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 2
+                    onHovered: {
+                        if (!root.monDropOpen())
+                            root.selectedIndex = root.monFirst + index * root.monRows + 2;
+                    }
                         title: "Resolution"
                         value: ""
                         z: root.openMonRes === monName ? 100 : 0
@@ -961,26 +1116,65 @@ BasePopup {
                             options: Services.Settings.monitorModes(monName)
                             current: Services.Settings.monitorRes(monName)
                             open: root.openMonRes === monName
-                            selected: root.tab === 3 && root.selectedIndex === Services.Settings.monitorBase(monName) + 2
+                            selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 2
                             cursor: root.dropCursor
                             openUp: index === root.monCount - 1
                             onHeaderClicked: {
-                                root.selectedIndex = Services.Settings.monitorBase(monName) + 2;
+                                root.selectedIndex = root.monFirst + index * root.monRows + 2;
                                 root.toggleMonDrop(monName);
                             }
                             onOptionHovered: optIdx => root.dropCursor = optIdx
                             onOptionClicked: value => {
-                                root.selectedIndex = Services.Settings.monitorBase(monName) + 2;
+                                root.selectedIndex = root.monFirst + index * root.monRows + 2;
                                 root.commitMonRes(monName, value);
                             }
                         }
+                    }
+                    SettingsRow {
+                    visible: root.monCount > 1
+                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
+                    onHovered: {
+                        if (!root.monDropOpen())
+                            root.selectedIndex = root.monFirst + index * root.monRows + 3;
+                    }
+                        title: "Position"
+                        value: ""
+                        z: root.openMonPos === monName ? 100 : 0
+                        Dropdown {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width
+                            options: Services.Settings.monitorPosOptions()
+                            current: Services.Settings.monitorPos(monName)
+                            open: root.openMonPos === monName
+                            selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
+                            cursor: root.dropCursor
+                            openUp: index === root.monCount - 1
+                            onHeaderClicked: {
+                                root.selectedIndex = root.monFirst + index * root.monRows + 3;
+                                root.toggleMonPosDrop(monName);
+                            }
+                            onOptionHovered: optIdx => root.dropCursor = optIdx
+                            onOptionClicked: value => {
+                                root.selectedIndex = root.monFirst + index * root.monRows + 3;
+                                root.commitMonPos(monName, value);
+                            }
+                        }
+                    }
                     }
                 }
             }
             PopupButton {
                 label: "Re-detect displays"
                 columns: 1
-                onClicked: Services.Settings.refreshMonitors()
+                selected: root.tab === 3 && root.selectedIndex === root.monLastIndex()
+                onHovered: {
+                    if (!root.monDropOpen())
+                        root.selectedIndex = root.monLastIndex();
+                }
+                onClicked: {
+                    root.selectedIndex = root.monLastIndex();
+                    Services.Settings.refreshMonitors();
+                }
             }
             Text {
                 width: parent.width

@@ -16,6 +16,16 @@ ShellRoot {
         sessionLock: sessionLock
         screenshotTool: screenshotTool
     }
+    Variants {
+        model: {
+            const main = Services.Settings.mainScreen(Quickshell.screens);
+            return Quickshell.screens.filter(s => s.name !== (main?.name ?? ""));
+        }
+        SlimBar {
+            required property var modelData
+            targetScreen: modelData
+        }
+    }
 
     IpcHandler {
         target: "bar"

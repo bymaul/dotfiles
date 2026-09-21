@@ -87,6 +87,14 @@ Item {
         color: Services.Theme.bg
         border.width: 1
         border.color: Services.Theme.border
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.AllButtons
+            onPressed: mouse => mouse.accepted = true
+            onClicked: mouse => mouse.accepted = true
+            onWheel: wheel => wheel.accepted = true
+        }
         ListView {
             id: optList
             anchors.fill: parent

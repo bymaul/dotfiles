@@ -115,6 +115,8 @@ Singleton {
                     entry.scale = Math.max(0.5, Math.min(3, e.scale));
                 if (typeof e.res === "string" && e.res !== "")
                     entry.res = e.res.slice(0, 64);
+                if (typeof e.pos === "string" && ["auto", "auto-right", "auto-left", "auto-up", "auto-down"].includes(e.pos))
+                    entry.pos = e.pos;
                 clean[name] = entry;
             }
             settings.monitorConfigs = clean;
@@ -192,10 +194,6 @@ Singleton {
     function monitorCfg(name: string): var {
         return settings.monitorConfigs[name] ?? {};
     }
-    function monitorBase(name: string): int {
-        const i = settings.monitors.findIndex(m => m && m.name === name);
-        return i < 0 ? -1 : i * 3;
-    }
     function monitorLive(name: string): var {
         return settings.monitors.find(m => m && m.name === name) ?? null;
     }
@@ -255,6 +253,9 @@ Singleton {
             return name;
         const rate = typeof live.refreshRate === "number" ? live.refreshRate.toFixed(2) : "?";
         let s = name + "  " + live.width + "x" + live.height + "@" + rate + "  x" + settings.monitorScale(name);
+        const pos = settings.monitorPos(name);
+        if (pos !== "auto")
+            s += "  " + pos;
         if (live.disabled === true)
             s += "  (disabled)";
         return s;
@@ -275,8 +276,18 @@ Singleton {
         }
         const scale = String(settings.monitorScale(name));
         const res = String(settings.monitorRes(name));
-        const desc = name + " -> " + res + " x" + scale;
-        settings.applyTracked(desc, 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = false, mode = ' + HyprBridge.luaStr(res) + ', position = "auto", scale = ' + HyprBridge.luaStr(scale) + '})', q, name);
+        const pos = settings.monitorPos(name);
+        const desc = name + " -> " + res + " x" + scale + (pos !== "auto" ? " " + pos : "");
+        settings.applyTracked(desc, 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = false, mode = ' + HyprBridge.luaStr(res) + ', position = ' + HyprBridge.luaStr(pos) + ', scale = ' + HyprBridge.luaStr(scale) + '})', q, name);
+    }
+    function monitorPosOptions(): var {
+        return ["auto", "auto-right", "auto-left", "auto-up", "auto-down"];
+    }
+    function monitorPos(name: string): string {
+        const cfg = settings.monitorCfg(name);
+        if (typeof cfg.pos === "string" && settings.monitorPosOptions().includes(cfg.pos))
+            return cfg.pos;
+        return "auto";
     }
     function applyTracked(label: string, code: string, quiet: bool, key: string): void {
         const k = typeof key === "string" && key !== "" ? key : label;
@@ -328,6 +339,21 @@ Singleton {
             idx = 0;
         idx = (idx + dir + modes.length) % modes.length;
         settings.setMonitorRes(name, modes[idx]);
+    }
+    function setMonitorPos(name: string, pos: string): void {
+        if (!settings.monitorPosOptions().includes(pos))
+            return;
+        settings.putMonitorCfg(name, {pos: pos});
+        settings.applyMonitor(name);
+        settings.scheduleSave();
+    }
+    function cycleMonitorPos(name: string, dir: int): void {
+        const opts = settings.monitorPosOptions();
+        let idx = opts.indexOf(settings.monitorPos(name));
+        if (idx < 0)
+            idx = 0;
+        idx = (idx + dir + opts.length) % opts.length;
+        settings.setMonitorPos(name, opts[idx]);
     }
 
     property var monitors: []
