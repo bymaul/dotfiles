@@ -16,21 +16,30 @@ Row {
             if (!ws)
                 return false;
             const m = ws.monitor;
-            const name = m && m.name ? m.name : (typeof m === "string" ? m : "");
-            return String(name) === root.screenName;
+            const name = (m && typeof m.name === "string" && m.name !== "") ? m.name : (typeof m === "string" ? m : "");
+            return name === root.screenName;
         });
     }
+    readonly property int activeId: {
+        const mons = Hyprland.monitors && Hyprland.monitors.values ? Hyprland.monitors.values : [];
+        for (const m of mons) {
+            if (m && m.name === root.screenName && m.activeWorkspace)
+                return m.activeWorkspace.id ?? -99999;
+        }
+        return -99999;
+    }
     readonly property var slotIds: {
-        const ids = new Set([1, 2, 3]);
+        const ids = new Set();
         for (const ws of root.pool ?? []) {
-            if (ws && ws.id > 0)
+            if (ws && typeof ws.id === "number")
                 ids.add(ws.id);
         }
+        if (root.activeId !== -99999)
+            ids.add(root.activeId);
         return [...ids].sort((a, b) => a - b);
     }
     function workspaceById(id: int): var {
-        const all = Hyprland.workspaces && Hyprland.workspaces.values ? Hyprland.workspaces.values : [];
-        const hit = all.find(ws => ws && ws.id === id);
+        const hit = (root.pool ?? []).find(ws => ws && ws.id === id);
         return hit ? hit : null;
     }
     function activateSlot(id: int): void {
@@ -49,7 +58,7 @@ Row {
         delegate: Item {
             required property var modelData
             readonly property var ws: workspaceById(modelData)
-            readonly property bool isFocused: !!(ws && ws.active)
+            readonly property bool isFocused: ws ? !!ws.active : modelData === root.activeId
             width: 25
             height: 25
             Rectangle {

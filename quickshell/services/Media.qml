@@ -49,11 +49,12 @@ Singleton {
         const pct = Math.round(media.brightness);
         media.osd({app: "brightness", summary: pct + "%", body: "Brightness", icon: "display-brightness-symbolic", value: pct, syncId: "brightness"});
     }
-    function adjustVolume(delta: real): void {
+    function adjustVolume(delta: real, quiet: bool): void {
         const audio = media.sink?.audio;
         if (audio)
             audio.volume = Theme.clamp(audio.volume + delta, 0, Theme.volumeMax);
-        media.volumeToast();
+        if (!quiet)
+            media.volumeToast();
     }
     function volumeUp(): void {
         media.adjustVolume(Theme.volumeStep);

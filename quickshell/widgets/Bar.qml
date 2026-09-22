@@ -20,7 +20,7 @@ PanelWindow {
     }
 
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
-    property var mainScreen: Services.Settings.mainScreen(Quickshell.screens, bar.focusedName)
+    property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
     screen: bar.mainScreen
     readonly property string mainName: bar.mainScreen && bar.mainScreen.name ? bar.mainScreen.name : ""
 
@@ -155,6 +155,33 @@ PanelWindow {
     function closePopups(): void {
         hideAll(exclusivePopups);
     }
+    function followPopupAnchor(): void {
+        const anchor = bar.currentPopupAnchor();
+        const all = [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, launcherPopup, clipboardPopup, emojiPopup, historyPanel];
+        for (const p of all) {
+            if (!p || !p.anchor || p.anchor.window === anchor)
+                continue;
+            if (!p.visible) {
+                p.anchor.window = anchor;
+                continue;
+            }
+            console.log("[popup-anchor] move to " + (anchor && anchor.screen ? anchor.screen.name : "?") + " (focus " + bar.focusedName + ")");
+            p.visible = false;
+            p.anchor.window = anchor;
+            p.visible = true;
+            if (typeof p.regrab === "function")
+                p.regrab();
+        }
+    }
+    Connections {
+        target: Hyprland
+        function onFocusedMonitorChanged(): void {
+            bar.followPopupAnchor();
+        }
+        function onFocusedWorkspaceChanged(): void {
+            bar.followPopupAnchor();
+        }
+    }
     onScreenChanged: bar.closePopups()
     readonly property int screenCount: Quickshell.screens.length
     onScreenCountChanged: bar.closePopups()
@@ -212,7 +239,9 @@ PanelWindow {
         SystemGroup {
             bar: bar
         }
-        BatteryIcon {}
+        BatteryIcon {
+            bar: bar
+        }
         Row {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6

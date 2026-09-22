@@ -5,6 +5,7 @@ Item {
     required property real value
     property real minimum: 0
     property real maximum: 1
+    property real wheelStep: 0
     signal sliderMoved(real newValue)
     height: 24
     readonly property real fraction: {
@@ -41,8 +42,10 @@ Item {
                 root.setFromMouse(mouse);
         }
         onWheel: event => {
-            const step = (event.angleDelta.y > 0 ? 0.05 : -0.05) * (root.maximum - root.minimum);
-            root.sliderMoved(Services.Theme.clamp(root.value + step, root.minimum, root.maximum));
+            const range = root.maximum - root.minimum;
+            const step = root.wheelStep > 0 ? root.wheelStep : 0.05 * range;
+            const dir = event.angleDelta.y > 0 ? 1 : -1;
+            root.sliderMoved(Services.Theme.clamp(root.value + dir * step, root.minimum, root.maximum));
         }
     }
 }

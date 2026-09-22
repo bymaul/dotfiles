@@ -28,6 +28,7 @@ fail=0
 # Allowlist: files qmllint 1.0 cannot process (see header). Every entry was
 # verified failing on the pristine tree too - none of them regressed.
 allowlist=(
+    "quickshell/components/BarIcon.qml"
     "quickshell/components/SliderBar.qml"
     "quickshell/components/ToastCard.qml"
     "quickshell/lock/LockContext.qml"

@@ -11,7 +11,6 @@ import "lock"
 import "screenshot"
 import "services" as Services
 ShellRoot {
-    readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
     Bar {
         id: bar
         lockContext: lockContext
@@ -20,7 +19,7 @@ ShellRoot {
     }
     Variants {
         model: {
-            const main = Services.Settings.mainScreen(Quickshell.screens, focusedName);
+            const main = Services.Settings.mainScreen(Quickshell.screens);
             const mainName = main && main.name ? main.name : "";
             return Quickshell.screens.filter(s => s.name !== mainName);
         }

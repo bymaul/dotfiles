@@ -165,9 +165,7 @@ BasePopup {
         return selectedIndex - root.firstHistIdx();
     }
     function adjustVolume(delta: real): void {
-        const audio = root.audioSink?.audio;
-        if (audio)
-            audio.volume = Services.Theme.clamp(audio.volume + delta, 0, Services.Theme.volumeMax);
+        Services.Media.adjustVolume(delta);
     }
     function toggleVolumeMute(): void {
         const audio = root.audioSink?.audio;
@@ -390,6 +388,7 @@ BasePopup {
                     anchors.verticalCenter: parent.verticalCenter
                     width: parent.width - 80
                     maximum: Services.Theme.volumeMax
+                    wheelStep: Services.Theme.volumeStep
                     value: root.audioSink?.audio?.volume ?? 0
                     onSliderMoved: value => {
                         const audio = root.audioSink?.audio;

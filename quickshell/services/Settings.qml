@@ -408,11 +408,6 @@ Singleton {
             const hit = list.find(s => s && s.name === want);
             if (hit)
                 return hit;
-            if (typeof focusedName === "string" && focusedName !== "") {
-                const fhit = list.find(s => s && s.name === focusedName);
-                if (fhit)
-                    return fhit;
-            }
         }
         return list.length > 0 ? list[0] : null;
     }

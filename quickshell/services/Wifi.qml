@@ -10,6 +10,8 @@ Singleton {
 
     readonly property var device: (Networking.devices?.values ?? []).find(d => d && d.type === DeviceType.Wifi) ?? null
     readonly property var connected: (wifi.device?.networks?.values ?? []).find(n => n && n.connected) ?? null
+    readonly property var wiredDevice: (Networking.devices?.values ?? []).find(d => d && d.type === DeviceType.Wired) ?? null
+    readonly property bool wiredConnected: wifi.wiredDevice ? !!wifi.wiredDevice.connected : false
 
     function signalTier(s: real): int {
         if (s >= Theme.sigHigh)

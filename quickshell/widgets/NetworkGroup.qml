@@ -20,9 +20,4 @@ Item {
             bar: root.bar
         }
     }
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        onClicked: bar.toggleControl()
-    }
 }

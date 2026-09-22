@@ -36,6 +36,9 @@ BasePopup {
     property string activeClass: ""
     property bool wipeConfirm: false
     property int wipeChoice: 1
+    property string thumbDir: "/tmp/qs-cliphist-thumbs"
+    property var thumbs: ({})
+    property bool thumbPending: false
     onVisibleChanged: {
         if (visible)
             root.reset();
@@ -58,7 +61,21 @@ BasePopup {
             const tab = line.indexOf("\t");
             if (tab <= 0)
                 continue;
-            out.push({line: line, preview: line.slice(tab + 1)});
+            const id = line.slice(0, tab);
+            const preview = line.slice(tab + 1);
+            const isImage = preview.startsWith("[[ binary data");
+            const sizeMatch = isImage ? preview.match(/(\d+(?:\.\d+)?\s*[KMGT]?i?B)/) : null;
+            const fmtMatch = isImage ? preview.match(/(?:binary data\s+(?:\d+(?:\.\d+)?\s*[KMGT]?i?B)\s+)([A-Za-z0-9.+-]+(?:\/[A-Za-z0-9.+-]+)?)/) : null;
+            const dimsMatch = isImage ? preview.match(/(\d+x\d+)/) : null;
+            const size = sizeMatch ? sizeMatch[1] : "";
+            const dims = dimsMatch ? dimsMatch[1] : "";
+            let mime = "image/png";
+            if (fmtMatch) {
+                const fmt = fmtMatch[1].toLowerCase();
+                mime = fmt.indexOf("/") >= 0 ? fmt : "image/" + (fmt === "jpg" ? "jpeg" : fmt);
+            }
+            const label = isImage ? ("󰆏 Image" + (size !== "" ? " - " + size : "") + (dims !== "" ? " " + dims : "")) : "";
+            out.push({line: line, id: id, preview: preview, isImage: isImage, mime: mime, label: label});
         }
         root.entries = out;
         if (out.length > 0) {
@@ -67,6 +84,38 @@ BasePopup {
         } else {
             clipList.currentIndex = -1;
         }
+        root.requestThumbs();
+    }
+    function requestThumbs(): void {
+        if (thumbProbe.running) {
+            root.thumbPending = true;
+            return;
+        }
+        const lines = [];
+        for (let i = 0; i < root.entries.length && lines.length < 30; i++) {
+            const e = root.entries[i];
+            if (e && e.isImage && !root.thumbs[e.id])
+                lines.push(e.line);
+        }
+        if (lines.length === 0)
+            return;
+        thumbProbe.command = ["sh", "-c", 'dir="$1"; shift; mkdir -p "$dir"; for line in "$@"; do id=$(printf "%s" "$line" | cut -f1); f="$dir/$id.png"; if [ ! -s "$f" ]; then printf "%s\\n" "$line" | cliphist decode > "$f" 2>/dev/null; fi; if [ -s "$f" ]; then printf "%s\\t%s\\n" "$id" "$f"; fi; done', "qs", root.thumbDir].concat(lines);
+        thumbProbe.running = true;
+    }
+    function applyThumbs(text: string): void {
+        const next = Object.assign({}, root.thumbs);
+        let changed = false;
+        for (const line of text.split("\n")) {
+            if (line.trim() === "")
+                continue;
+            const tab = line.indexOf("\t");
+            if (tab <= 0)
+                continue;
+            next[line.slice(0, tab)] = line.slice(tab + 1);
+            changed = true;
+        }
+        if (changed)
+            root.thumbs = next;
     }
     function stepSelection(dir: int): void {
         root.wipeConfirm = false;
@@ -92,6 +141,14 @@ BasePopup {
         root.pendingIndex = Math.max(0, clipList.currentIndex);
         root.wipeConfirm = false;
         root.deleteQueue.push(entry.line);
+        if (entry.id !== undefined && entry.id !== "") {
+            Quickshell.execDetached(["rm", "-f", root.thumbDir + "/" + entry.id + ".png"]);
+            if (root.thumbs[entry.id]) {
+                const next = Object.assign({}, root.thumbs);
+                delete next[entry.id];
+                root.thumbs = next;
+            }
+        }
         root.runNextDelete();
     }
     function runNextDelete(): void {
@@ -110,7 +167,8 @@ BasePopup {
         if (!wipe)
             return;
         bar.closePopups();
-        Quickshell.execDetached(["cliphist", "wipe"]);
+        Quickshell.execDetached(["sh", "-c", 'cliphist wipe; rm -f "$1"/*.png', "qs", root.thumbDir]);
+        root.thumbs = {};
     }
     function copySelection(entry: var): void {
         if (!entry)
@@ -121,7 +179,10 @@ BasePopup {
         }
         root.pendingCopy = entry;
         root.queuedCopy = null;
-        copyProbe.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist decode | wl-copy', "qs", entry.line];
+        if (entry.isImage)
+            copyProbe.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist decode | wl-copy -t "$2"', "qs", entry.line, entry.mime && entry.mime !== "" ? entry.mime : "image/png"];
+        else
+            copyProbe.command = ["sh", "-c", 'printf "%s\\n" "$1" | cliphist decode | wl-copy', "qs", entry.line];
         copyProbe.running = true;
         copyTimeout.restart();
     }
@@ -202,6 +263,18 @@ BasePopup {
             onStreamFinished: root.parseHistory(text)
         }
     }
+    Process {
+        id: thumbProbe
+        stdout: StdioCollector {
+            onStreamFinished: root.applyThumbs(text)
+        }
+        onExited: {
+            if (root.thumbPending) {
+                root.thumbPending = false;
+                root.requestThumbs();
+            }
+        }
+    }
     PopupCard {
         Text {
             id: title
@@ -235,14 +308,32 @@ BasePopup {
                     clipList.currentIndex = index;
                     root.pasteSelected();
                 }
-                Text {
+                Image {
                     anchors {
                         left: parent.left
                         verticalCenter: parent.verticalCenter
                         leftMargin: 10
                     }
-                    width: parent.width - 56
-                    text: modelData.preview !== "" ? modelData.preview : "󰆏 Image"
+                    width: 28
+                    height: 28
+                    readonly property string thumbSource: modelData.isImage && root.thumbs[modelData.id] ? "file://" + root.thumbs[modelData.id] : ""
+                    source: thumbSource
+                    visible: thumbSource !== ""
+                    asynchronous: true
+                    cache: true
+                    smooth: true
+                    sourceSize.width: 56
+                    sourceSize.height: 56
+                    fillMode: Image.PreserveAspectCrop
+                }
+                Text {
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: modelData.isImage ? 44 : 10
+                    }
+                    width: parent.width - (modelData.isImage ? 90 : 56)
+                    text: modelData.isImage ? modelData.label : (modelData.preview !== "" ? modelData.preview : "󰆏 Image")
                     color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12

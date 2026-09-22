@@ -21,16 +21,17 @@ BarIcon {
         return "󰝝";
     }
     glyphColor: root.level > 1 ? Services.Theme.warn : Services.Theme.fg
+    tipText: root.muted ? "Muted" : "Volume " + Math.round(root.level * 100) + "%"
+    tipAnchor: root.bar
     onClicked: bar.toggleControl()
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
         hoverEnabled: true
+        onEntered: root.armTip()
+        onExited: root.hideTip()
         onWheel: event => {
-            const audio = root.sink?.audio;
-            if (!audio)
-                return;
-            audio.volume = Services.Theme.clamp(audio.volume + (event.angleDelta.y > 0 ? Services.Theme.volumeStep : -Services.Theme.volumeStep), 0, Services.Theme.volumeMax);
+            Services.Media.adjustVolume(event.angleDelta.y > 0 ? Services.Theme.volumeStep : -Services.Theme.volumeStep, true);
         }
     }
 }
