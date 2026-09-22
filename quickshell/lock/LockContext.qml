@@ -8,6 +8,7 @@ Scope {
     property bool unlockInProgress: false
     property bool showFailure: false
     property string authMessage: ""
+    property string activeSurface: ""
     onCurrentTextChanged: {
         showFailure = false;
         authMessage = "";
@@ -27,6 +28,7 @@ Scope {
     function reset(): void {
         if (pam.active)
             pam.abort();
+        root.activeSurface = "";
         root.clearAuth();
     }
     PamContext {

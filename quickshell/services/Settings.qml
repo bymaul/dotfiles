@@ -370,15 +370,60 @@ Singleton {
         settings.mainMonitor = (typeof name === "string" && name !== "") ? name : "auto";
         settings.scheduleSave();
     }
-    function mainScreen(screens): var {
+    property var barByScreen: ({})
+    function registerBar(name: string, win: var): void {
+        if (typeof name !== "string" || name === "" || !win)
+            return;
+        const next = Object.assign({}, settings.barByScreen);
+        for (const k of Object.keys(next)) {
+            if (next[k] === win && k !== name)
+                delete next[k];
+        }
+        next[name] = win;
+        settings.barByScreen = next;
+    }
+    function unregisterBar(win: var): void {
+        if (!win)
+            return;
+        const next = Object.assign({}, settings.barByScreen);
+        let changed = false;
+        for (const k of Object.keys(next)) {
+            if (next[k] === win) {
+                delete next[k];
+                changed = true;
+            }
+        }
+        if (changed)
+            settings.barByScreen = next;
+    }
+    function barForScreen(name: string): var {
+        if (typeof name !== "string" || name === "")
+            return null;
+        return settings.barByScreen[name] ?? null;
+    }
+    function mainScreen(screens, focusedName): var {
         const list = screens ?? [];
         const want = settings.mainMonitor;
         if (typeof want === "string" && want !== "" && want !== "auto") {
             const hit = list.find(s => s && s.name === want);
             if (hit)
                 return hit;
+            if (typeof focusedName === "string" && focusedName !== "") {
+                const fhit = list.find(s => s && s.name === focusedName);
+                if (fhit)
+                    return fhit;
+            }
         }
         return list.length > 0 ? list[0] : null;
+    }
+    function popupScreen(screens, focusedName): var {
+        const list = screens ?? [];
+        if (typeof focusedName === "string" && focusedName !== "") {
+            const fhit = list.find(s => s && s.name === focusedName);
+            if (fhit)
+                return fhit;
+        }
+        return settings.mainScreen(list, focusedName);
     }
     property bool monitorsReady: false
     property var appliedMonitors: []

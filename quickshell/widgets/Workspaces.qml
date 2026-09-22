@@ -9,11 +9,9 @@ Row {
         verticalCenter: parent.verticalCenter
     }
     spacing: 4
-    property string screenName: ""
+    required property string screenName
     readonly property var pool: {
         const all = Hyprland.workspaces && Hyprland.workspaces.values ? Hyprland.workspaces.values : [];
-        if (root.screenName === "")
-            return all;
         return all.filter(ws => {
             if (!ws)
                 return false;
@@ -23,15 +21,11 @@ Row {
         });
     }
     readonly property var slotIds: {
-        const ids = new Set(root.screenName === "" ? [1, 2, 3] : []);
+        const ids = new Set([1, 2, 3]);
         for (const ws of root.pool ?? []) {
             if (ws && ws.id > 0)
                 ids.add(ws.id);
         }
-        const fw = Hyprland.focusedWorkspace;
-        const focused = fw && typeof fw.id === "number" ? fw.id : 1;
-        if (typeof focused === "number" && focused > 0 && root.screenName === "")
-            ids.add(focused);
         return [...ids].sort((a, b) => a - b);
     }
     function workspaceById(id: int): var {
@@ -55,7 +49,7 @@ Row {
         delegate: Item {
             required property var modelData
             readonly property var ws: workspaceById(modelData)
-            readonly property bool isFocused: root.screenName === "" ? modelData === (Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.id ? Hyprland.focusedWorkspace.id : -1) : !!(ws && ws.active)
+            readonly property bool isFocused: !!(ws && ws.active)
             width: 25
             height: 25
             Rectangle {

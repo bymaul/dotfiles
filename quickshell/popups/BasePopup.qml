@@ -89,8 +89,12 @@ PopupWindow {
         onActivated: base.close()
     }
     anchor.window: bar
-    anchor.rect.x: (base.anchorMode === "center" || base.anchorMode === "middle") ? bar.width / 2 - width / 2 : bar.width - width - Services.Theme.popupMargin
-    anchor.rect.y: base.anchorMode === "middle" ? Math.max(bar.height + Services.Theme.popupTopGap, Screen.height / 2 - height / 2) : bar.height + Services.Theme.popupTopGap + base.extraTop
+    readonly property var anchorBar: base.anchor.window ?? bar
+    readonly property real anchorBarWidth: anchorBar && anchorBar.width ? anchorBar.width : (bar && bar.width ? bar.width : 0)
+    readonly property real anchorBarHeight: anchorBar && anchorBar.height ? anchorBar.height : (bar && bar.height ? bar.height : 0)
+    readonly property real popupScreenHeight: base.screen && base.screen.height ? base.screen.height : Screen.height
+    anchor.rect.x: (base.anchorMode === "center" || base.anchorMode === "middle") ? anchorBarWidth / 2 - width / 2 : anchorBarWidth - width - Services.Theme.popupMargin
+    anchor.rect.y: base.anchorMode === "middle" ? Math.max(anchorBarHeight + Services.Theme.popupTopGap, popupScreenHeight / 2 - height / 2) : anchorBarHeight + Services.Theme.popupTopGap + base.extraTop
     visible: false
     color: "transparent"
     onVisibleChanged: {

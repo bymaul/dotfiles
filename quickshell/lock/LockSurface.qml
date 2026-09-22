@@ -1,9 +1,15 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import "../services" as Services
 Item {
     id: root
     required property var context
+    property var ownScreen: null
+    readonly property string ownName: ownScreen && ownScreen.name ? String(ownScreen.name) : ""
+    readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
+    readonly property bool isFocusScreen: ownName === "" || focusedName === "" || ownName === focusedName
+    readonly property bool maySteal: context.activeSurface === "" || (ownName !== "" && context.activeSurface === ownName)
     component Label: Text {
         width: parent.width
         horizontalAlignment: Text.AlignHCenter
@@ -57,20 +63,54 @@ Item {
                     font.pixelSize: Services.Theme.px12
                     enabled: !root.context.unlockInProgress
                     onTextChanged: root.context.currentText = text
+                    onActiveFocusChanged: {
+                        if (activeFocus && root.ownName !== "")
+                            root.context.activeSurface = root.ownName;
+                    }
                     Keys.onReturnPressed: root.context.tryUnlock()
                     Keys.onEnterPressed: root.context.tryUnlock()
                     Keys.onEscapePressed: root.context.currentText = ""
+                    function claimFocus(): void {
+                        if (!field.visible || !field.enabled)
+                            return;
+                        field.forceActiveFocus();
+                        if (field.activeFocus && root.ownName !== "")
+                            root.context.activeSurface = root.ownName;
+                    }
                     Component.onCompleted: {
-                        forceActiveFocus();
-                        focusRetry.restart();
+                        if (root.isFocusScreen) {
+                            field.claimFocus();
+                            if (!field.activeFocus)
+                                focusRetry.restart();
+                        } else {
+                            claimWaiter.restart();
+                        }
+                    }
+                    Timer {
+                        id: claimWaiter
+                        interval: 500
+                        repeat: false
+                        onTriggered: {
+                            if (root.context.activeSurface === "" && !field.activeFocus) {
+                                field.claimFocus();
+                                if (!field.activeFocus)
+                                    focusRetry.restart();
+                            }
+                        }
                     }
                     Timer {
                         id: focusRetry
                         interval: 200
                         repeat: true
                         onTriggered: {
+                            if (!root.maySteal) {
+                                focusRetry.stop();
+                                return;
+                            }
                             if (!field.activeFocus && field.visible && field.enabled) {
                                 field.forceActiveFocus();
+                                if (field.activeFocus && root.ownName !== "")
+                                    root.context.activeSurface = root.ownName;
                             } else {
                                 focusRetry.stop();
                             }

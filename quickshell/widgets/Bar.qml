@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Hyprland._GlobalShortcuts
 import Quickshell.Wayland
@@ -18,8 +19,23 @@ PanelWindow {
         right: true
     }
 
-    property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
+    readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
+    property var mainScreen: Services.Settings.mainScreen(Quickshell.screens, bar.focusedName)
     screen: bar.mainScreen
+    readonly property string mainName: bar.mainScreen && bar.mainScreen.name ? bar.mainScreen.name : ""
+
+    function currentPopupAnchor(): var {
+        const anchor = Services.Settings.barForScreen(bar.focusedName);
+        return anchor ?? bar;
+    }
+    function syncBarReg(): void {
+        Services.Settings.unregisterBar(bar);
+        if (bar.mainName !== "")
+            Services.Settings.registerBar(bar.mainName, bar);
+    }
+    Component.onCompleted: bar.syncBarReg()
+    Component.onDestruction: Services.Settings.unregisterBar(bar)
+    onMainNameChanged: bar.syncBarReg()
 
     implicitHeight: Services.Theme.barHeight
     exclusiveZone: implicitHeight
@@ -42,6 +58,12 @@ PanelWindow {
     function openExclusive(target, returnTo = null): void {
         const open = !target.visible;
         hideAll(exclusivePopups);
+        if (open) {
+            if (returnTo && returnTo.anchor && returnTo.anchor.window)
+                target.anchor.window = returnTo.anchor.window;
+            else
+                target.anchor.window = bar.currentPopupAnchor();
+        }
         target.returnTo = open ? returnTo : null;
         target.visible = open;
         if (open && target.useGrab !== false && typeof target.regrab === "function")
@@ -133,6 +155,9 @@ PanelWindow {
     function closePopups(): void {
         hideAll(exclusivePopups);
     }
+    onScreenChanged: bar.closePopups()
+    readonly property int screenCount: Quickshell.screens.length
+    onScreenCountChanged: bar.closePopups()
     function revealHistory(i: int): void {
         historyPanel.revealAt(i);
     }
@@ -162,8 +187,11 @@ PanelWindow {
 
     Workspaces {
         id: workspaces
+        screenName: bar.mainName
     }
-    WindowTitle {}
+    WindowTitle {
+        screenName: bar.mainName
+    }
     SystemClock {
         id: systemClock
         precision: SystemClock.Minutes

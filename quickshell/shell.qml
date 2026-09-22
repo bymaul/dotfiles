@@ -2,6 +2,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import "widgets"
@@ -10,6 +11,7 @@ import "lock"
 import "screenshot"
 import "services" as Services
 ShellRoot {
+    readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
     Bar {
         id: bar
         lockContext: lockContext
@@ -18,7 +20,7 @@ ShellRoot {
     }
     Variants {
         model: {
-            const main = Services.Settings.mainScreen(Quickshell.screens);
+            const main = Services.Settings.mainScreen(Quickshell.screens, focusedName);
             const mainName = main && main.name ? main.name : "";
             return Quickshell.screens.filter(s => s.name !== mainName);
         }
@@ -100,9 +102,11 @@ ShellRoot {
     WlSessionLock {
         id: sessionLock
         WlSessionLockSurface {
+            id: lockSurf
             LockSurface {
                 anchors.fill: parent
                 context: lockContext
+                ownScreen: lockSurf.screen
             }
         }
     }

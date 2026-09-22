@@ -1,12 +1,14 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../components"
 import "../services" as Services
 PanelWindow {
     id: root
     required property var bar
-    screen: root.bar.mainScreen
+    readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
+    screen: Services.Settings.popupScreen(Quickshell.screens, root.focusedName)
     anchors {
         top: true
         right: true
