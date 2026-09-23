@@ -18,6 +18,7 @@ Singleton {
     property string accent: "#aeaed1"
     property string accentFg: "#141415"
     property string white: "#ffffff"
+    property string transparent: "transparent"
     property string warn: "#f3be7c"
     property string danger: "#d8647e"
     property string font: "JetBrainsMono Nerd Font Propo"
@@ -38,11 +39,13 @@ Singleton {
     property int rowHeight: 36
     property int listRowHeight: 40
     property int toastWidth: 300
+    property int osdWidth: 150
+    property int osdBottomMargin: 32
     property int barHeight: 34
     property int groupSpacing: 12
     property int listSpacing: 4
-    property int listVisible: 10
-    property int resultMax: 100
+    property int listVisible: 7
+    property int resultMax: 40
     property int tileHeight: 40
 
     property int grabDelay: 100
@@ -52,7 +55,7 @@ Singleton {
     property int toastTimeout: 5000
     property int osdTimeout: 1500
     property int toastMax: 5
-    property int historyMax: 30
+    property int historyMax: 20
 
     property real volumeMax: 1.5
     property real volumeStep: 0.05

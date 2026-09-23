@@ -10,12 +10,13 @@ Rectangle {
     property bool highlighted: false
     property int rowHeight: Services.Theme.rowHeight
     property color selectedColor: Services.Theme.accent
+    property color baseColor: Services.Theme.transparent
     signal hovered()
     signal clicked()
     readonly property bool isHovered: rowArea.containsMouse
     width: ListView.view.width
     height: root.rowHeight
-    color: root.selected ? root.selectedColor : rowArea.containsMouse ? Services.Theme.hoverBg : (root.highlighted ? Services.Theme.activeBg : "transparent")
+    color: root.selected ? root.selectedColor : rowArea.containsMouse ? Services.Theme.hoverBg : (root.highlighted ? Services.Theme.activeBg : root.baseColor)
     border.width: (!root.selected && root.highlighted) ? 1 : 0
     border.color: Services.Theme.accent
     MouseArea {

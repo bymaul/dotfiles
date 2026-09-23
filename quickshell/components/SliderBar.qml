@@ -15,17 +15,12 @@ Item {
     function setFromMouse(mouse: var): void {
         root.sliderMoved(root.minimum + Services.Theme.clamp01(mouse.x / root.width) * (root.maximum - root.minimum));
     }
-    Rectangle {
+    ProgressBar {
         anchors.verticalCenter: parent.verticalCenter
         width: root.width
         height: 3
-        color: Services.Theme.accentFg
-    }
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        width: root.width * root.fraction
-        height: 3
-        color: Services.Theme.accent
+        animated: false
+        fraction: root.fraction
     }
     Rectangle {
         anchors.verticalCenter: parent.verticalCenter

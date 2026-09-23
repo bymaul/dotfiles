@@ -173,7 +173,7 @@ Scope {
         screen: root.targetScreen
         exclusiveZone: -1
         visible: false
-        color: "transparent"
+        color: Services.Theme.transparent
         ScreencopyView {
             id: captureView
             anchors.fill: parent
@@ -239,7 +239,7 @@ Scope {
         screen: root.targetScreen
         exclusiveZone: -1
         visible: false
-        color: "transparent"
+        color: Services.Theme.transparent
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qs-screenshot-picker"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -368,7 +368,7 @@ Scope {
             width: picker.normalized.width
             height: picker.normalized.height
             visible: picker.selecting || (picker.stillReady && picker.normalized.width > 0)
-            color: "transparent"
+            color: Services.Theme.transparent
             border.width: 1
             border.color: Services.Theme.accent
         }

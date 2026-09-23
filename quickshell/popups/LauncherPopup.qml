@@ -1,20 +1,21 @@
 import QtQuick
 import Quickshell
 import "../components"
+import "../components/FilterUtils.js" as FilterUtils
 import "../services" as Services
 BasePopup {
     id: root
     anchorMode: "middle"
-    focusTarget: queryField
+    focusTarget: search.input
     implicitWidth: Services.Theme.launcherWidth
     implicitHeight: 16 + Services.Theme.rowHeight + Services.Theme.popupSpacing * 2 + Services.Theme.listHeight(Services.Theme.listVisible) + hint.implicitHeight
     function quitArmed(): bool {
-        return !queryField.activeFocus;
+        return !search.hasFocus;
     }
-    Shortcut { sequence: "Down"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Return"; enabled: root.visible && !queryField.activeFocus; onActivated: root.launch() }
-    Shortcut { sequence: "Enter"; enabled: root.visible && !queryField.activeFocus; onActivated: root.launch() }
+    Shortcut { sequence: "Down"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(1) }
+    Shortcut { sequence: "Up"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1) }
+    Shortcut { sequence: "Return"; enabled: root.visible && !search.hasFocus; onActivated: root.launch() }
+    Shortcut { sequence: "Enter"; enabled: root.visible && !search.hasFocus; onActivated: root.launch() }
     Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "Ctrl+N"; enabled: root.visible; onActivated: root.stepSelection(1) }
@@ -22,16 +23,22 @@ BasePopup {
     Shortcut { sequence: "Ctrl+Y"; enabled: root.visible; onActivated: root.launch() }
     property var appsCache: null
     property var entries: []
-    property bool selMoved: false
-    readonly property bool runMode: String(queryField.text ?? "").trim().startsWith(">")
-    readonly property string runQuery: String(queryField.text ?? "").trim().slice(1).trim().toLowerCase()
+    readonly property bool runMode: String(search.text ?? "").trim().startsWith(">")
+    readonly property string runQuery: String(search.text ?? "").trim().slice(1).trim().toLowerCase()
+    FilterState {
+        id: filter
+        onRefilterRequested: {
+            if (root.visible)
+                root.refilter();
+        }
+    }
     onVisibleChanged: {
         if (visible) {
             root.appsCache = DesktopEntries.applications?.values ?? [];
             Services.RunMode.refresh();
             Services.LaunchHistory.load();
-            queryField.text = "";
-            root.selMoved = false;
+            search.text = "";
+            filter.selMoved = false;
             root.refilter();
         }
     }
@@ -65,89 +72,18 @@ BasePopup {
         }
     }
     function stepSelection(dir: int): void {
-        root.flushRefilter();
+        filter.flush();
         stepListView(resultList, dir);
-        root.selMoved = true;
-    }
-    function flushRefilter(): void {
-        if (refilterTimer.running) {
-            refilterTimer.stop();
-            root.refilter();
-        }
-    }
-    Timer {
-        id: refilterTimer
-        interval: Services.Theme.refilterDelay
-        repeat: false
-        onTriggered: {
-            if (root.visible)
-                root.refilter();
-        }
+        filter.selMoved = true;
     }
     function refilter(): void {
         if (root.runMode)
             root.refilterRun(root.runQuery);
         else
-            root.refilterApps(String(queryField.text ?? "").toLowerCase().trim());
-    }
-    function fuzzyMatch(t: string, query: string): bool {
-        let qi = 0;
-        for (let ti = 0; ti < t.length && qi < query.length; ti++) {
-            if (t[ti] === query[qi])
-                qi++;
-        }
-        return qi >= query.length;
-    }
-    function matchScoreLn(t: string, query: string): int {
-        if (query === "")
-            return 1;
-        if (t === query)
-            return 0;
-        if (t.startsWith(query))
-            return 1;
-        if (t.includes(query))
-            return 2;
-        if (root.fuzzyMatch(t, query))
-            return 3;
-        return 4;
-    }
-    function matchScore(text: string, q: string): int {
-        return root.matchScoreLn(String(text ?? "").toLowerCase(), String(q ?? "").toLowerCase());
+            root.refilterApps(String(search.text ?? "").toLowerCase().trim());
     }
     function hlQuery(): string {
-        return root.runMode ? root.runQuery : String(queryField.text ?? "").toLowerCase().trim();
-    }
-    function escHtml(s: string): string {
-        return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
-    function hlFuzzy(raw: string, query: string): string {
-        const lower = raw.toLowerCase();
-        let qi = 0;
-        let out = "";
-        for (let ti = 0; ti < raw.length; ti++) {
-            const ch = raw[ti];
-            const c = ch === "&" ? "&amp;" : ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : ch === '"' ? "&quot;" : ch;
-            if (qi < query.length && lower[ti] === query[qi]) {
-                out += "<u>" + c + "</u>";
-                qi++;
-            } else {
-                out += c;
-            }
-        }
-        return out;
-    }
-    function hlName(name: string, q: string): string {
-        const raw = String(name ?? "");
-        const query = String(q ?? "");
-        if (query === "")
-            return root.escHtml(raw);
-        const low = raw.toLowerCase();
-        const i = low.indexOf(query);
-        if (i >= 0) {
-            const esc = root.escHtml;
-            return esc(raw.slice(0, i)) + "<u>" + esc(raw.slice(i, i + query.length)) + "</u>" + esc(raw.slice(i + query.length));
-        }
-        return root.hlFuzzy(raw, query);
+        return root.runMode ? root.runQuery : String(search.text ?? "").toLowerCase().trim();
     }
     function entryKey(e): string {
         if (!e)
@@ -173,15 +109,15 @@ BasePopup {
             if (empty) {
                 best = 1;
             } else {
-                best = root.matchScore(String(app.name ?? ""), q);
+                best = FilterUtils.matchScore(String(app.name ?? ""), q);
                 if (best !== 0)
-                    best = Math.min(best, root.matchScore(String(app.genericName ?? ""), q));
+                    best = Math.min(best, FilterUtils.matchScore(String(app.genericName ?? ""), q));
                 if (best !== 0)
-                    best = Math.min(best, root.matchScore(String(app.comment ?? ""), q));
+                    best = Math.min(best, FilterUtils.matchScore(String(app.comment ?? ""), q));
                 if (best !== 0) {
                     const kws = app.keywords ?? [];
                     for (const h of kws) {
-                        best = Math.min(best, root.matchScore(String(h ?? ""), q));
+                        best = Math.min(best, FilterUtils.matchScore(String(h ?? ""), q));
                         if (best === 0)
                             break;
                     }
@@ -199,7 +135,7 @@ BasePopup {
         const out = [];
         const seen = new Set();
         for (const b of Services.RunMode.binaries ?? []) {
-            const score = root.matchScoreLn(b.ln ?? "", q);
+            const score = FilterUtils.matchScoreLn(b.ln ?? "", q);
             if (score < 4) {
                 seen.add(b.name);
                 out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, score: score, use: Services.LaunchHistory.countFor("bin:" + b.name), last: Services.LaunchHistory.lastFor("bin:" + b.name)});
@@ -215,15 +151,7 @@ BasePopup {
         root.applyResults(out.slice(0, Services.Theme.resultMax));
     }
     function applyResults(out: var): void {
-        let idx = 0;
-        if (root.selMoved) {
-            const keep = root.entryKey(root.entries[resultList.currentIndex]);
-            if (keep !== "") {
-                const found = out.findIndex(e => root.entryKey(e) === keep);
-                if (found >= 0)
-                    idx = found;
-            }
-        }
+        const idx = filter.keptIndex(root.entryKey(root.entries[resultList.currentIndex]), out);
         root.entries = out;
         if (out.length > 0) {
             resultList.currentIndex = Math.min(idx, out.length - 1);
@@ -233,11 +161,11 @@ BasePopup {
         }
     }
     function launch(): void {
-        root.flushRefilter();
+        filter.flush();
         if (root.runMode) {
-            const rest = String(queryField.text ?? "").trim().slice(1).trim();
+            const rest = String(search.text ?? "").trim().slice(1).trim();
             const sel = root.entries[resultList.currentIndex] ?? null;
-            if (root.selMoved && sel) {
+            if (filter.selMoved && sel) {
                 if (sel.isCmd) {
                     Services.LaunchHistory.record(sel.key);
                     root.run(["sh", "-c", sel.name]);
@@ -355,32 +283,15 @@ BasePopup {
         Quickshell.execDetached(cmd);
     }
     PopupCard {
-        Rectangle {
-            width: parent.width
-            height: Services.Theme.rowHeight
-            color: "transparent"
-            border.width: 1
-            border.color: root.runMode ? Services.Theme.accent : Services.Theme.border
-            TextInput {
-                id: queryField
-                anchors {
-                    fill: parent
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                verticalAlignment: TextInput.AlignVCenter
-                color: Services.Theme.fg
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px13
-                onTextChanged: {
-                    root.selMoved = false;
-                    refilterTimer.restart();
-                }
-                Keys.onUpPressed: root.stepSelection(-1)
-                Keys.onDownPressed: root.stepSelection(1)
-                Keys.onReturnPressed: root.launch()
-                Keys.onEnterPressed: root.launch()
-            }
+        SearchField {
+            id: search
+            accentBorder: root.runMode
+            catchEscape: true
+            onTextChanged: filter.schedule()
+            onUpPressed: root.stepSelection(-1)
+            onDownPressed: root.stepSelection(1)
+            onAccepted: root.launch()
+            onEscapePressed: search.releaseFocus()
         }
         ListView {
             id: resultList
@@ -397,11 +308,11 @@ BasePopup {
                 onHovered: {
                     resultList.currentIndex = index;
                     resultList.positionViewAtIndex(index, ListView.Contain);
-                    root.selMoved = true;
+                    filter.selMoved = true;
                 }
                 onClicked: {
                     resultList.currentIndex = index;
-                    root.selMoved = true;
+                    filter.selMoved = true;
                     root.launch();
                 }
                 Text {
@@ -412,7 +323,7 @@ BasePopup {
                     }
                     width: parent.width - 20
                     textFormat: Text.RichText
-                    text: (modelData.isCmd ? "> " : "") + root.hlName(modelData.name, root.hlQuery())
+                    text: (modelData.isCmd ? "> " : "") + FilterUtils.hlName(modelData.name, root.hlQuery())
                     color: parent.selected ? Services.Theme.accentFg : parent.isHovered ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12

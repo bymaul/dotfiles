@@ -11,12 +11,11 @@ git clone https://github.com/bymaul/dotfiles ~/dotfiles
 cd ~/dotfiles
 sudo pacman -S --needed - < pkglist.txt
 ./install.sh
-dot-doctor
 ```
 
 - Each app dir mirrors its location in `$HOME` and is linked in (`~/.config/nvim -> ~/dotfiles/nvim`); new files inside show up automatically.
 - Shared targets (`~`, `~/.config`, `~/.local/bin`) link per-file - re-run `./install.sh` after adding top-level files there.
-- Idempotent and safe to re-run; `./install.sh --remove [packages...]` unlinks again. Anything unmanaged is never touched unless you pass `--backup` (moves it to `~/.local/share/dotfiles-backup/<date>/`). Preview with `./install.sh --dry-run`, check with `./install.sh --verify` or `dot-doctor`.
+- Idempotent and safe to re-run; `./install.sh --remove [packages...]` unlinks again. Anything unmanaged is never touched unless you pass `--backup` (moves it to `~/.local/share/dotfiles-backup/<date>/`). Preview with `./install.sh --dry-run`, check with `./install.sh --verify`.
 - After cloning: `mise trust && mise install`.
 
 ## Requirements

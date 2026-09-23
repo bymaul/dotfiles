@@ -299,7 +299,7 @@ BasePopup {
             root.activateDefaultAction();
             return;
         }
-        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => bar.openSettingsFromPanel(), () => Services.Power.cycleProfile(), () => bar.openPowerFromPanel()];
+        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Power.cycleProfile(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
         const tile = root.selectedTile();
         if (tile >= 0 && tile < actions.length)
             actions[tile]();
@@ -525,71 +525,71 @@ BasePopup {
             columnSpacing: Services.Theme.listSpacing
             rowSpacing: Services.Theme.listSpacing
             width: parent.width
-            ToggleTile {
+            Tile {
                 glyph: Networking.wifiEnabled ? (Services.Wifi.connected ? "󰤨" : "󰤭") : "󰤯"
                 label: "Wi-Fi"
                 active: Networking.wifiEnabled
                 selected: root.selectedIndex === root.firstTileIdx() + 0
-                onTileClicked: bar.openWifiFromPanel()
+                onClicked: bar.openWifiFromPanel()
                 onHovered: root.selectIndex(root.firstTileIdx() + 0)
             }
-            ToggleTile {
+            Tile {
                 glyph: Bluetooth.defaultAdapter?.enabled ? "󰂯" : "󰂲"
                 label: "Bluetooth"
                 active: Bluetooth.defaultAdapter?.enabled ?? false
-                enabled: Bluetooth.defaultAdapter != null
+                available: Bluetooth.defaultAdapter != null
                 selected: root.selectedIndex === root.firstTileIdx() + 1
-                onTileClicked: bar.openBluetoothFromPanel()
+                onClicked: bar.openBluetoothFromPanel()
                 onHovered: root.selectIndex(root.firstTileIdx() + 1)
             }
-            ToggleTile {
+            Tile {
                 glyph: root.micSource?.audio?.muted ? "󰍭" : "󰍬"
                 label: "Mic"
                 active: !(root.micSource?.audio?.muted ?? false)
-                enabled: root.micSource?.audio != null
+                available: root.micSource?.audio != null
                 selected: root.selectedIndex === root.firstTileIdx() + 2
-                onTileClicked: root.toggleMicMute()
+                onClicked: root.toggleMicMute()
                 onHovered: root.selectIndex(root.firstTileIdx() + 2)
             }
-            ToggleTile {
+            Tile {
                 glyph: "󰅶"
                 label: "Caffeine"
                 active: Services.Modes.caffeineActive
                 selected: root.selectedIndex === root.firstTileIdx() + 3
-                onTileClicked: Services.Modes.toggleCaffeine()
+                onClicked: Services.Modes.toggleCaffeine()
                 onHovered: root.selectIndex(root.firstTileIdx() + 3)
             }
-            ToggleTile {
+            Tile {
                 glyph: ""
                 label: "DND"
                 active: Services.Modes.dndActive
                 selected: root.selectedIndex === root.firstTileIdx() + 4
-                onTileClicked: Services.Modes.toggleDnd()
+                onClicked: Services.Modes.toggleDnd()
                 onHovered: root.selectIndex(root.firstTileIdx() + 4)
             }
-            ToggleTile {
-                glyph: ""
-                label: "Settings"
-                active: false
-                selected: root.selectedIndex === root.firstTileIdx() + 5
-                onTileClicked: bar.openSettingsFromPanel()
-                onHovered: root.selectIndex(root.firstTileIdx() + 5)
-            }
-            ToggleTile {
+            Tile {
                 glyph: "󰓅"
                 label: Services.Power.profilesAvailable && Services.Power.profileName !== "" ? Services.Power.profileName : "Profile"
                 active: Services.Power.profileName === "performance"
-                enabled: Services.Power.profilesAvailable
+                available: Services.Power.profilesAvailable
+                selected: root.selectedIndex === root.firstTileIdx() + 5
+                onClicked: Services.Power.cycleProfile()
+                onHovered: root.selectIndex(root.firstTileIdx() + 5)
+            }
+            Tile {
+                glyph: ""
+                label: "Settings"
+                active: false
                 selected: root.selectedIndex === root.firstTileIdx() + 6
-                onTileClicked: Services.Power.cycleProfile()
+                onClicked: bar.openSettingsFromPanel()
                 onHovered: root.selectIndex(root.firstTileIdx() + 6)
             }
-            ToggleTile {
+            Tile {
                 glyph: "󰐥"
                 label: "Power"
                 active: false
                 selected: root.selectedIndex === root.firstTileIdx() + 7
-                onTileClicked: bar.openPowerFromPanel()
+                onClicked: bar.openPowerFromPanel()
                 onHovered: root.selectIndex(root.firstTileIdx() + 7)
             }
         }

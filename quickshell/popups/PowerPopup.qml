@@ -68,12 +68,12 @@ BasePopup {
             columns: 2
             columnSpacing: Services.Theme.popupSpacing
             rowSpacing: Services.Theme.popupSpacing
-            ActionTile { glyph: "󰐥"; label: "Power off"; onActionClicked: root.powerOff() }
-            ActionTile { glyph: "󰜉"; label: "Reboot"; onActionClicked: root.reboot() }
-            ActionTile { glyph: "󰤄"; label: "Suspend"; onActionClicked: root.suspend() }
-            ActionTile { glyph: "󰋊"; label: "Hibernate"; onActionClicked: root.hibernate() }
-            ActionTile { glyph: "󰌾"; label: "Lock"; onActionClicked: root.lock() }
-            ActionTile { glyph: "󰍃"; label: "Logout"; onActionClicked: root.logout() }
+            Tile { glyph: "󰐥"; label: "Power off"; columns: 2; onClicked: root.powerOff() }
+            Tile { glyph: "󰜉"; label: "Reboot"; columns: 2; onClicked: root.reboot() }
+            Tile { glyph: "󰤄"; label: "Suspend"; columns: 2; onClicked: root.suspend() }
+            Tile { glyph: "󰋊"; label: "Hibernate"; columns: 2; onClicked: root.hibernate() }
+            Tile { glyph: "󰌾"; label: "Lock"; columns: 2; onClicked: root.lock() }
+            Tile { glyph: "󰍃"; label: "Logout"; columns: 2; onClicked: root.logout() }
         }
         HintText {
             id: hint

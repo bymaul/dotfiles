@@ -7,7 +7,7 @@ Singleton {
     property var binaries: []
     property string lastPath: ""
     property double lastScan: 0
-    readonly property int scanTtl: 60000
+    readonly property int scanTtl: 300000
     function refresh(): void {
         if (scanner.running) {
             scanTimeout.restart();

@@ -10,10 +10,13 @@ BasePopup {
     implicitWidth: Services.Theme.settingsWidth
     implicitHeight: 16 + title.implicitHeight + Services.Theme.rowHeight + Services.Theme.popupSpacing * 3 + Services.Theme.listHeight(Services.Theme.listVisible) + hint.implicitHeight
     function cancelOrClose(): void {
-        if (root.wipeConfirm)
+        if (root.wipeConfirm) {
             root.wipeConfirm = false;
-        else
-            root.close();
+            return;
+        }
+        root.cancelPendingCopy();
+        pasteTimer.stop();
+        root.close();
     }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
@@ -40,8 +43,19 @@ BasePopup {
     property var thumbs: ({})
     property bool thumbPending: false
     onVisibleChanged: {
-        if (visible)
+        if (visible) {
             root.reset();
+        } else {
+            root.cancelPendingCopy();
+        }
+    }
+    function cancelPendingCopy(): void {
+        copyTimeout.stop();
+        if (copyProbe.running)
+            copyProbe.running = false;
+        root.pendingCopy = null;
+        root.queuedCopy = null;
+        root.copyTimedOut = false;
     }
     function reset(): void {
         activeAddress = "";
@@ -97,7 +111,7 @@ BasePopup {
             return;
         }
         const lines = [];
-        for (let i = 0; i < root.entries.length && lines.length < 30; i++) {
+        for (let i = 0; i < root.entries.length && lines.length < 10; i++) {
             const e = root.entries[i];
             if (e && e.isImage && !root.thumbs[e.id])
                 lines.push(e.line);
@@ -193,13 +207,16 @@ BasePopup {
     }
     property var pendingCopy: null
     property var queuedCopy: null
+    property bool copyTimedOut: false
     Timer {
         id: copyTimeout
         interval: 8000
         repeat: false
         onTriggered: {
-            if (copyProbe.running)
+            if (copyProbe.running) {
+                root.copyTimedOut = true;
                 copyProbe.running = false;
+            }
         }
     }
     Process {
@@ -220,6 +237,13 @@ BasePopup {
         id: copyProbe
         onExited: exitCode => {
             copyTimeout.stop();
+            if (root.copyTimedOut) {
+                root.copyTimedOut = false;
+                root.pendingCopy = null;
+                root.queuedCopy = null;
+                Services.Notifs.notify({app: "clipboard", summary: "Copy timed out", body: "cliphist decode or wl-copy hung", timeout: 5000});
+                return;
+            }
             const entry = root.pendingCopy;
             root.pendingCopy = null;
             if (root.queuedCopy !== null) {
@@ -228,12 +252,12 @@ BasePopup {
                 root.copySelection(next);
                 return;
             }
+            if (!entry)
+                return;
             if (exitCode !== 0) {
                 Services.Notifs.notify({app: "clipboard", summary: "Copy failed", body: "cliphist decode or wl-copy failed", timeout: 5000});
                 return;
             }
-            if (!entry)
-                return;
             bar.closePopups();
             pasteTimer.start();
         }
@@ -245,10 +269,11 @@ BasePopup {
         onTriggered: root.pasteIntoActive()
     }
     function pasteIntoActive(): void {
+        if (root.activeAddress === "")
+            return;
         const terminal = /kitty|alacritty|foot|wezterm|ghostty|konsole|gnome-terminal|xfce4-terminal|terminator|tilix|xterm|rxvt|hyper|tabby|stterm|\bst\b/.test(root.activeClass);
         const mods = terminal ? "CTRL, SHIFT" : "CTRL";
-        const windowArg = root.activeAddress !== "" ? ", window = \"address:" + root.activeAddress + "\"" : "";
-        Hyprland.dispatch("hl.dsp.send_shortcut({ mods = \"" + mods + "\", key = \"V\"" + windowArg + " })");
+        Hyprland.dispatch("hl.dsp.send_shortcut({ mods = \"" + mods + "\", key = \"V\", window = \"address:" + root.activeAddress + "\" })");
     }
     Process {
         id: focusProbe

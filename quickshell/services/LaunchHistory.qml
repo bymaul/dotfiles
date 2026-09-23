@@ -146,6 +146,12 @@ Singleton {
                 launchHistory.loaded = true;
             }
         }
+        onExited: exitCode => {
+            if (launchHistory.loading && !launchHistory.loaded) {
+                launchHistory.loading = false;
+                launchHistory.loaded = true;
+            }
+        }
     }
     Process {
         id: writer

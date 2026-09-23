@@ -150,9 +150,15 @@ Singleton {
         Wallpaper.applyOverride(path);
         settings.scheduleSave();
     }
-    function refreshWallpapers(): void {
-        if (!wallpaperScan.running)
-            wallpaperScan.running = true;
+    property double lastWallScan: 0
+    property double lastMonScan: 0
+    function refreshWallpapers(force: bool): void {
+        if (wallpaperScan.running)
+            return;
+        if (!force && Date.now() - settings.lastWallScan < 30000)
+            return;
+        settings.lastWallScan = Date.now();
+        wallpaperScan.running = true;
     }
 
     function setBlurEnabled(on: bool): void {
@@ -192,9 +198,13 @@ Singleton {
         settings.scheduleSave();
     }
 
-    function refreshMonitors(): void {
-        if (!monitorScan.running)
-            monitorScan.running = true;
+    function refreshMonitors(force: bool): void {
+        if (monitorScan.running)
+            return;
+        if (!force && Date.now() - settings.lastMonScan < 30000)
+            return;
+        settings.lastMonScan = Date.now();
+        monitorScan.running = true;
     }
     function monitorCfg(name: string): var {
         return settings.monitorConfigs[name] ?? {};
@@ -515,9 +525,13 @@ Singleton {
     }
     Process {
         id: loader
+        property bool loadDone: false
         command: ["cat", settings.settingsFile]
         stdout: StdioCollector {
             onStreamFinished: {
+                if (loader.loadDone)
+                    return;
+                loader.loadDone = true;
                 let parsed = null;
                 let corrupt = false;
                 try {
@@ -525,9 +539,11 @@ Singleton {
                 } catch (_) {
                     corrupt = text.trim() !== "";
                 }
+                if (!corrupt && parsed !== null && (typeof parsed !== "object" || Array.isArray(parsed)))
+                    corrupt = true;
                 if (corrupt) {
                     console.warn("quickshell: settings.json corrupt, keeping defaults; backup at settings.json.corrupt-" + Date.now());
-                    Quickshell.execDetached(["sh", "-c", 'cp "$1" "$1.corrupt-$(date +%s)" 2>/dev/null', "qs", settings.settingsFile]);
+                    Quickshell.execDetached(["sh", "-c", 'cp "$1" "$1.corrupt-$(date +%s%3N)" 2>/dev/null', "qs", settings.settingsFile]);
                     Notifs.notify({app: "settings", summary: "Settings file corrupt, defaults kept", body: "Backup saved next to settings.json", syncId: "settings-load", timeout: 8000});
                 } else {
                     settings.applyLoaded(parsed);
@@ -538,15 +554,19 @@ Singleton {
             }
         }
         onExited: exitCode => {
+            if (loader.loadDone)
+                return;
+            loader.loadDone = true;
             if (exitCode !== 0) {
                 settings.loaded = true;
+                settings.applyAll();
             }
         }
         Component.onCompleted: loader.running = true
     }
     Process {
         id: wallpaperScan
-        command: ["sh", "-c", "for d in \"$HOME/dotfiles/wallpapers\" \"$HOME/Pictures/Wallpapers\"; do [ -d \"$d\" ] && find \"$d\" -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) 2>/dev/null; done | sort -u"]
+        command: ["sh", "-c", "for d in \"$HOME/dotfiles/wallpapers\" \"$HOME/Pictures/Wallpapers\"; do [ -d \"$d\" ] && find \"$d\" -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) 2>/dev/null; done | sort -u | head -n 20"]
         stdout: StdioCollector {
             onStreamFinished: {
                 settings.wallpapers = text.trim().split("\n").filter(s => s !== "");
@@ -563,6 +583,16 @@ Singleton {
                     settings.monitors = Array.isArray(arr) ? arr : [];
                 } catch (_) {
                     settings.monitors = [];
+                }
+                const live = {};
+                for (const m of settings.monitors) {
+                    if (m && typeof m.name === "string" && m.name !== "")
+                        live[m.name] = true;
+                }
+                settings.appliedMonitors = settings.appliedMonitors.filter(n => live[n]);
+                if (settings.monitors.length > 0 && settings.mainMonitor !== "auto" && !live[settings.mainMonitor]) {
+                    settings.mainMonitor = "auto";
+                    settings.scheduleSave();
                 }
                 settings.monitorsReady = true;
                 settings.applyScannedMonitors();
@@ -581,6 +611,7 @@ Singleton {
         id: monApply
         property string jobLabel: ""
         property bool jobQuiet: false
+        property bool dropNextExit: false
         stdout: StdioCollector {
             id: monOut
         }
@@ -588,6 +619,10 @@ Singleton {
             id: monErr
         }
         onExited: exitCode => {
+            if (monApply.dropNextExit) {
+                monApply.dropNextExit = false;
+                return;
+            }
             applyTimeout.stop();
             const detail = (monErr.text + " " + monOut.text).trim();
             const failed = exitCode !== 0 || /error|failed|invalid|unknown|not found|no such/i.test(detail);
@@ -609,6 +644,7 @@ Singleton {
         onTriggered: {
             if (monApply.running) {
                 monApply.running = false;
+                monApply.dropNextExit = true;
                 settings.lastApplyMsg = "Timed out: " + monApply.jobLabel;
                 settings.pumpApply();
             }

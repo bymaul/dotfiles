@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import "../components"
+import "../components/FilterUtils.js" as FilterUtils
 import "../services" as Services
 import "../emoji/emoji.js" as EmojiData
 BasePopup {
@@ -11,28 +12,34 @@ BasePopup {
     readonly property int gridCols: 10
     readonly property int gridRows: 9
     function escArmed(): bool {
-        return !queryField.activeFocus;
+        return !search.hasFocus;
     }
     function quitArmed(): bool {
-        return !queryField.activeFocus;
+        return !search.hasFocus;
     }
-    Shortcut { sequence: "Down"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1, root.gridCols) }
-    Shortcut { sequence: "Up"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1, root.gridCols) }
-    Shortcut { sequence: "Left"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1, 1) }
-    Shortcut { sequence: "Right"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1, 1) }
-    Shortcut { sequence: "Return"; enabled: root.visible && !queryField.activeFocus; onActivated: root.pick() }
-    Shortcut { sequence: "Enter"; enabled: root.visible && !queryField.activeFocus; onActivated: root.pick() }
-    Shortcut { sequence: "/"; enabled: root.visible && !queryField.activeFocus; onActivated: queryField.forceActiveFocus() }
-    Shortcut { sequence: "j"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1, root.gridCols) }
-    Shortcut { sequence: "k"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1, root.gridCols) }
-    Shortcut { sequence: "h"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(-1, 1) }
-    Shortcut { sequence: "l"; enabled: root.visible && !queryField.activeFocus; onActivated: root.stepSelection(1, 1) }
+    Shortcut { sequence: "Down"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(1, root.gridCols) }
+    Shortcut { sequence: "Up"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1, root.gridCols) }
+    Shortcut { sequence: "Left"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1, 1) }
+    Shortcut { sequence: "Right"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(1, 1) }
+    Shortcut { sequence: "Return"; enabled: root.visible && !search.hasFocus; onActivated: root.pick() }
+    Shortcut { sequence: "Enter"; enabled: root.visible && !search.hasFocus; onActivated: root.pick() }
+    Shortcut { sequence: "/"; enabled: root.visible && !search.hasFocus; onActivated: search.forceFocus() }
+    Shortcut { sequence: "j"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(1, root.gridCols) }
+    Shortcut { sequence: "k"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1, root.gridCols) }
+    Shortcut { sequence: "h"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1, 1) }
+    Shortcut { sequence: "l"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(1, 1) }
     Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "Ctrl+N"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Ctrl+P"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     property var entries: []
-    property bool selMoved: false
+    FilterState {
+        id: filter
+        onRefilterRequested: {
+            if (root.visible)
+                root.refilter();
+        }
+    }
     function groupRank(g: int): int {
         if (g < 0)
             return 99;
@@ -55,8 +62,8 @@ BasePopup {
     onVisibleChanged: {
         if (visible) {
             Services.EmojiHistory.load();
-            queryField.text = "";
-            root.selMoved = false;
+            search.text = "";
+            filter.selMoved = false;
             root.refilter();
         }
     }
@@ -68,41 +75,15 @@ BasePopup {
         }
     }
     function stepSelection(dir: int, stride: int): void {
-        root.flushRefilter();
+        filter.flush();
         stepListView(resultGrid, dir, stride);
-        root.selMoved = true;
-    }
-    function flushRefilter(): void {
-        if (refilterTimer.running) {
-            refilterTimer.stop();
-            root.refilter();
-        }
-    }
-    Timer {
-        id: refilterTimer
-        interval: Services.Theme.refilterDelay
-        repeat: false
-        onTriggered: {
-            if (root.visible)
-                root.refilter();
-        }
-    }
-    function matchScoreLn(t: string, query: string): int {
-        if (query === "")
-            return 1;
-        if (t === query)
-            return 0;
-        if (t.startsWith(query))
-            return 1;
-        if (t.includes(query))
-            return 2;
-        return 3;
+        filter.selMoved = true;
     }
     function refilter(): void {
-        const q = String(queryField.text ?? "").toLowerCase().trim();
+        const q = String(search.text ?? "").toLowerCase().trim();
         const main = [];
         for (const e of EmojiData.EMOJI) {
-            const score = root.matchScoreLn(e[2], q);
+            const score = FilterUtils.matchScoreLn(e[2], q);
             if (score < 3)
                 main.push({ch: e[0], name: e[1], g: e[3], key: e[0], score: q === "" ? 1 : score});
         }
@@ -134,15 +115,7 @@ BasePopup {
         return root.emojiByChar[ch] ?? null;
     }
     function applyResults(out: var): void {
-        let idx = 0;
-        if (root.selMoved) {
-            const keep = (root.entries[resultGrid.currentIndex] ?? {}).key ?? "";
-            if (keep !== "") {
-                const found = out.findIndex(e => e.key === keep);
-                if (found >= 0)
-                    idx = found;
-            }
-        }
+        const idx = filter.keptIndex((root.entries[resultGrid.currentIndex] ?? {}).key ?? "", out);
         root.entries = out;
         if (out.length > 0) {
             resultGrid.currentIndex = Math.min(idx, out.length - 1);
@@ -152,7 +125,7 @@ BasePopup {
         }
     }
     function pick(): void {
-        root.flushRefilter();
+        filter.flush();
         const entry = root.entries[resultGrid.currentIndex];
         if (!entry)
             return;
@@ -162,33 +135,14 @@ BasePopup {
         bar.closePopups();
     }
     PopupCard {
-        Rectangle {
-            width: parent.width
-            height: Services.Theme.rowHeight
-            color: "transparent"
-            border.width: 1
-            border.color: Services.Theme.border
-            TextInput {
-                id: queryField
-                anchors {
-                    fill: parent
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                verticalAlignment: TextInput.AlignVCenter
-                color: Services.Theme.fg
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px13
-                onTextChanged: {
-                    root.selMoved = false;
-                    refilterTimer.restart();
-                }
-                Keys.onUpPressed: root.stepSelection(-1, root.gridCols)
-                Keys.onDownPressed: root.stepSelection(1, root.gridCols)
-                Keys.onReturnPressed: root.pick()
-                Keys.onEnterPressed: root.pick()
-                Keys.onEscapePressed: queryField.focus = false
-            }
+        SearchField {
+            id: search
+            catchEscape: true
+            onTextChanged: filter.schedule()
+            onUpPressed: root.stepSelection(-1, root.gridCols)
+            onDownPressed: root.stepSelection(1, root.gridCols)
+            onAccepted: root.pick()
+            onEscapePressed: search.releaseFocus()
         }
         GridView {
             id: resultGrid
@@ -205,7 +159,7 @@ BasePopup {
                 readonly property bool selected: resultGrid.currentIndex === index
                 width: GridView.view.cellWidth
                 height: GridView.view.cellHeight
-                color: selected ? Services.Theme.accent : cellArea.containsMouse ? Services.Theme.hoverBg : "transparent"
+                color: selected ? Services.Theme.accent : cellArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
                 MouseArea {
                     id: cellArea
                     anchors.fill: parent
@@ -215,12 +169,12 @@ BasePopup {
                         if (containsMouse) {
                             resultGrid.currentIndex = index;
                             resultGrid.positionViewAtIndex(index, GridView.Contain);
-                            root.selMoved = true;
+                            filter.selMoved = true;
                         }
                     }
                     onClicked: {
                         resultGrid.currentIndex = index;
-                        root.selMoved = true;
+                        filter.selMoved = true;
                         root.pick();
                     }
                 }

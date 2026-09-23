@@ -21,7 +21,7 @@ ShellRoot {
         model: {
             const main = Services.Settings.mainScreen(Quickshell.screens);
             const mainName = main && main.name ? main.name : "";
-            return Quickshell.screens.filter(s => s.name !== mainName);
+            return Quickshell.screens.filter(s => s && s.name && s.name !== mainName);
         }
         SlimBar {
             required property var modelData
@@ -89,8 +89,8 @@ ShellRoot {
                 cache: true
                 smooth: true
                 mipmap: true
-                sourceSize.width: modelData.width
-                sourceSize.height: modelData.height
+                sourceSize.width: modelData?.width ?? 0
+                sourceSize.height: modelData?.height ?? 0
             }
         }
     }
@@ -109,8 +109,8 @@ ShellRoot {
             }
         }
     }
-    ToastStack {
-        id: toastStack
+    NotificationStack {
+        id: notifStack
         bar: bar
     }
     Screenshot {

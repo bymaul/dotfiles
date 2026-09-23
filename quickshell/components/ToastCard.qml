@@ -46,7 +46,7 @@ Rectangle {
     Timer {
         id: expiryTimer
         interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Services.Theme.toastTimeout
-        running: !(card.notification.resident === true)
+        running: !(card.notification.resident === true) && (card.notification.expireTimeout ?? -1) !== 0
         onTriggered: Services.Notifs.dismissToast(card.notification)
     }
     Column {
@@ -93,73 +93,24 @@ Rectangle {
                     wrapMode: Text.WordWrap
                 }
             }
-            Item {
+            CardCloseButton {
                 id: closeBox
                 anchors.verticalCenter: parent.verticalCenter
-                width: 20
-                height: 20
-                Text {
-                    anchors.centerIn: parent
-                    text: "󰅖"
-                    color: closeArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px12
-                }
-                MouseArea {
-                    id: closeArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: Services.Notifs.dismissToast(card.notification)
-                }
+                onClicked: Services.Notifs.dismissToast(card.notification)
             }
         }
-        Rectangle {
+        ProgressBar {
             width: parent.width
             height: 3
             visible: card.hasProgress
-            color: Services.Theme.accentFg
-            Rectangle {
-                width: parent.width * Services.Theme.clamp01(Number(card.valueHint) / 100)
-                height: parent.height
-                color: Services.Theme.accent
-                Behavior on width {
-                    NumberAnimation {
-                        duration: 120
-                    }
-                }
-            }
+            fraction: Number(card.valueHint) / 100
         }
-        Flow {
+        ActionPills {
             width: parent.width
-            visible: card.actionList.length > 0
-            spacing: 6
-            Repeater {
-                model: card.actionList
-                delegate: Rectangle {
-                    required property var modelData
-                    width: actionLabel.width + 16
-                    height: 24
-                    color: hover.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
-                    Text {
-                        id: actionLabel
-                        anchors.centerIn: parent
-                        text: modelData.text
-                        color: Services.Theme.fg
-                        font.family: Services.Theme.font
-                        font.pixelSize: Services.Theme.px12
-                    }
-                    MouseArea {
-                        id: hover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            Services.Notifs.activateAction(card.notification, modelData);
-                            Services.Notifs.dismissToast(card.notification);
-                        }
-                    }
-                }
+            actions: card.actionList
+            onPicked: action => {
+                Services.Notifs.activateAction(card.notification, action);
+                Services.Notifs.dismissToast(card.notification);
             }
         }
     }

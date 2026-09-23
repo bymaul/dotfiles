@@ -3,27 +3,12 @@ import Quickshell
 import Quickshell.Bluetooth
 import "../components"
 import "../services" as Services
-BasePopup {
+DeviceListBase {
     id: root
     implicitWidth: Services.Theme.popupWidth
     implicitHeight: 36 + 36 + Services.Theme.listHeight(Services.Theme.listVisible) + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
-    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.moveHeader(-1) }
-    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.moveHeader(1) }
-    Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.focusNext() }
-    Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.focusPrev() }
-    Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.activateSelected() }
-    Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
-    Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.activateSelected() }
-    Shortcut { sequence: "e"; enabled: root.visible; onActivated: root.toggleAdapter() }
-    Shortcut { sequence: "s"; enabled: root.visible; onActivated: root.toggleScan() }
-    Shortcut { sequence: "d"; enabled: root.visible; onActivated: root.forgetSelected() }
-    Shortcut { sequence: "Delete"; enabled: root.visible; onActivated: root.forgetSelected() }
+    targetList: btList
     Shortcut { sequence: "t"; enabled: root.visible; onActivated: root.toggleTrust() }
-    property int headIndex: -1
     property string opMessage: ""
     property bool opError: false
     property var rawDevices: (Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.devices && Bluetooth.defaultAdapter.devices.values) ? Bluetooth.defaultAdapter.devices.values : []
@@ -68,42 +53,17 @@ BasePopup {
     }
     onVisibleChanged: {
         if (visible) {
-            headIndex = -1;
-            btList.currentIndex = 0;
+            root.resetNav();
             root.clearOp();
         } else {
             opClear.stop();
         }
     }
-    function stepSelection(dir: int): void {
-        headIndex = -1;
-        stepListView(btList, dir);
-    }
-    function selectRow(i: int): void {
-        headIndex = -1;
-        selectInList(btList, i);
-    }
-    function moveHeader(dir: int): void {
-        if (headIndex < 0)
-            return;
-        headIndex = Services.Theme.clamp(headIndex + dir, 0, 1);
-    }
-    function focusNext(): void {
-        headIndex = headIndex >= 1 ? -1 : headIndex + 1;
-    }
-    function focusPrev(): void {
-        headIndex = headIndex <= -1 ? 1 : headIndex - 1;
-    }
-    function activateSelected(): void {
-        if (headIndex === 0) {
-            root.toggleAdapter();
-            return;
-        }
-        if (headIndex === 1) {
-            root.toggleScan();
-            return;
-        }
+    function activateRow(): void {
         root.activateDevice(root.selectedDevice());
+    }
+    function forgetRow(): void {
+        root.forgetSelected();
     }
     function selectedDevice(): var {
         const devs = root.sortedDevices;
@@ -134,7 +94,6 @@ BasePopup {
             root.pendingSince = Date.now();
             opWatch.restart();
             root.setOp("Connecting " + root.deviceLabel(device) + "...", false);
-            console.log("[bt] connect " + device.address);
             device.connect();
             return;
         }
@@ -155,7 +114,6 @@ BasePopup {
         root.pendingSince = Date.now();
         opWatch.restart();
         root.setOp("Pairing " + root.deviceLabel(device) + "...", false);
-        console.log("[bt] pair start " + device.address);
         device.pair();
     }
     property string pendingAddr: ""
@@ -206,7 +164,7 @@ BasePopup {
             root.setOp("Connect failed" + (name !== "" ? ": " + name : "") + " - retry", true);
         root.clearPending();
     }
-    function toggleAdapter(): void {
+    function toggleEnabled(): void {
         if (Bluetooth.defaultAdapter) {
             Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled;
             root.clearOp();
@@ -244,7 +202,7 @@ BasePopup {
     }
     Timer {
         id: opWatch
-        interval: 500
+        interval: 1000
         repeat: true
         onTriggered: {
             if (root.pendingAddr === "") {
@@ -260,7 +218,6 @@ BasePopup {
             const elapsed = Date.now() - root.pendingSince;
             if (root.pendingAuto) {
                 if ((dev.paired || dev.bonded) && !dev.pairing) {
-                    console.log("[bt] paired " + dev.address + ", connecting");
                     if (!dev.trusted)
                         dev.trusted = true;
                     root.pendingAuto = false;
@@ -277,7 +234,6 @@ BasePopup {
                 return;
             }
             if (dev.connected || dev.state === BluetoothDeviceState.Connected) {
-                console.log("[bt] connected " + dev.address);
                 root.setOp("Connected: " + root.deviceLabel(dev), false);
                 root.clearPending();
                 return;
@@ -356,40 +312,15 @@ BasePopup {
         return "No devices found";
     }
     PopupCard {
-        Rectangle {
-            width: parent.width
-            height: Services.Theme.rowHeight
-            color: "transparent"
-            Text {
-                anchors {
-                    left: parent.left
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: 10
-                }
-                width: parent.width - 20
-                text: root.opMessage !== "" ? root.opMessage : root.headerStatus()
-                color: root.opMessage !== "" ? (root.opError ? Services.Theme.danger : Services.Theme.fg) : Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
-                elide: Text.ElideRight
-            }
-        }
-        Row {
-            width: parent.width
-            height: Services.Theme.rowHeight
-            spacing: Services.Theme.popupSpacing
-            PopupButton {
-                label: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled ? "󰂲  Disable" : "󰂯  Enable"
-                selected: root.headIndex === 0
-                onHovered: root.headIndex = 0
-                onClicked: root.toggleAdapter()
-            }
-            PopupButton {
-                label: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.discovering ? "󰑓  Scanning..." : "󰑐  Scan"
-                selected: root.headIndex === 1
-                onHovered: root.headIndex = 1
-                onClicked: root.toggleScan()
-            }
+        DeviceHeader {
+            statusText: root.opMessage !== "" ? root.opMessage : root.headerStatus()
+            statusColor: root.opMessage !== "" ? (root.opError ? Services.Theme.danger : Services.Theme.fg) : Services.Theme.dim
+            enableLabel: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled ? "󰂲  Disable" : "󰂯  Enable"
+            scanLabel: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.discovering ? "󰑓  Scanning..." : "󰑐  Scan"
+            headIndex: root.headIndex
+            onHeadHovered: index => root.headIndex = index
+            onEnableClicked: root.toggleEnabled()
+            onScanClicked: root.toggleScan()
         }
         Item {
             width: parent.width

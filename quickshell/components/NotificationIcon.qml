@@ -24,6 +24,8 @@ Item {
         sourceSize.width: root.iconSize
         sourceSize.height: root.iconSize
         fillMode: Image.PreserveAspectFit
+        cache: true
+        asynchronous: true
         visible: !root.recolorable && root.resolvedSource !== ""
     }
     MultiEffect {

@@ -103,14 +103,16 @@ Item {
             spacing: Services.Theme.listSpacing
             model: root.options
             currentIndex: root.cursor
-            delegate: Rectangle {
+            delegate: ResultRow {
                 required property var modelData
                 required property int index
                 readonly property bool isCurrent: modelData === root.current
                 readonly property bool isCursor: index === root.cursor
-                width: ListView.view.width
-                height: Services.Theme.rowHeight
-                color: isCursor ? Services.Theme.accent : optHover.containsMouse ? Services.Theme.hoverBg : isCurrent ? Services.Theme.activeBg : Services.Theme.surface
+                selected: isCursor
+                highlighted: isCurrent
+                baseColor: Services.Theme.surface
+                onHovered: root.optionHovered(index)
+                onClicked: root.optionClicked(modelData)
                 Text {
                     anchors {
                         fill: parent
@@ -119,21 +121,10 @@ Item {
                     }
                     verticalAlignment: Text.AlignVCenter
                     text: (parent.isCurrent ? "✓  " : "") + modelData
-                    color: parent.isCursor ? Services.Theme.accentFg : parent.isCurrent ? Services.Theme.accent : optHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                    color: parent.selected ? Services.Theme.accentFg : parent.highlighted ? Services.Theme.accent : parent.isHovered ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
                     elide: Text.ElideRight
-                }
-                MouseArea {
-                    id: optHover
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onContainsMouseChanged: {
-                        if (containsMouse)
-                            root.optionHovered(index);
-                    }
-                    onClicked: root.optionClicked(modelData)
                 }
             }
         }

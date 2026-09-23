@@ -25,6 +25,12 @@ Singleton {
             return true;
         return app === "volume" || app === "brightness" || app === "media" || app === "power" || app === "emoji" || app === "clipboard" || app === "settings";
     }
+    function isOsd(n): bool {
+        if (!n || n.qsInternal !== true)
+            return false;
+        const k = n.qsSyncKey;
+        return k === "volume" || k === "brightness" || k === "mic" || k === "media" || k === "charger" || k === "caffeine" || k === "dnd";
+    }
     function bypassesDnd(n): bool {
         if (n?.qsInternal === true)
             return true;
@@ -219,7 +225,9 @@ Singleton {
                 notifs.pending = [notification, ...notifs.pending].slice(0, Theme.toastMax);
             return;
         }
-        const next = [notification, ...notifs.toasts].slice(0, Theme.toastMax);
+        let next = [notification, ...notifs.toasts].slice(0, Theme.toastMax);
+        if (notifs.isOsd(notification))
+            next = [next[0], ...next.slice(1).filter(t => !notifs.isOsd(t))];
         const dropped = notifs.toasts.filter(t => !next.includes(t));
         notification.qsToastId = ++notifs.toastSeq;
         notifs.toasts = next;

@@ -54,6 +54,8 @@ BasePopup {
         root.selectedIndex = 0;
         root.closeDrop();
         root.syncWallCursor();
+        if (root.visible && root.tab === 3)
+            Services.Settings.refreshMonitors(false);
     }
     onWpCountChanged: root.syncWallCursor()
     onMonCountChanged: {
@@ -71,8 +73,9 @@ BasePopup {
             root.selectedIndex = 0;
             root.closeDrop();
             root.syncWallCursor();
-            Services.Settings.refreshWallpapers();
-            Services.Settings.refreshMonitors();
+            Services.Settings.refreshWallpapers(false);
+            if (root.tab === 3)
+                Services.Settings.refreshMonitors(false);
         } else {
             root.calmBusy();
             root.closeDrop();
@@ -109,22 +112,23 @@ BasePopup {
     }
     function stepSelection(dir: int): void {
         if (root.tab === 2 && root.openDropdown >= 0) {
-            root.moveDropCursor(dir);
+            root.moveCursor(root.dropdownOptions(root.openDropdown), dir);
             return;
         }
         if (root.tab === 3 && root.openMainDrop) {
-            root.mainMoveCursor(dir);
+            root.moveCursor(root.mainOptions(), dir);
             return;
         }
         if (root.tab === 3 && root.openMonRes !== "") {
-            root.monMoveCursor(dir);
+            root.moveCursor(Services.Settings.monitorModes(root.openMonRes), dir);
             return;
         }
         if (root.tab === 3 && root.openMonPos !== "") {
-            root.monPosMoveCursor(dir);
+            root.moveCursor(Services.Settings.monitorPosOptions(), dir);
             return;
         }
         selectedIndex += dir;
+        root.clampSelection();
         root.syncWallCursor();
     }
     function tabStep(dir: int): void {
@@ -257,7 +261,7 @@ BasePopup {
             return;
         }
         if (root.tab === 3 && root.selectedIndex === root.monLastIndex()) {
-            Services.Settings.refreshMonitors();
+            Services.Settings.refreshMonitors(true);
             return;
         }
         const name = root.monitorNameAt(selectedIndex);
@@ -362,9 +366,8 @@ BasePopup {
         else
             root.openDrop(i);
     }
-    function moveDropCursor(dir: int): void {
-        const opts = root.dropdownOptions(root.openDropdown);
-        if (opts.length === 0)
+    function moveCursor(opts: var, dir: int): void {
+        if (!opts || opts.length === 0)
             return;
         root.dropCursor = (root.dropCursor + dir + opts.length) % opts.length;
     }
@@ -405,12 +408,6 @@ BasePopup {
         root.dropCursor = at;
         root.openMenu = {kind: "pos", name: name};
     }
-    function monPosMoveCursor(dir: int): void {
-        const opts = Services.Settings.monitorPosOptions();
-        if (opts.length === 0)
-            return;
-        root.dropCursor = (root.dropCursor + dir + opts.length) % opts.length;
-    }
     function commitMonPos(name: string, pos: string): void {
         root.beginMonitorChange();
         Services.Settings.setMonitorPos(name, pos);
@@ -437,12 +434,6 @@ BasePopup {
         root.dropCursor = at;
         root.openMenu = {kind: "main"};
     }
-    function mainMoveCursor(dir: int): void {
-        const opts = root.mainOptions();
-        if (opts.length === 0)
-            return;
-        root.dropCursor = (root.dropCursor + dir + opts.length) % opts.length;
-    }
     function cycleMainMonitor(dir: int): void {
         const opts = root.mainOptions();
         if (opts.length === 0)
@@ -457,12 +448,6 @@ BasePopup {
         }
         Services.Settings.setMainMonitor(opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
         root.closeDrop();
-    }
-    function monMoveCursor(dir: int): void {
-        const modes = Services.Settings.monitorModes(root.openMonRes);
-        if (modes.length === 0)
-            return;
-        root.dropCursor = (root.dropCursor + dir + modes.length) % modes.length;
     }
     function commitMonRes(name: string, res: string): void {
         root.beginMonitorChange();
@@ -562,7 +547,7 @@ BasePopup {
                 height: Services.Theme.listRowHeight
                 readonly property bool current: Services.Settings.wallpaperOverride === ""
                 readonly property bool selected: root.tab === 0 && root.selectedIndex === 0
-                color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : autoHover.containsMouse ? Services.Theme.hoverBg : "transparent"
+                color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : autoHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
                 border.width: (!selected && current) ? 1 : 0
                 border.color: Services.Theme.accent
                 Text {
@@ -608,7 +593,7 @@ BasePopup {
                     readonly property bool selected: wallList.currentIndex === index
                     width: ListView.view.width
                     height: Services.Theme.listRowHeight
-                    color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : rowHover.containsMouse ? Services.Theme.hoverBg : "transparent"
+                    color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : rowHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
                     border.width: (!selected && current) ? 1 : 0
                     border.color: Services.Theme.accent
                     Text {
@@ -826,153 +811,123 @@ BasePopup {
                     onSliderMoved: value => Services.Settings.setCriticalBatteryPct(Math.round(value / 2) * 2)
                 }
             }
-            SettingsRow {
+            DropdownRow {
                 selected: root.tab === 2 && root.selectedIndex === 6
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 6;
                 }
                 title: "Critical action"
-                value: ""
                 z: root.openDropdown === 6 ? 100 : 0
-                Dropdown {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    options: Services.Power.criticalOptions
-                    current: Services.Settings.criticalBatteryAction
-                    open: root.openDropdown === 6
-                    selected: root.tab === 2 && root.selectedIndex === 6
-                    cursor: root.dropCursor
-                    onHeaderClicked: {
-                        root.selectedIndex = 6;
-                        root.toggleDrop(6);
-                    }
-                    onOptionHovered: index => root.dropCursor = index
-                    onOptionClicked: value => {
-                        root.selectedIndex = 6;
-                        root.applyDropValue(6, value);
-                        root.closeDrop();
-                    }
+                options: Services.Power.criticalOptions
+                current: Services.Settings.criticalBatteryAction
+                dropOpen: root.openDropdown === 6
+                cursor: root.dropCursor
+                onHeaderClicked: {
+                    root.selectedIndex = 6;
+                    root.toggleDrop(6);
+                }
+                onOptionHovered: index => root.dropCursor = index
+                onOptionClicked: value => {
+                    root.selectedIndex = 6;
+                    root.applyDropValue(6, value);
+                    root.closeDrop();
                 }
             }
-            SettingsRow {
+            DropdownRow {
                 selected: root.tab === 2 && root.selectedIndex === 7
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 7;
                 }
                 title: "Lid close"
-                value: ""
                 z: root.openDropdown === 7 ? 100 : 0
-                Dropdown {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    options: Services.Power.lidOptions
-                    current: Services.Settings.lidCloseAction
-                    open: root.openDropdown === 7
-                    selected: root.tab === 2 && root.selectedIndex === 7
-                    cursor: root.dropCursor
-                    onHeaderClicked: {
-                        root.selectedIndex = 7;
-                        root.toggleDrop(7);
-                    }
-                    onOptionHovered: index => root.dropCursor = index
-                    onOptionClicked: value => {
-                        root.selectedIndex = 7;
-                        root.applyDropValue(7, value);
-                        root.closeDrop();
-                    }
+                options: Services.Power.lidOptions
+                current: Services.Settings.lidCloseAction
+                dropOpen: root.openDropdown === 7
+                cursor: root.dropCursor
+                onHeaderClicked: {
+                    root.selectedIndex = 7;
+                    root.toggleDrop(7);
+                }
+                onOptionHovered: index => root.dropCursor = index
+                onOptionClicked: value => {
+                    root.selectedIndex = 7;
+                    root.applyDropValue(7, value);
+                    root.closeDrop();
                 }
             }
-            SettingsRow {
+            DropdownRow {
                 selected: root.tab === 2 && root.selectedIndex === 8
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 8;
                 }
                 title: "Power button"
-                value: ""
                 z: root.openDropdown === 8 ? 100 : 0
-                Dropdown {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    options: Services.Power.buttonOptions
-                    current: Services.Settings.powerButtonAction
-                    open: root.openDropdown === 8
-                    selected: root.tab === 2 && root.selectedIndex === 8
-                    cursor: root.dropCursor
-                    openUp: true
-                    onHeaderClicked: {
-                        root.selectedIndex = 8;
-                        root.toggleDrop(8);
-                    }
-                    onOptionHovered: index => root.dropCursor = index
-                    onOptionClicked: value => {
-                        root.selectedIndex = 8;
-                        root.applyDropValue(8, value);
-                        root.closeDrop();
-                    }
+                options: Services.Power.buttonOptions
+                current: Services.Settings.powerButtonAction
+                dropOpen: root.openDropdown === 8
+                cursor: root.dropCursor
+                openUp: true
+                onHeaderClicked: {
+                    root.selectedIndex = 8;
+                    root.toggleDrop(8);
+                }
+                onOptionHovered: index => root.dropCursor = index
+                onOptionClicked: value => {
+                    root.selectedIndex = 8;
+                    root.applyDropValue(8, value);
+                    root.closeDrop();
                 }
             }
-            SettingsRow {
+            DropdownRow {
                 selected: root.tab === 2 && root.selectedIndex === 9
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 9;
                 }
                 title: "Active profile"
-                value: ""
                 z: root.openDropdown === 9 ? 100 : 0
-                Dropdown {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    options: root.activeProfileOptions()
-                    current: Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd"
-                    enabled: Services.Power.profilesAvailable
-                    open: root.openDropdown === 9
-                    selected: root.tab === 2 && root.selectedIndex === 9
-                    cursor: root.dropCursor
-                    openUp: true
-                    onHeaderClicked: {
-                        root.selectedIndex = 9;
-                        root.toggleDrop(9);
-                    }
-                    onOptionHovered: index => root.dropCursor = index
-                    onOptionClicked: value => {
-                        root.selectedIndex = 9;
-                        root.applyDropValue(9, value);
-                        root.closeDrop();
-                    }
+                options: root.activeProfileOptions()
+                current: Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd"
+                dropEnabled: Services.Power.profilesAvailable
+                dropOpen: root.openDropdown === 9
+                cursor: root.dropCursor
+                openUp: true
+                onHeaderClicked: {
+                    root.selectedIndex = 9;
+                    root.toggleDrop(9);
+                }
+                onOptionHovered: index => root.dropCursor = index
+                onOptionClicked: value => {
+                    root.selectedIndex = 9;
+                    root.applyDropValue(9, value);
+                    root.closeDrop();
                 }
             }
-            SettingsRow {
+            DropdownRow {
                 selected: root.tab === 2 && root.selectedIndex === 10
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 10;
                 }
                 title: "On battery"
-                value: ""
                 z: root.openDropdown === 10 ? 100 : 0
-                Dropdown {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    options: Services.Power.profileOptions
-                    current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
-                    open: root.openDropdown === 10
-                    selected: root.tab === 2 && root.selectedIndex === 10
-                    cursor: root.dropCursor
-                    openUp: true
-                    onHeaderClicked: {
-                        root.selectedIndex = 10;
-                        root.toggleDrop(10);
-                    }
-                    onOptionHovered: index => root.dropCursor = index
-                    onOptionClicked: value => {
-                        root.selectedIndex = 10;
-                        root.applyDropValue(10, value);
-                        root.closeDrop();
-                    }
+                options: Services.Power.profileOptions
+                current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
+                dropOpen: root.openDropdown === 10
+                cursor: root.dropCursor
+                openUp: true
+                onHeaderClicked: {
+                    root.selectedIndex = 10;
+                    root.toggleDrop(10);
+                }
+                onOptionHovered: index => root.dropCursor = index
+                onOptionClicked: value => {
+                    root.selectedIndex = 10;
+                    root.applyDropValue(10, value);
+                    root.closeDrop();
                 }
             }
             Text {
@@ -991,34 +946,28 @@ BasePopup {
             visible: root.tab === 3
             width: parent.width
             spacing: Services.Theme.popupSpacing
-            SettingsRow {
+            DropdownRow {
                 visible: root.hasMain
+                title: "Main display"
                 selected: root.tab === 3 && root.selectedIndex === 0
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 0;
                 }
-                title: "Main display"
-                value: ""
                 z: root.openMainDrop ? 100 : 0
-                Dropdown {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    options: root.mainOptions()
-                    current: Services.Settings.mainMonitor
-                    open: root.openMainDrop
-                    selected: root.tab === 3 && root.selectedIndex === 0
-                    cursor: root.dropCursor
-                    onHeaderClicked: {
-                        root.selectedIndex = 0;
-                        root.toggleMainDrop();
-                    }
-                    onOptionHovered: index => root.dropCursor = index
-                    onOptionClicked: value => {
-                        root.selectedIndex = 0;
-                        Services.Settings.setMainMonitor(value);
-                        root.closeDrop();
-                    }
+                options: root.mainOptions()
+                current: Services.Settings.mainMonitor
+                dropOpen: root.openMainDrop
+                cursor: root.dropCursor
+                onHeaderClicked: {
+                    root.selectedIndex = 0;
+                    root.toggleMainDrop();
+                }
+                onOptionHovered: index => root.dropCursor = index
+                onOptionClicked: value => {
+                    root.selectedIndex = 0;
+                    Services.Settings.setMainMonitor(value);
+                    root.closeDrop();
                 }
             }
             Text {
@@ -1095,63 +1044,51 @@ BasePopup {
                             }
                         }
                     }
-                    SettingsRow {
-                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 2
-                    onHovered: {
-                        if (!root.anyDropOpen())
-                            root.selectedIndex = root.monFirst + index * root.monRows + 2;
-                    }
+                    DropdownRow {
                         title: "Resolution"
-                        value: ""
+                        selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 2
+                        onHovered: {
+                            if (!root.anyDropOpen())
+                                root.selectedIndex = root.monFirst + index * root.monRows + 2;
+                        }
                         z: root.openMonRes === monName ? 100 : 0
-                        Dropdown {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            options: Services.Settings.monitorModes(monName)
-                            current: Services.Settings.monitorRes(monName)
-                            open: root.openMonRes === monName
-                            selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 2
-                            cursor: root.dropCursor
-                            openUp: index === root.monCount - 1
-                            onHeaderClicked: {
-                                root.selectedIndex = root.monFirst + index * root.monRows + 2;
-                                root.toggleMonDrop(monName);
-                            }
-                            onOptionHovered: optIdx => root.dropCursor = optIdx
-                            onOptionClicked: value => {
-                                root.selectedIndex = root.monFirst + index * root.monRows + 2;
-                                root.commitMonRes(monName, value);
-                            }
+                        options: Services.Settings.monitorModes(monName)
+                        current: Services.Settings.monitorRes(monName)
+                        dropOpen: root.openMonRes === monName
+                        cursor: root.dropCursor
+                        openUp: index === root.monCount - 1
+                        onHeaderClicked: {
+                            root.selectedIndex = root.monFirst + index * root.monRows + 2;
+                            root.toggleMonDrop(monName);
+                        }
+                        onOptionHovered: optIdx => root.dropCursor = optIdx
+                        onOptionClicked: value => {
+                            root.selectedIndex = root.monFirst + index * root.monRows + 2;
+                            root.commitMonRes(monName, value);
                         }
                     }
-                    SettingsRow {
-                    visible: root.monCount > 1
-                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
-                    onHovered: {
-                        if (!root.anyDropOpen())
-                            root.selectedIndex = root.monFirst + index * root.monRows + 3;
-                    }
+                    DropdownRow {
+                        visible: root.monCount > 1
                         title: "Position"
-                        value: ""
+                        selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
+                        onHovered: {
+                            if (!root.anyDropOpen())
+                                root.selectedIndex = root.monFirst + index * root.monRows + 3;
+                        }
                         z: root.openMonPos === monName ? 100 : 0
-                        Dropdown {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            options: Services.Settings.monitorPosOptions()
-                            current: Services.Settings.monitorPos(monName)
-                            open: root.openMonPos === monName
-                            selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
-                            cursor: root.dropCursor
-                            openUp: index === root.monCount - 1
-                            onHeaderClicked: {
-                                root.selectedIndex = root.monFirst + index * root.monRows + 3;
-                                root.toggleMonPosDrop(monName);
-                            }
-                            onOptionHovered: optIdx => root.dropCursor = optIdx
-                            onOptionClicked: value => {
-                                root.selectedIndex = root.monFirst + index * root.monRows + 3;
-                                root.commitMonPos(monName, value);
-                            }
+                        options: Services.Settings.monitorPosOptions()
+                        current: Services.Settings.monitorPos(monName)
+                        dropOpen: root.openMonPos === monName
+                        cursor: root.dropCursor
+                        openUp: index === root.monCount - 1
+                        onHeaderClicked: {
+                            root.selectedIndex = root.monFirst + index * root.monRows + 3;
+                            root.toggleMonPosDrop(monName);
+                        }
+                        onOptionHovered: optIdx => root.dropCursor = optIdx
+                        onOptionClicked: value => {
+                            root.selectedIndex = root.monFirst + index * root.monRows + 3;
+                            root.commitMonPos(monName, value);
                         }
                     }
                     }
@@ -1167,7 +1104,7 @@ BasePopup {
                 }
                 onClicked: {
                     root.selectedIndex = root.monLastIndex();
-                    Services.Settings.refreshMonitors();
+                    Services.Settings.refreshMonitors(true);
                 }
             }
             Text {

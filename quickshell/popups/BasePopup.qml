@@ -96,7 +96,7 @@ PopupWindow {
     anchor.rect.x: (base.anchorMode === "center" || base.anchorMode === "middle") ? anchorBarWidth / 2 - width / 2 : anchorBarWidth - width - Services.Theme.popupMargin
     anchor.rect.y: base.anchorMode === "middle" ? Math.max(anchorBarHeight + Services.Theme.popupTopGap, popupScreenHeight / 2 - height / 2) : anchorBarHeight + Services.Theme.popupTopGap + base.extraTop
     visible: false
-    color: "transparent"
+    color: Services.Theme.transparent
     onVisibleChanged: {
         if (!base.visible) {
             grab.active = false;

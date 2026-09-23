@@ -95,7 +95,7 @@ BasePopup {
                 id: historyList
                 anchors.fill: parent
                 clip: true
-                cacheBuffer: 10000
+                cacheBuffer: 400
                 model: Services.Notifs.history
                 spacing: Services.Theme.popupSpacing
                 delegate: Rectangle {
@@ -164,24 +164,9 @@ BasePopup {
                                         font.family: Services.Theme.font
                                         font.pixelSize: Services.Theme.px10
                                     }
-                                    Item {
+                                    CardCloseButton {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: 20
-                                        height: 20
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "󰅖"
-                                            color: histCloseArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                                            font.family: Services.Theme.font
-                                            font.pixelSize: Services.Theme.px12
-                                        }
-                                        MouseArea {
-                                            id: histCloseArea
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: Services.Notifs.dismissHistoryAt(historyCard.index)
-                                        }
+                                        onClicked: Services.Notifs.dismissHistoryAt(historyCard.index)
                                     }
                                 }
                                 Text {
@@ -194,43 +179,15 @@ BasePopup {
                                     textFormat: Text.RichText
                                     wrapMode: Text.WordWrap
                                 }
-                                Flow {
+                                ActionPills {
                                     width: parent.width
-                                    visible: (modelData.live?.actions ?? []).length > 0
-                                    spacing: 6
-                                    Repeater {
-                                        model: modelData.live?.actions ?? []
-                                        delegate: Rectangle {
-                                            required property var modelData
-                                            required property int index
-                                            readonly property bool focused: historyCard.selected && root.panel.actionIndex === index
-                                            width: actionLabel.width + 16
-                                            height: 24
-                                            color: focused ? Services.Theme.accent : actionArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.surface
-                                            Text {
-                                                id: actionLabel
-                                                anchors.centerIn: parent
-                                                text: modelData.text
-                                                color: parent.focused ? Services.Theme.accentFg : Services.Theme.fg
-                                                font.family: Services.Theme.font
-                                                font.pixelSize: Services.Theme.px12
-                                            }
-                                            MouseArea {
-                                                id: actionArea
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onContainsMouseChanged: {
-                                                    if (containsMouse)
-                                                        root.panel.selectAction(historyCard.index, index);
-                                                }
-                                                onClicked: {
-                                                    Services.Notifs.activateAction(historyCard.modelData.live, modelData);
-                                                    Services.Notifs.dismissHistoryAt(historyCard.index);
-                                                    bar.closePopups();
-                                                }
-                                            }
-                                        }
+                                    actions: modelData.live?.actions ?? []
+                                    focusedIndex: historyCard.selected ? root.panel.actionIndex : -1
+                                    onHovered: index => root.panel.selectAction(historyCard.index, index)
+                                    onPicked: action => {
+                                        Services.Notifs.activateAction(modelData.live, action);
+                                        Services.Notifs.dismissHistoryAt(historyCard.index);
+                                        bar.closePopups();
                                     }
                                 }
                             }

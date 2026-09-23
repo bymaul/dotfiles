@@ -17,6 +17,8 @@ Row {
                 sourceSize.width: 18
                 sourceSize.height: 18
                 fillMode: Image.PreserveAspectFit
+                cache: true
+                asynchronous: true
                 visible: (modelData?.icon ?? "") !== ""
             }
             QsMenuAnchor {

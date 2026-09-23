@@ -376,7 +376,7 @@ if [ "$NO_PLUGINS" -eq 0 ]; then
     fi
 fi
 
-log "checking requirements (details: dot-doctor)"
+log "checking requirements"
 missing=0
 for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
            yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
@@ -386,7 +386,7 @@ for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
         missing=1
     fi
 done
-[ "$missing" -eq 0 ] || warn "some requirements are missing - see README.md (pkglist.txt) or run dot-doctor"
+[ "$missing" -eq 0 ] || warn "some requirements are missing - see README.md (pkglist.txt)"
 
 cat <<EOF
 

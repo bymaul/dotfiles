@@ -174,7 +174,7 @@ Singleton {
     property string lidStatePath: ""
     Timer {
         id: lidTimer
-        interval: 10000
+        interval: 30000
         running: true
         repeat: true
         triggeredOnStart: true

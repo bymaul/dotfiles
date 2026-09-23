@@ -39,8 +39,15 @@ Row {
         return [...ids].sort((a, b) => a - b);
     }
     function workspaceById(id: int): var {
-        const hit = (root.pool ?? []).find(ws => ws && ws.id === id);
-        return hit ? hit : null;
+        return root.wsById[id] ?? null;
+    }
+    readonly property var wsById: {
+        const m = {};
+        for (const ws of root.pool ?? []) {
+            if (ws && typeof ws.id === "number")
+                m[ws.id] = ws;
+        }
+        return m;
     }
     function activateSlot(id: int): void {
         const target = workspaceById(id);
@@ -63,7 +70,7 @@ Row {
             height: 25
             Rectangle {
                 anchors.fill: parent
-                color: isFocused ? Services.Theme.surface : "transparent"
+                color: isFocused ? Services.Theme.surface : Services.Theme.transparent
             }
             Text {
                 anchors.centerIn: parent

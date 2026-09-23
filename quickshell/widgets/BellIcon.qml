@@ -1,35 +1,30 @@
 import QtQuick
+import "../components"
 import "../services" as Services
-Item {
+BarIcon {
     id: root
     required property var bar
     anchors.verticalCenter: parent.verticalCenter
-    width: 20
-    height: 20
     readonly property bool hasUnread: Services.Notifs.unread > 0
-    Text {
-        anchors.centerIn: parent
-        text: ""
-        color: root.hasUnread ? Services.Theme.accent : Services.Theme.dim
-        font.family: Services.Theme.font
-        font.pixelSize: Services.Theme.px13
-    }
+    glyph: ""
+    glyphColor: root.hasUnread ? Services.Theme.accent : Services.Theme.dim
+    tipText: "Notifications"
+    tipAnchor: bar
+    onClicked: bar.toggleControl()
     Rectangle {
         anchors {
             top: parent.top
             right: parent.right
-            topMargin: 2
-            rightMargin: 1
+            topMargin: -2
+            rightMargin: -3
         }
-        width: 7
-        height: 7
-        radius: 3.5
+        width: 8
+        height: 8
+        radius: 4
         visible: root.hasUnread
         color: Services.Theme.accent
-    }
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.bar.toggleControl()
+        border.color: Services.Theme.barBg
+        border.width: 1
+        z: 1
     }
 }

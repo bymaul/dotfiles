@@ -49,7 +49,7 @@ Singleton {
     }
     Timer {
         id: poller
-        interval: 2000
+        interval: 4000
         running: true
         repeat: true
         triggeredOnStart: true

@@ -134,7 +134,7 @@ BasePopup {
                     required property var modelData
                     width: parent.width / 7
                     height: 26
-                    color: modelData > 0 && root.isToday(modelData) ? Services.Theme.accent : "transparent"
+                    color: modelData > 0 && root.isToday(modelData) ? Services.Theme.accent : Services.Theme.transparent
                     Text {
                         anchors.centerIn: parent
                         text: modelData === 0 ? "" : modelData

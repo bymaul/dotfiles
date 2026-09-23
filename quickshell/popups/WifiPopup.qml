@@ -3,25 +3,12 @@ import Quickshell
 import Quickshell.Networking
 import "../components"
 import "../services" as Services
-BasePopup {
+DeviceListBase {
     id: root
     implicitWidth: Services.Theme.popupWidth
     implicitHeight: (root.authTarget === null ? wifiList.height : authCol.height) + 36 + 36 + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
-    Shortcut { sequence: "j"; enabled: root.visible && root.authTarget === null; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "k"; enabled: root.visible && root.authTarget === null; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Down"; enabled: root.visible && root.authTarget === null; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible && root.authTarget === null; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Left"; enabled: root.visible && root.authTarget === null; onActivated: root.moveHeader(-1) }
-    Shortcut { sequence: "Right"; enabled: root.visible && root.authTarget === null; onActivated: root.moveHeader(1) }
-    Shortcut { sequence: "Tab"; enabled: root.visible && root.authTarget === null; onActivated: root.focusNext() }
-    Shortcut { sequence: "Shift+Tab"; enabled: root.visible && root.authTarget === null; onActivated: root.focusPrev() }
-    Shortcut { sequence: "Return"; enabled: root.visible && root.authTarget === null; onActivated: root.activateSelected() }
-    Shortcut { sequence: "Enter"; enabled: root.visible && root.authTarget === null; onActivated: root.activateSelected() }
-    Shortcut { sequence: "Space"; enabled: root.visible && root.authTarget === null; onActivated: root.activateSelected() }
-    Shortcut { sequence: "d"; enabled: root.visible && root.authTarget === null; onActivated: root.forgetSelected() }
-    Shortcut { sequence: "Delete"; enabled: root.visible && root.authTarget === null; onActivated: root.forgetSelected() }
-    Shortcut { sequence: "s"; enabled: root.visible && root.authTarget === null; onActivated: root.toggleScan() }
-    Shortcut { sequence: "e"; enabled: root.visible && root.authTarget === null; onActivated: root.toggleWifiEnabled() }
+    targetList: wifiList
+    listBlocked: root.authTarget !== null
     Shortcut { sequence: "h"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = 0 }
     Shortcut { sequence: "l"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = 1 }
     Shortcut { sequence: "Left"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = 0 }
@@ -31,7 +18,6 @@ BasePopup {
     Shortcut { sequence: "Space"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
     Shortcut { sequence: "Return"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
     Shortcut { sequence: "Enter"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
-    property int headIndex: -1
     property var authTarget: null
     property string authError: ""
     property var pendingNetwork: null
@@ -44,41 +30,16 @@ BasePopup {
     }
     onVisibleChanged: {
         if (visible) {
-            headIndex = -1;
-            wifiList.currentIndex = 0;
+            root.resetNav();
         } else {
             root.cancelAuth();
         }
     }
-    function stepSelection(dir: int): void {
-        headIndex = -1;
-        stepListView(wifiList, dir);
-    }
-    function selectRow(i: int): void {
-        headIndex = -1;
-        selectInList(wifiList, i);
-    }
-    function moveHeader(dir: int): void {
-        if (headIndex < 0)
-            return;
-        headIndex = Services.Theme.clamp(headIndex + dir, 0, 1);
-    }
-    function focusNext(): void {
-        headIndex = headIndex >= 1 ? -1 : headIndex + 1;
-    }
-    function focusPrev(): void {
-        headIndex = headIndex <= -1 ? 1 : headIndex - 1;
-    }
-    function activateSelected(): void {
-        if (headIndex === 0) {
-            root.toggleWifiEnabled();
-            return;
-        }
-        if (headIndex === 1) {
-            root.toggleScan();
-            return;
-        }
+    function activateRow(): void {
         root.activateNetwork(root.selectedNetwork());
+    }
+    function forgetRow(): void {
+        root.forgetSelected();
     }
     function selectedNetwork(): var {
         const nets = Services.Wifi.device?.networks?.values ?? [];
@@ -180,44 +141,19 @@ BasePopup {
                 Services.Wifi.device.scannerEnabled = false;
         }
     }
-    function toggleWifiEnabled(): void {
+    function toggleEnabled(): void {
         Networking.wifiEnabled = !Networking.wifiEnabled;
     }
     PopupCard {
-        Rectangle {
-            width: parent.width
-            height: Services.Theme.rowHeight
-            color: "transparent"
-            Text {
-                anchors {
-                    left: parent.left
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: 10
-                }
-                width: parent.width - 20
-                text: Services.Wifi.connected ? "󰤨 " + Services.Wifi.connected.name : (Services.Wifi.device?.networks?.values ?? []).find(n => n && n.state === ConnectionState.Connecting) ? "󰤭 Connecting..." : Networking.wifiEnabled ? "󰤭 Not connected" : "󰤯 Wi-Fi off"
-                color: Services.Wifi.connected ? Services.Theme.fg : Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
-                elide: Text.ElideRight
-            }
-        }
-        Row {
-            width: parent.width
-            height: Services.Theme.rowHeight
-            spacing: Services.Theme.popupSpacing
-            PopupButton {
-                label: Networking.wifiEnabled ? "󰖪  Disable" : "󰖩  Enable"
-                selected: root.headIndex === 0
-                onHovered: root.headIndex = 0
-                onClicked: root.toggleWifiEnabled()
-            }
-            PopupButton {
-                label: Services.Wifi.device?.scannerEnabled ? "󰑓  Scanning..." : "󰑐  Scan"
-                selected: root.headIndex === 1
-                onHovered: root.headIndex = 1
-                onClicked: root.toggleScan()
-            }
+        DeviceHeader {
+            statusText: Services.Wifi.connected ? "󰤨 " + Services.Wifi.connected.name : (Services.Wifi.device?.networks?.values ?? []).find(n => n && n.state === ConnectionState.Connecting) ? "󰤭 Connecting..." : Networking.wifiEnabled ? "󰤭 Not connected" : "󰤯 Wi-Fi off"
+            statusColor: Services.Wifi.connected ? Services.Theme.fg : Services.Theme.dim
+            enableLabel: Networking.wifiEnabled ? "󰖪  Disable" : "󰖩  Enable"
+            scanLabel: Services.Wifi.device?.scannerEnabled ? "󰑓  Scanning..." : "󰑐  Scan"
+            headIndex: root.headIndex
+            onHeadHovered: index => root.headIndex = index
+            onEnableClicked: root.toggleEnabled()
+            onScanClicked: root.toggleScan()
         }
         ListView {
             id: wifiList
@@ -339,27 +275,18 @@ BasePopup {
                     Keys.onEnterPressed: root.doConnect()
                 }
             }
-            Row {
-                width: parent.width
-                spacing: Services.Theme.popupSpacing
-                PopupButton {
-                    label: "Cancel"
-                    selected: root.selectedButton === 0
-                    onHovered: root.selectedButton = 0
-                    onClicked: {
-                        root.selectedButton = 0;
+            ConfirmRow {
+                choice: root.selectedButton
+                noLabel: "Cancel"
+                yesLabel: "Connect"
+                accentYes: true
+                onHovered: index => root.selectedButton = index
+                onPicked: index => {
+                    root.selectedButton = index;
+                    if (index === 0)
                         root.cancelAuth();
-                    }
-                }
-                PopupButton {
-                    label: "Connect"
-                    accent: true
-                    selected: root.selectedButton === 1
-                    onHovered: root.selectedButton = 1
-                    onClicked: {
-                        root.selectedButton = 1;
+                    else
                         root.doConnect();
-                    }
                 }
             }
         }
