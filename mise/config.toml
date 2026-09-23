@@ -1,6 +1,7 @@
 # mise tools. After cloning: mise trust && mise install
 [tools]
 go = "latest"
-java = "latest"
+java = "lts"
+maven = "latest"
 node = "lts"
 pnpm = "latest"
