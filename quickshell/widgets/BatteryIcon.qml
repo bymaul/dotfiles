@@ -30,5 +30,4 @@ BarIcon {
     glyphColor: Services.Power.levelColor(root.level * 100)
     tipText: Services.Power.statusLine
     tipAnchor: root.bar
-    onClicked: bar.togglePower()
 }

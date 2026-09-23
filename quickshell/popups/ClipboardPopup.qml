@@ -74,7 +74,12 @@ BasePopup {
                 const fmt = fmtMatch[1].toLowerCase();
                 mime = fmt.indexOf("/") >= 0 ? fmt : "image/" + (fmt === "jpg" ? "jpeg" : fmt);
             }
-            const label = isImage ? ("󰆏 Image" + (size !== "" ? " - " + size : "") + (dims !== "" ? " " + dims : "")) : "";
+            const bits = [];
+            if (dims !== "")
+                bits.push(dims);
+            if (size !== "")
+                bits.push(size);
+            const label = isImage ? (bits.length > 0 ? bits.join(" · ") : "Image") : "";
             out.push({line: line, id: id, preview: preview, isImage: isImage, mime: mime, label: label});
         }
         root.entries = out;
@@ -298,6 +303,7 @@ BasePopup {
                 id: row
                 required property var modelData
                 required property int index
+                rowHeight: modelData.isImage ? 80 : Services.Theme.rowHeight
                 selected: clipList.currentIndex === index
                 onHovered: {
                     root.wipeConfirm = false;
@@ -311,29 +317,47 @@ BasePopup {
                 Image {
                     anchors {
                         left: parent.left
-                        verticalCenter: parent.verticalCenter
+                        top: parent.top
+                        bottom: parent.bottom
                         leftMargin: 10
+                        topMargin: 6
+                        bottomMargin: 6
                     }
-                    width: 28
-                    height: 28
+                    width: 144
                     readonly property string thumbSource: modelData.isImage && root.thumbs[modelData.id] ? "file://" + root.thumbs[modelData.id] : ""
                     source: thumbSource
-                    visible: thumbSource !== ""
+                    visible: modelData.isImage && thumbSource !== ""
                     asynchronous: true
                     cache: true
                     smooth: true
-                    sourceSize.width: 56
-                    sourceSize.height: 56
-                    fillMode: Image.PreserveAspectCrop
+                    sourceSize.width: 288
+                    fillMode: Image.PreserveAspectFit
+                    horizontalAlignment: Image.AlignLeft
+                    verticalAlignment: Image.AlignVCenter
                 }
                 Text {
+                    visible: modelData.isImage
                     anchors {
                         left: parent.left
                         verticalCenter: parent.verticalCenter
-                        leftMargin: modelData.isImage ? 44 : 10
+                        leftMargin: 164
                     }
-                    width: parent.width - (modelData.isImage ? 90 : 56)
-                    text: modelData.isImage ? modelData.label : (modelData.preview !== "" ? modelData.preview : "󰆏 Image")
+                    width: parent.width - 204
+                    text: modelData.label
+                    color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
+                    elide: Text.ElideRight
+                }
+                Text {
+                    visible: !modelData.isImage
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: 10
+                    }
+                    width: parent.width - 56
+                    text: modelData.preview !== "" ? modelData.preview : "󰆏 Image"
                     color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
