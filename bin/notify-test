@@ -29,7 +29,7 @@
 
 set -u
 
-IMG="$HOME/dotfiles/wallpapers/wallpaper.jpg"
+IMG="$HOME/dotfiles/wallpapers/wallpaper-2.jpg"
 [ -f "$IMG" ] || IMG="/usr/share/icons/Adwaita/scalable/status/dialog-information-symbolic.svg"
 
 case_basic() {

@@ -5,7 +5,7 @@ import "../services" as Services
 BasePopup {
     id: root
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: 16 + statusText.height + Services.Theme.popupSpacing + (xfceWarn.visible ? xfceWarn.height + Services.Theme.popupSpacing : 0) + powerGrid.height + Services.Theme.popupSpacing + hint.implicitHeight
+    implicitHeight: 16 + powerGrid.height + Services.Theme.popupSpacing + hint.implicitHeight
     Shortcut { sequence: "s"; enabled: root.visible; onActivated: root.powerOff() }
     Shortcut { sequence: "r"; enabled: root.visible; onActivated: root.reboot() }
     Shortcut { sequence: "u"; enabled: root.visible; onActivated: root.suspend() }
@@ -41,27 +41,6 @@ BasePopup {
             Services.Power.refreshInhibitors();
     }
     PopupCard {
-        Text {
-            id: statusText
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            text: Services.Power.statusLine
-            color: Services.Theme.dim
-            font.family: Services.Theme.font
-            font.pixelSize: Services.Theme.px12
-        }
-        Text {
-            id: xfceWarn
-            visible: Services.Power.xfceBlocking
-            width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            text: "xfce4-power-manager is still running and blocks logind - uninstall it"
-            color: Services.Theme.danger
-            font.family: Services.Theme.font
-            font.pixelSize: Services.Theme.px11
-        }
         Grid {
             id: powerGrid
             width: parent.width

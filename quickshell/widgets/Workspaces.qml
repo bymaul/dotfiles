@@ -4,8 +4,7 @@ import "../services" as Services
 Row {
     id: root
     anchors {
-        left: parent.left
-        leftMargin: Services.Theme.popupMargin
+        horizontalCenter: parent.horizontalCenter
         verticalCenter: parent.verticalCenter
     }
     spacing: 4
@@ -60,24 +59,40 @@ Row {
         else
             Hyprland.dispatch("workspace " + String(id));
     }
+    function stepSlot(dir: int): void {
+        const ids = root.slotIds ?? [];
+        if (ids.length === 0)
+            return;
+        let i = ids.indexOf(root.activeId);
+        if (i < 0)
+            i = dir > 0 ? -1 : 0;
+        root.activateSlot(ids[(i + dir + ids.length) % ids.length]);
+    }
+    WheelHandler {
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        onWheel: event => {
+            if (event.angleDelta.y > 0)
+                root.stepSlot(-1);
+            else if (event.angleDelta.y < 0)
+                root.stepSlot(1);
+            event.accepted = true;
+        }
+    }
     Repeater {
         model: slotIds
         delegate: Item {
             required property var modelData
             readonly property var ws: workspaceById(modelData)
             readonly property bool isFocused: ws ? !!ws.active : modelData === root.activeId
-            width: 25
+            width: 22
             height: 25
-            Rectangle {
-                anchors.fill: parent
-                color: isFocused ? Services.Theme.surface : Services.Theme.transparent
-            }
             Text {
                 anchors.centerIn: parent
                 text: ws && ws.name ? ws.name : modelData
                 color: isFocused ? Services.Theme.white : Services.Theme.dim
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px12
+                font.bold: isFocused
             }
             MouseArea {
                 anchors.fill: parent

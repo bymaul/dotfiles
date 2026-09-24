@@ -2,12 +2,10 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Design tokens. Singleton (not .js) so bindings update live if a
-// value is ever mutated at runtime (e.g. accent, font scale).
 Singleton {
     id: root
 
-    property string barBg: "#CC141415"
+    property string barBg: "#D9141415"
     property string bg: "#141415"
     property string surface: "#1c1c24"
     property string hoverBg: "#252530"

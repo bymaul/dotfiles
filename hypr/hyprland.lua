@@ -43,8 +43,8 @@ hl.config({
 		rounding = 0,
 		rounding_power = 1,
 
-		active_opacity = 0.9,
-		inactive_opacity = 0.87,
+		active_opacity = 0.97,
+		inactive_opacity = 0.95,
 
 		shadow = {
 			enabled = true,
@@ -97,6 +97,10 @@ hl.config({
 			disable_while_typing = true,
 			scroll_factor = 0.8,
 		},
+	},
+
+	cursor = {
+		no_hardware_cursors = true,
 	},
 })
 
@@ -196,7 +200,7 @@ hl.window_rule({
 hl.window_rule({
 	name = "float-transparency",
 	match = { float = true },
-	opacity = "0.8 override 0.8 override",
+	opacity = "0.85 override 0.85 override",
 })
 
 hl.layer_rule({

@@ -40,7 +40,7 @@ vim.pack.add {
   gh "lewis6991/gitsigns.nvim",
   gh "nvim-treesitter/nvim-treesitter",
   gh "windwp/nvim-ts-autotag",
-  gh "barrettruth/canola.nvim",
+  "https://forge.barrettruth.com/barrettruth/canola.nvim",
   gh "echasnovski/mini.nvim",
   gh "mason-org/mason.nvim",
   gh "mason-org/mason-lspconfig.nvim",

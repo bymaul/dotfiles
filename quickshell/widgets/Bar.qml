@@ -248,10 +248,6 @@ PanelWindow {
         Component.onCompleted: depCheck.running = true
     }
 
-    Workspaces {
-        id: workspaces
-        screenName: bar.mainName
-    }
     WindowTitle {
         screenName: bar.mainName
     }
@@ -259,9 +255,9 @@ PanelWindow {
         id: systemClock
         precision: SystemClock.Minutes
     }
-    Clock {
-        bar: bar
-        clockSource: systemClock
+    Workspaces {
+        id: workspaces
+        screenName: bar.mainName
     }
     Row {
         id: systemStatus
@@ -284,8 +280,9 @@ PanelWindow {
             BellIcon {
                 bar: bar
             }
-            PowerIcon {
+            Clock {
                 bar: bar
+                clockSource: systemClock
             }
         }
     }

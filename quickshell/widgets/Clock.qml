@@ -3,9 +3,9 @@ import "../services" as Services
 Item {
     required property var bar
     required property var clockSource
-    anchors.centerIn: parent
-    width: label.width + 20
-    height: Services.Theme.barHeight
+    anchors.verticalCenter: parent.verticalCenter
+    width: label.width
+    height: label.height
     Text {
         id: label
         anchors.centerIn: parent

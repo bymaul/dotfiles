@@ -3,8 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Single-wallpaper resolver (no switcher by design).
-// Per-screen windows in shell.qml bind to `source`.
 Singleton {
     id: root
     property string source: ""
@@ -14,13 +12,16 @@ Singleton {
         const out = [];
         if (root.homeDir !== "") {
             for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+                out.push(root.homeDir + "/dotfiles/wallpapers/wallpaper-1." + ext);
+            }
+            for (const ext of ["jpg", "jpeg", "png", "webp"]) {
                 out.push(root.homeDir + "/dotfiles/wallpapers/wallpaper." + ext);
             }
             for (const ext of ["jpg", "jpeg", "png", "webp"]) {
                 out.push(root.homeDir + "/Pictures/Wallpapers/wallpaper." + ext);
             }
         }
-        out.push(Quickshell.shellDir + "/wallpaper.jpg");
+        out.push(Quickshell.shellDir + "/wallpaper-1.jpg");
         return out;
     }
     function probeNext(): void {
@@ -28,7 +29,7 @@ Singleton {
             return;
         if (root.probeIndex >= root.candidates.length) {
             console.warn("[wallpaper] no wallpaper found, tried: " + root.candidates.join(", "));
-            Notifs.notify({app: "wallpaper", summary: "No wallpaper found", body: "Add ~/dotfiles/wallpapers/wallpaper.jpg", syncId: "wallpaper", timeout: 8000});
+            Notifs.notify({app: "wallpaper", summary: "No wallpaper found", body: "Add ~/dotfiles/wallpapers/wallpaper-1.jpg", syncId: "wallpaper", timeout: 8000});
             return;
         }
         probe.command = ["test", "-r", root.candidates[root.probeIndex]];

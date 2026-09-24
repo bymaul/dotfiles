@@ -4,9 +4,10 @@ import "../services" as Services
 Text {
     id: root
     required property string screenName
+    property var leftItem: null
     anchors {
-        left: workspaces.right
-        leftMargin: 10
+        left: root.leftItem ? root.leftItem.right : parent.left
+        leftMargin: root.leftItem ? 10 : Services.Theme.popupMargin
         verticalCenter: parent.verticalCenter
     }
     readonly property string activeTitle: {
