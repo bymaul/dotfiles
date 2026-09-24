@@ -7,7 +7,7 @@ Text {
     property var leftItem: null
     anchors {
         left: root.leftItem ? root.leftItem.right : parent.left
-        leftMargin: root.leftItem ? 10 : Services.Theme.popupMargin
+        leftMargin: root.leftItem ? 10 : Services.Theme.barMargin
         verticalCenter: parent.verticalCenter
     }
     readonly property string activeTitle: {

@@ -268,7 +268,7 @@ PanelWindow {
         id: systemStatus
         anchors {
             right: parent.right
-            rightMargin: Services.Theme.popupMargin
+            rightMargin: Services.Theme.barMargin
             verticalCenter: parent.verticalCenter
         }
         spacing: Services.Theme.groupSpacing

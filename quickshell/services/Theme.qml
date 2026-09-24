@@ -30,6 +30,7 @@ Singleton {
     property int popupWidth: 340
     property int settingsWidth: 400
     property int launcherWidth: 480
+    property int barMargin: 8
     property int popupMargin: 6
     property int popupTopGap: 6
     property int popupPadding: 8
