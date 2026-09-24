@@ -69,10 +69,6 @@ hl.config({
 		preserve_split = true,
 	},
 
-	scrolling = {
-		fullscreen_on_one_column = true,
-	},
-
 	misc = {
 		force_default_wallpaper = 0,
 		disable_hyprland_logo = true,
@@ -97,10 +93,6 @@ hl.config({
 			disable_while_typing = true,
 			scroll_factor = 0.8,
 		},
-	},
-
-	cursor = {
-		no_hardware_cursors = true,
 	},
 })
 
