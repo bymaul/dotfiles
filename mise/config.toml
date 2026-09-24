@@ -1,5 +1,6 @@
 # mise tools. After cloning: mise trust && mise install
 [tools]
+bun = "latest"
 go = "latest"
 java = "lts"
 maven = "latest"
