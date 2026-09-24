@@ -14,6 +14,7 @@ on:
       - "fastfetch/**"
       - "yazi/**"
       - "mise/**"
+      - ".gitconfig"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -90,6 +91,19 @@ jobs:
             fi
           }
 
+          sync_file() {
+            local src="$1"
+            local dst="$2"
+
+            if [ -f "$src" ]; then
+              mkdir -p "other/$(dirname "$dst")"
+              cp "$src" "other/$dst"
+            else
+              echo "Source $src does not exist; removing other/$dst"
+              rm -f "other/$dst"
+            fi
+          }
+
           # <source> <destination>
           sync_dir nvim nvim
           sync_dir starship starship
@@ -101,6 +115,7 @@ jobs:
           sync_dir fastfetch fastfetch
           sync_dir yazi yazi
           sync_dir mise mise
+          sync_file .gitconfig .gitconfig
 
       - name: Create sync branch
         if: steps.check.outputs.skip != 'true'

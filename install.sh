@@ -47,11 +47,12 @@ PKGS=(
     "dir tmux .config/tmux"
     "tree bin .local/bin"
     "dir vague-theme .local/share/themes/Vague"
+    "file git .gitconfig .gitconfig"
 )
 
 declare -A CATS=(
     [desktop]="hypr quickshell gtk vague-theme"
-    [shell]="zsh starship tmux mise"
+    [shell]="zsh starship tmux mise git"
     [tools]="kitty bat btop fastfetch lazygit nvim opencode yazi bin"
 )
 
@@ -321,9 +322,49 @@ remove_tree() {
     done < <(find "$src" -mindepth 1 -maxdepth 1 -print0 | sort -z)
 }
 
+remove_file() {
+    local rel=$1 dest="$HOME/$1"
+    if [ -L "$dest" ]; then
+        case "$(readlink -f "$dest")" in
+            "$REPO"/*)
+                if [ "$DRY_RUN" -eq 1 ]; then dry "would remove $rel"; else rm "$dest"; log "removed $rel"; fi
+                ;;
+            *) warn "$rel is a symlink out of our control - leaving it" ;;
+        esac
+    elif [ -e "$dest" ]; then
+        warn "$rel holds unmanaged content - leaving it"
+    fi
+}
+
+link_file() {
+    local src=$1 rel=$2 dest="$HOME/$2" expected="$REPO/$1"
+    if [ "$VERIFY" -eq 1 ]; then
+        if [ -L "$dest" ] && [ "$(readlink -f "$dest")" = "$expected" ]; then return 0; fi
+        verify_fail "$rel should link to $expected"
+        return 0
+    fi
+    [ "$DRY_RUN" -eq 0 ] && mkdir -p "$(dirname "$dest")"
+
+    if [ -L "$dest" ]; then
+        if [ "$(readlink -f "$dest")" != "$expected" ]; then
+            warn "$rel is a symlink out of our control - skipping ($src)"
+        fi
+    elif [ -e "$dest" ]; then
+        if [ "$BACKUP" -eq 1 ]; then
+            backup_unmanaged "$dest"
+            make_link "$expected" "$dest"
+        else
+            warn "$rel holds unmanaged content - skipping ($src) (resolve manually or re-run with --backup)"
+        fi
+    else
+        make_link "$expected" "$dest"
+    fi
+}
+
 count=0
 for entry in "${PKGS[@]}"; do
-    read -r mode pkg target <<<"$entry"
+    read -r mode pkg a b <<<"$entry"
+    if [ -z "${b:-}" ]; then src="$pkg"; target="$a"; else src="$a"; target="$b"; fi
     wanted "$pkg" || continue
     case "$mode" in
         dir)
@@ -331,6 +372,9 @@ for entry in "${PKGS[@]}"; do
             ;;
         tree)
             if [ "$MODE" = remove ]; then remove_tree "$REPO/$pkg" "$HOME/$target"; else link_tree "$REPO/$pkg" "$HOME/$target"; fi
+            ;;
+        file)
+            if [ "$MODE" = remove ]; then remove_file "$target"; else link_file "$src" "$target"; fi
             ;;
     esac
     count=$((count + 1))
