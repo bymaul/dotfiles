@@ -56,7 +56,7 @@ PanelWindow {
     // notification parking offset.
     readonly property var allPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, launcherPopup, clipboardPopup, emojiPopup, historyPanel]
     readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, launcherPopup, clipboardPopup, emojiPopup]
-    readonly property var rightPopups: [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, historyPanel]
+    readonly property var rightPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, historyPanel]
     function popupByName(name: string): var {
         switch (name) {
         case "calendar": return calendarPopup;
@@ -189,10 +189,15 @@ PanelWindow {
             if (!p || !p.anchor || p.anchor.window === anchor)
                 continue;
             // historyPanel.visible is a binding (panel.visible && history.length);
-            // never assign to it or the binding breaks. Re-anchor while hidden only.
+            // never leave a plain assignment behind: hide, move, rebind.
             if (p === historyPanel) {
-                if (!p.visible)
+                if (!p.visible) {
                     p.anchor.window = anchor;
+                } else {
+                    p.visible = false;
+                    p.anchor.window = anchor;
+                    p.rebindVisibility();
+                }
                 continue;
             }
             if (!p.visible) {

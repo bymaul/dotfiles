@@ -24,17 +24,9 @@ setopt no_beep
 # --- Plugins (zinit) ---
 source "$ZDOTDIR/plugins.zsh"
 
-# --- Completion (after plugins so compdefs register) ---
-autoload -Uz compinit
-compinit -d "$XDG_CACHE_HOME/zsh/zcompdump"
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
-zstyle ':completion:*' menu select
-
 # --- Integrations (guarded so a fresh checkout without packages still starts) ---
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # --- Config modules ---
 source "$ZDOTDIR/aliases.zsh"
-source "$ZDOTDIR/bindings.zsh"
-source "$ZDOTDIR/prompt.zsh"

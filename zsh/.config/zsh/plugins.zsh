@@ -11,5 +11,10 @@ fi
 source "${ZINIT_HOME}/zinit.zsh"
 
 # Update with: zinit self-update && zinit update
-zinit light zsh-users/zsh-autosuggestions
 zinit light zsh-users/zsh-syntax-highlighting
+
+zinit ice wait"0" lucid depth=1 pick"deja.plugin.zsh"
+zinit light Giammarco-Ferranti/deja
+
+zinit ice from"gh-r" as"command" atload'eval "$(starship init zsh)"'
+zinit load starship/starship

@@ -30,8 +30,10 @@ BasePopup {
         }
     }
     property var mprisPlayer: null
+    property int playerCount: 0
     function refreshPlayer(): void {
         mprisPlayer = Services.Media.activePlayer();
+        playerCount = Services.Media.playerCount();
     }
     Timer {
         interval: 2000
@@ -49,6 +51,9 @@ BasePopup {
     }
     function mprisIdx(): int {
         return root.mprisPlayer !== null ? root.volumeIdx() + 1 : -1;
+    }
+    function mprisMaxCol(): int {
+        return root.playerCount > 1 ? 3 : 2;
     }
     function firstTileIdx(): int {
         return root.volumeIdx() + 1 + (root.mprisPlayer !== null ? 1 : 0);
@@ -102,7 +107,7 @@ BasePopup {
             return;
         selectedIndex = root.mprisIdx();
         actionIndex = -1;
-        mprisCol = Services.Theme.clamp(col, 0, 2);
+        mprisCol = Services.Theme.clamp(col, 0, root.mprisMaxCol());
         root.clampSelection();
     }
     Connections {
@@ -184,7 +189,7 @@ BasePopup {
         else if (kind === "volume")
             root.adjustVolume(dir * Services.Theme.volumeStep);
         else if (kind === "mpris")
-            mprisCol = Services.Theme.clamp(mprisCol + dir, 0, 2);
+            mprisCol = Services.Theme.clamp(mprisCol + dir, 0, root.mprisMaxCol());
         else if (kind === "history")
             root.moveAction(dir);
         else
@@ -239,7 +244,11 @@ BasePopup {
             Services.Media.mediaPrev();
         else if (col === 2)
             Services.Media.mediaNext();
-        else
+        else if (col === 3) {
+            Services.Media.cyclePlayer();
+            root.refreshPlayer();
+            root.mprisCol = Services.Theme.clamp(root.mprisCol, 0, root.mprisMaxCol());
+        } else
             Services.Media.mediaToggle();
     }
     function activateActionAt(actIdx: int): void {
@@ -408,118 +417,196 @@ BasePopup {
             }
         }
         Rectangle {
+            id: transportRect
             visible: root.mprisPlayer !== null
             width: parent.width
             height: visible ? Services.Theme.rowHeight : 0
-            color: root.selectedKind() === "mpris" ? Services.Theme.activeBg : Services.Theme.surface
-            readonly property bool mprisSelected: root.selectedKind() === "mpris"
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                onContainsMouseChanged: {
-                    if (containsMouse)
-                        root.selectMpris(root.mprisCol);
+                color: root.selectedKind() === "mpris" ? Services.Theme.activeBg : Services.Theme.surface
+                readonly property bool mprisSelected: root.selectedKind() === "mpris"
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onContainsMouseChanged: {
+                        if (containsMouse)
+                            root.selectMpris(root.mprisCol);
+                    }
+                }
+                Item {
+                    id: artBox
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: 10
+                    }
+                    width: 28
+                    height: 28
+                    Text {
+                        anchors.centerIn: parent
+                        visible: artImg.status !== Image.Ready
+                        text: "󰝚"
+                        color: Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px14
+                    }
+                    Image {
+                        id: artImg
+                        anchors.fill: parent
+                        visible: status === Image.Ready
+                        source: root.mprisPlayer?.trackArtUrl ?? ""
+                        asynchronous: true
+                        cache: true
+                        smooth: true
+                        fillMode: Image.PreserveAspectCrop
+                    }
+                }
+                Column {
+                    anchors {
+                        left: artBox.right
+                        right: transportBtns.left
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: 8
+                        rightMargin: 8
+                    }
+                    spacing: 0
+                    Text {
+                        width: parent.width
+                        elide: Text.ElideRight
+                        text: root.mprisPlayer?.trackTitle || root.mprisPlayer?.identity || "Unknown"
+                        color: Services.Theme.fg
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
+                    }
+                    Text {
+                        width: parent.width
+                        elide: Text.ElideRight
+                        text: {
+                            const parts = [root.mprisPlayer?.trackArtist, root.mprisPlayer?.trackAlbum].filter(s => s);
+                            return parts.length > 0 ? parts.join(" · ") : (root.mprisPlayer?.identity ?? "");
+                        }
+                        color: Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px10
+                    }
+                }
+                Row {
+                    id: transportBtns
+                    anchors {
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        rightMargin: 10
+                    }
+                    spacing: 6
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 20
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "󰒮"
+                        color: transportRect.mprisSelected && root.mprisCol === 0 ? Services.Theme.accentFg : Services.Theme.fg
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px14
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            visible: transportRect.mprisSelected && root.mprisCol === 0
+                            color: Services.Theme.accent
+                            z: -1
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: {
+                                if (containsMouse)
+                                    root.selectMpris(0);
+                            }
+                            onClicked: root.activateMpris(0)
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 20
+                        horizontalAlignment: Text.AlignHCenter
+                        text: (root.mprisPlayer?.isPlaying ?? false) ? "󰏤" : "󰐊"
+                        color: transportRect.mprisSelected && root.mprisCol === 1 ? Services.Theme.accentFg : Services.Theme.fg
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px14
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            visible: transportRect.mprisSelected && root.mprisCol === 1
+                            color: Services.Theme.accent
+                            z: -1
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: {
+                                if (containsMouse)
+                                    root.selectMpris(1);
+                            }
+                            onClicked: root.activateMpris(1)
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 20
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "󰒭"
+                        color: transportRect.mprisSelected && root.mprisCol === 2 ? Services.Theme.accentFg : Services.Theme.fg
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px14
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            visible: transportRect.mprisSelected && root.mprisCol === 2
+                            color: Services.Theme.accent
+                            z: -1
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: {
+                                if (containsMouse)
+                                    root.selectMpris(2);
+                            }
+                            onClicked: root.activateMpris(2)
+                        }
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: root.playerCount > 1
+                        width: visible ? 34 : 0
+                        horizontalAlignment: Text.AlignHCenter
+                        text: (Services.Media.playerIndex() + 1) + "/" + root.playerCount
+                        color: transportRect.mprisSelected && root.mprisCol === 3 ? Services.Theme.accentFg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px10
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 34
+                            height: 24
+                            visible: transportRect.mprisSelected && root.mprisCol === 3
+                            color: Services.Theme.accent
+                            z: -1
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: {
+                                if (containsMouse)
+                                    root.selectMpris(3);
+                            }
+                            onClicked: root.activateMpris(3)
+                        }
+                    }
                 }
             }
-            Row {
-                anchors {
-                    fill: parent
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                spacing: 6
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 20
-                    horizontalAlignment: Text.AlignHCenter
-                    text: "󰒮"
-                    color: parent.parent.mprisSelected && root.mprisCol === 0 ? Services.Theme.accentFg : Services.Theme.fg
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px14
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        visible: parent.parent.parent.mprisSelected && root.mprisCol === 0
-                        color: Services.Theme.accent
-                        z: -1
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                root.selectMpris(0);
-                        }
-                        onClicked: root.activateMpris(0)
-                    }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 20
-                    horizontalAlignment: Text.AlignHCenter
-                    text: (root.mprisPlayer?.isPlaying ?? false) ? "󰏤" : "󰐊"
-                    color: parent.parent.mprisSelected && root.mprisCol === 1 ? Services.Theme.accentFg : Services.Theme.fg
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px14
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        visible: parent.parent.parent.mprisSelected && root.mprisCol === 1
-                        color: Services.Theme.accent
-                        z: -1
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                root.selectMpris(1);
-                        }
-                        onClicked: root.activateMpris(1)
-                    }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 20
-                    horizontalAlignment: Text.AlignHCenter
-                    text: "󰒭"
-                    color: parent.parent.mprisSelected && root.mprisCol === 2 ? Services.Theme.accentFg : Services.Theme.fg
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px14
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        visible: parent.parent.parent.mprisSelected && root.mprisCol === 2
-                        color: Services.Theme.accent
-                        z: -1
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                root.selectMpris(2);
-                        }
-                        onClicked: root.activateMpris(2)
-                    }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - 78
-                    elide: Text.ElideRight
-                    text: (root.mprisPlayer?.trackTitle || root.mprisPlayer?.identity || "Unknown") + (root.mprisPlayer?.trackArtist ? " - " + root.mprisPlayer.trackArtist : "")
-                    color: Services.Theme.dim
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px12
-                }
-            }
-        }
         Grid {
             columns: 3
             columnSpacing: Services.Theme.listSpacing

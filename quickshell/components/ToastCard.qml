@@ -5,10 +5,16 @@ Rectangle {
     id: card
     required property var notification
     property int seq: Services.Notifs.toastSeq
-    onSeqChanged: {
-        if (card.notification && card.notification.qsInternal === true && !cardArea.containsMouse)
+    property string contentSig: ""
+    function refreshSig(): void {
+        const n = card.notification;
+        const sig = n ? [n.summary ?? "", n.body ?? "", n.appIcon ?? "", n.image ?? "", n.expireTimeout ?? "", n.hints ? JSON.stringify(n.hints) : ""].join("\u0001") : "";
+        if (card.contentSig !== "" && sig !== card.contentSig && !cardArea.containsMouse)
             expiryTimer.restart();
+        card.contentSig = sig;
     }
+    onSeqChanged: card.refreshSig()
+    Component.onCompleted: card.refreshSig()
     width: Services.Theme.popupWidth
     height: content.height + 16
     color: Services.Theme.bg
@@ -28,6 +34,7 @@ Rectangle {
         return hit ?? "";
     }
     readonly property var actionList: card.notification && card.notification.actions ? card.notification.actions : []
+    readonly property bool sticky: card.notification.resident === true || (card.notification.expireTimeout ?? -1) === 0
     MouseArea {
         id: cardArea
         anchors.fill: parent
@@ -35,19 +42,21 @@ Rectangle {
         onContainsMouseChanged: {
             if (containsMouse)
                 expiryTimer.stop();
-            else if (card.notification.resident !== true)
+            else
                 expiryTimer.restart();
         }
         onClicked: {
-            Services.Notifs.activateDefault(card.notification);
-            Services.Notifs.dismissToast(card.notification);
+            if (Services.Notifs.activateDefault(card.notification))
+                Services.Notifs.consumeToast(card.notification);
+            else
+                Services.Notifs.hideToast(card.notification);
         }
     }
     Timer {
         id: expiryTimer
-        interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Services.Theme.toastTimeout
-        running: !(card.notification.resident === true) && (card.notification.expireTimeout ?? -1) !== 0
-        onTriggered: Services.Notifs.dismissToast(card.notification)
+        interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : (card.sticky ? Services.Theme.toastStickyTimeout : Services.Theme.toastTimeout)
+        running: true
+        onTriggered: Services.Notifs.hideToast(card.notification)
     }
     Column {
         id: content
@@ -96,7 +105,7 @@ Rectangle {
             CardCloseButton {
                 id: closeBox
                 anchors.verticalCenter: parent.verticalCenter
-                onClicked: Services.Notifs.dismissToast(card.notification)
+                onClicked: Services.Notifs.hideToast(card.notification)
             }
         }
         ProgressBar {
@@ -109,8 +118,10 @@ Rectangle {
             width: parent.width
             actions: card.actionList
             onPicked: action => {
-                Services.Notifs.activateAction(card.notification, action);
-                Services.Notifs.dismissToast(card.notification);
+                if (Services.Notifs.activateAction(card.notification, action))
+                    Services.Notifs.consumeToast(card.notification);
+                else
+                    Services.Notifs.hideToast(card.notification);
             }
         }
     }

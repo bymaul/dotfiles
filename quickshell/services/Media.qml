@@ -74,15 +74,34 @@ Singleton {
             audio.muted = !audio.muted;
         media.micToast();
     }
+    property string preferredPlayer: ""
+    function playerList(): var {
+        return [...(Mpris.players?.values ?? [])];
+    }
+    function playerCount(): int {
+        return media.playerList().length;
+    }
+    function playerIndex(): int {
+        return media.playerList().indexOf(media.activePlayer());
+    }
     function activePlayer(): var {
-        let first = null;
-        for (const player of Mpris.players?.values ?? []) {
-            if (!first)
-                first = player;
-            if (player.isPlaying)
-                return player;
+        const list = media.playerList();
+        if (list.length === 0)
+            return null;
+        if (media.preferredPlayer !== "") {
+            const preferred = list.find(p => p.identity === media.preferredPlayer);
+            if (preferred)
+                return preferred;
         }
-        return first;
+        return list.find(p => p.isPlaying) ?? list[0];
+    }
+    function cyclePlayer(): void {
+        const list = media.playerList();
+        if (list.length < 2)
+            return;
+        const next = list[(list.indexOf(media.activePlayer()) + 1) % list.length];
+        if (next)
+            media.preferredPlayer = next.identity ?? "";
     }
     function mediaToast(): void {
         const player = media.activePlayer();

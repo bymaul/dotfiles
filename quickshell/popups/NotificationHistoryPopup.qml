@@ -14,6 +14,11 @@ BasePopup {
     function close(): void {
         panel.close();
     }
+    function rebindVisibility(): void {
+        root.visible = Qt.binding(function() {
+            return root.panel.visible && Services.Notifs.history.length > 0;
+        });
+    }
     function cancelOrClose(): void {
         root.panel.close();
     }
@@ -119,9 +124,13 @@ BasePopup {
                                 root.panel.selectIndex(root.panel.firstHistIdx() + historyCard.index);
                         }
                         onClicked: {
-                            if (Services.Notifs.activateDefault(historyCard.modelData.live))
+                            const live = historyCard.modelData.live;
+                            if (live == null) {
+                                Services.Notifs.dismissHistoryAt(historyCard.index);
+                            } else if (Services.Notifs.activateDefault(live)) {
                                 bar.closePopups();
-                            Services.Notifs.dismissHistoryAt(historyCard.index);
+                                Services.Notifs.dismissHistoryAt(historyCard.index);
+                            }
                         }
                     }
                     Column {
@@ -185,9 +194,10 @@ BasePopup {
                                     focusedIndex: historyCard.selected ? root.panel.actionIndex : -1
                                     onHovered: index => root.panel.selectAction(historyCard.index, index)
                                     onPicked: action => {
-                                        Services.Notifs.activateAction(modelData.live, action);
-                                        Services.Notifs.dismissHistoryAt(historyCard.index);
-                                        bar.closePopups();
+                                        if (Services.Notifs.activateAction(modelData.live, action)) {
+                                            Services.Notifs.dismissHistoryAt(historyCard.index);
+                                            bar.closePopups();
+                                        }
                                     }
                                 }
                             }

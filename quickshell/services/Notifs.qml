@@ -49,7 +49,15 @@ Singleton {
         if (!n)
             return;
         notifs.hideToast(n);
+        notifs.releaseHistoryLive(n);
         notifs.safeDismiss(n);
+    }
+    function consumeToast(n): void {
+        if (!n)
+            return;
+        notifs.hideToast(n);
+        notifs.safeDismiss(n);
+        notifs.forgetLive(n);
     }
     function shelveToasts(): void {
         if (notifs.toasts.length === 0)
@@ -228,13 +236,10 @@ Singleton {
         let next = [notification, ...notifs.toasts].slice(0, Theme.toastMax);
         if (notifs.isOsd(notification))
             next = [next[0], ...next.slice(1).filter(t => !notifs.isOsd(t))];
-        const dropped = notifs.toasts.filter(t => !next.includes(t));
+        // Evicted toasts stay tracked so their history entries keep working
+        // actions; the closed handler cleans up when the sender withdraws.
         notification.qsToastId = ++notifs.toastSeq;
         notifs.toasts = next;
-        for (const old of dropped) {
-            notifs.safeDismiss(old);
-            notifs.forgetLive(old);
-        }
     }
     function notify(opts): void {
         const o = opts ?? {};

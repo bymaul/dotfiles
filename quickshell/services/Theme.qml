@@ -30,7 +30,7 @@ Singleton {
     property int popupWidth: 340
     property int settingsWidth: 400
     property int launcherWidth: 480
-    property int popupMargin: 10
+    property int popupMargin: 6
     property int popupTopGap: 6
     property int popupPadding: 8
     property int popupSpacing: 8
@@ -52,6 +52,7 @@ Singleton {
     property int scanTimeout: 15000
     property int toastTimeout: 5000
     property int osdTimeout: 1500
+    property int toastStickyTimeout: 30000
     property int toastMax: 5
     property int historyMax: 20
 

@@ -5,10 +5,16 @@ Rectangle {
     id: card
     required property var notification
     property int seq: Services.Notifs.toastSeq
-    onSeqChanged: {
-        if (card.notification && card.notification.qsInternal === true)
+    property string contentSig: ""
+    function refreshSig(): void {
+        const n = card.notification;
+        const sig = n ? [n.summary ?? "", n.appIcon ?? "", n.expireTimeout ?? "", n.hints ? JSON.stringify(n.hints) : ""].join("\u0001") : "";
+        if (card.contentSig !== "" && sig !== card.contentSig)
             expiryTimer.restart();
+        card.contentSig = sig;
     }
+    onSeqChanged: card.refreshSig()
+    Component.onCompleted: card.refreshSig()
     width: Services.Theme.osdWidth
     height: 28
     color: Services.Theme.bg

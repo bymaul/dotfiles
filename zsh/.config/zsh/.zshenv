@@ -3,7 +3,4 @@
 : "${XDG_CACHE_HOME:=$HOME/.cache}"
 : "${XDG_STATE_HOME:=$HOME/.local/state}"
 
-export PATH="$HOME/.local/bin:$PATH"
-
-# opencode
-export PATH=$HOME/.opencode/bin:$PATH
+export PATH="$HOME/.opencode/bin:$HOME/.local/bin:$PATH"

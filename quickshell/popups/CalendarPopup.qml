@@ -5,7 +5,7 @@ import "../services" as Services
 BasePopup {
     id: root
     required property var clock
-    anchorMode: "center"
+    anchorMode: "right"
     implicitWidth: Services.Theme.popupWidth
     implicitHeight: 256
     property date viewDate: new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
