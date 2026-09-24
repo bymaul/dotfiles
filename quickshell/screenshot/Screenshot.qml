@@ -13,6 +13,8 @@ Scope {
     }
     property string pendingMode: ""
     property string pendingFile: ""
+    property var snapScreen: null
+    property bool winResolved: false
     property string tmpFile: "/tmp/qs-screenshot-full.png"
     property bool freezeForPicker: false
     property real lastScale: 1
@@ -26,6 +28,7 @@ Scope {
         if (captureWin.visible || picker.visible || winProbe.running)
             return;
         root.pendingMode = mode;
+        root.snapScreen = root.targetScreen;
         if (root.dirsReady)
             root.startPending();
         else if (!mkdir.running)
@@ -40,7 +43,9 @@ Scope {
             return;
         }
         if (root.pendingMode === "window") {
+            root.winResolved = false;
             winProbe.running = true;
+            winTimeout.restart();
             return;
         }
         root.showCapture(false);
@@ -49,7 +54,7 @@ Scope {
         if (!captureWin.visible)
             return;
         const src = captureView.sourceSize;
-        const w = root.targetScreen?.width ?? 0;
+        const w = root.snapScreen?.width ?? root.targetScreen?.width ?? 0;
         if (src.width > 0 && w > 0)
             root.lastScale = src.width / w;
         captureView.grabToImage(result => {
@@ -62,12 +67,18 @@ Scope {
                 captureTimeout.stop();
                 Services.Notifs.notify({app: "screenshot", summary: "Capture failed", body: "Empty frame", timeout: 5000});
                 root.freezeForPicker = false;
+                root.pendingMode = "";
                 captureView.captureSource = null;
                 captureWin.visible = false;
+                if (picker.visible)
+                    picker.close();
+                else
+                    root.snapScreen = null;
                 return;
             }
             captureTimeout.stop();
-            if (root.freezeForPicker) {
+            const froze = root.freezeForPicker;
+            if (froze) {
                 root.freezeForPicker = false;
                 if (result.saveToFile(root.tmpFile)) {
                     still.source = "file://" + root.tmpFile;
@@ -78,6 +89,9 @@ Scope {
             } else {
                 root.saveShot(result, root.pendingFile);
             }
+            root.pendingMode = "";
+            if (!froze)
+                root.snapScreen = null;
             captureView.captureSource = null;
             captureWin.visible = false;
         });
@@ -126,7 +140,7 @@ Scope {
         }
     }
     function showCapture(freeze: bool): void {
-        captureView.captureSource = root.targetScreen;
+        captureView.captureSource = root.snapScreen ?? root.targetScreen;
         if (!captureView.captureSource) {
             if (freeze)
                 picker.close();
@@ -141,6 +155,13 @@ Scope {
     function captureScreen(): void {
         root.showCapture(false);
     }
+    function failWindowProbe(): void {
+        winTimeout.stop();
+        if (winProbe.running)
+            winProbe.running = false;
+        Services.Notifs.notify({app: "screenshot", summary: "Window info unavailable", body: "Falling back to full screenshot", timeout: 3000});
+        root.captureScreen();
+    }
     function freezeStill(): void {
         root.showCapture(true);
     }
@@ -149,6 +170,8 @@ Scope {
         command: ["sh", "-c", "W=$(hyprctl activewindow -j 2>/dev/null); M=$(hyprctl monitors -j 2>/dev/null); [ -n \"$M\" ] && [ -n \"$W\" ] && printf \"%s\\\\n%s\" \"$M\" \"$W\" | jq -r -s '.[1] as $w | select($w.address != null and $w.address != \"\") | (.[0] | ([.[] | select(.id == ($w.monitor // -1))][0] // ([.[] | select(.focused == true)][0]))) as $m | select($m != null) | \"\\($m.x) \\($m.y) \\($w.at[0]) \\($w.at[1]) \\($w.size[0]) \\($w.size[1])\"' 2>/dev/null"]
         stdout: StdioCollector {
             onStreamFinished: {
+                winTimeout.stop();
+                root.winResolved = true;
                 const m = text.trim().match(/(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)/);
                 if (!m) {
                     Services.Notifs.notify({app: "screenshot", summary: "Window info unavailable", body: "Falling back to full screenshot", timeout: 3000});
@@ -161,6 +184,22 @@ Scope {
                 picker.visible = true;
             }
         }
+        onExited: exitCode => {
+            winTimeout.stop();
+            if (exitCode !== 0 && !root.winResolved)
+                root.failWindowProbe();
+        }
+    }
+    Timer {
+        id: winTimeout
+        interval: 5000
+        repeat: false
+        onTriggered: {
+            if (winProbe.running) {
+                winProbe.running = false;
+                root.failWindowProbe();
+            }
+        }
     }
     PanelWindow {
         id: captureWin
@@ -170,7 +209,7 @@ Scope {
             left: true
             right: true
         }
-        screen: root.targetScreen
+        screen: root.snapScreen ?? root.targetScreen
         exclusiveZone: -1
         visible: false
         color: Services.Theme.transparent
@@ -201,6 +240,8 @@ Scope {
                     root.freezeForPicker = false;
                     picker.close();
                 }
+                root.pendingMode = "";
+                root.snapScreen = null;
                 captureView.captureSource = null;
                 captureWin.visible = false;
             }
@@ -236,7 +277,7 @@ Scope {
             left: true
             right: true
         }
-        screen: root.targetScreen
+        screen: root.snapScreen ?? root.targetScreen
         exclusiveZone: -1
         visible: false
         color: Services.Theme.transparent
@@ -271,6 +312,8 @@ Scope {
                 selection = Qt.rect(0, 0, 0, 0);
                 selecting = false;
                 still.source = "";
+                root.pendingMode = "";
+                root.snapScreen = null;
             }
         }
         HyprlandFocusGrab {
@@ -323,6 +366,8 @@ Scope {
                 picker.close();
                 if (result)
                     root.saveShot(result, root.pendingFile);
+                else
+                    Services.Notifs.notify({app: "screenshot", summary: "Capture failed", body: "Empty frame", timeout: 5000});
             }, Qt.size(Math.max(1, Math.round(r.width * k)), Math.max(1, Math.round(r.height * k))));
         }
         Image {
@@ -332,10 +377,44 @@ Scope {
             cache: false
             visible: picker.stillReady
         }
+        // Slurp-style dim: everything around the selection is dimmed while
+        // the selected region shows the undimmed frozen frame. With no
+        // selection yet the strips cover the whole screen.
+        readonly property real dimOpacity: 0.75
         Rectangle {
-            anchors.fill: parent
+            x: 0
+            y: 0
+            width: picker.width
+            height: Math.max(0, picker.normalized.y)
             color: Services.Theme.bg
-            opacity: 0.75
+            opacity: picker.dimOpacity
+            visible: picker.stillReady
+        }
+        Rectangle {
+            x: 0
+            y: picker.normalized.y + picker.normalized.height
+            width: picker.width
+            height: Math.max(0, picker.height - (picker.normalized.y + picker.normalized.height))
+            color: Services.Theme.bg
+            opacity: picker.dimOpacity
+            visible: picker.stillReady
+        }
+        Rectangle {
+            x: 0
+            y: picker.normalized.y
+            width: Math.max(0, picker.normalized.x)
+            height: Math.max(0, picker.normalized.height)
+            color: Services.Theme.bg
+            opacity: picker.dimOpacity
+            visible: picker.stillReady
+        }
+        Rectangle {
+            x: picker.normalized.x + picker.normalized.width
+            y: picker.normalized.y
+            width: Math.max(0, picker.width - (picker.normalized.x + picker.normalized.width))
+            height: Math.max(0, picker.normalized.height)
+            color: Services.Theme.bg
+            opacity: picker.dimOpacity
             visible: picker.stillReady
         }
         MouseArea {
