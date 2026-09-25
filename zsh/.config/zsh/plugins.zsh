@@ -11,7 +11,8 @@ fi
 source "${ZINIT_HOME}/zinit.zsh"
 
 # Update with: zinit self-update && zinit update
-zinit light zsh-users/zsh-syntax-highlighting
+zinit ice as"program" from"gh-r" pick"zsh-patina-*/zsh-patina" atload'eval "$(zsh-patina activate)" && eval "$(zsh-patina completion)"'
+zinit light michel-kraemer/zsh-patina
 
 zinit ice wait"0" lucid depth=1 pick"deja.plugin.zsh"
 zinit light Giammarco-Ferranti/deja

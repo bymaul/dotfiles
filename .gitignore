@@ -3,6 +3,9 @@
 *.swp
 *.tmp
 
+# zsh
+.zcompdump*
+
 # dependencies (opencode/ has its own scoped ignores for its local-only files)
 node_modules/
 

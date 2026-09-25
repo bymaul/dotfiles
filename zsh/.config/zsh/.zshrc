@@ -21,6 +21,10 @@ setopt auto_cd
 setopt extended_glob
 setopt no_beep
 
+# --- Completion ---
+autoload -Uz compinit
+compinit
+
 # --- Plugins (zinit) ---
 source "$ZDOTDIR/plugins.zsh"
 
