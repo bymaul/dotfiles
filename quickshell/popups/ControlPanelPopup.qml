@@ -20,7 +20,6 @@ BasePopup {
             selectedIndex = 0;
             actionIndex = -1;
             mprisCol = 1;
-            root.refreshPlayer();
             root.clampSelection();
             Services.Notifs.suppressToasts = true;
             Services.Notifs.shelveToasts();
@@ -29,18 +28,8 @@ BasePopup {
             Services.Notifs.flushPending();
         }
     }
-    property var mprisPlayer: null
-    property int playerCount: 0
-    function refreshPlayer(): void {
-        mprisPlayer = Services.Media.activePlayer();
-        playerCount = Services.Media.playerCount();
-    }
-    Timer {
-        interval: 2000
-        running: root.visible
-        repeat: true
-        onTriggered: root.refreshPlayer()
-    }
+    readonly property var mprisPlayer: Services.Media.activePlayer
+    readonly property int playerCount: Services.Media.usableCount
     property int selectedIndex: 0
     property int actionIndex: -1
     property int mprisCol: 1
@@ -240,16 +229,16 @@ BasePopup {
         root.stepSelection(-1);
     }
     function activateMpris(col: int): void {
+        const player = root.mprisPlayer;
         if (col === 0)
-            Services.Media.mediaPrev();
+            Services.Media.mediaPrev(player);
         else if (col === 2)
-            Services.Media.mediaNext();
+            Services.Media.mediaNext(player);
         else if (col === 3) {
             Services.Media.cyclePlayer();
-            root.refreshPlayer();
             root.mprisCol = Services.Theme.clamp(root.mprisCol, 0, root.mprisMaxCol());
         } else
-            Services.Media.mediaToggle();
+            Services.Media.mediaToggle(player);
     }
     function activateActionAt(actIdx: int): void {
         const histItem = root.selectedHistItem();
@@ -454,7 +443,7 @@ BasePopup {
                         visible: status === Image.Ready
                         source: root.mprisPlayer?.trackArtUrl ?? ""
                         asynchronous: true
-                        cache: true
+                        cache: false
                         smooth: true
                         fillMode: Image.PreserveAspectCrop
                     }
@@ -501,6 +490,7 @@ BasePopup {
                         width: 20
                         horizontalAlignment: Text.AlignHCenter
                         text: "󰒮"
+                        opacity: (root.mprisPlayer?.canGoPrevious ?? true) ? 1 : 0.35
                         color: transportRect.mprisSelected && root.mprisCol === 0 ? Services.Theme.accentFg : Services.Theme.fg
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px14
@@ -528,6 +518,7 @@ BasePopup {
                         width: 20
                         horizontalAlignment: Text.AlignHCenter
                         text: (root.mprisPlayer?.isPlaying ?? false) ? "󰏤" : "󰐊"
+                        opacity: (root.mprisPlayer?.canTogglePlaying ?? true) ? 1 : 0.35
                         color: transportRect.mprisSelected && root.mprisCol === 1 ? Services.Theme.accentFg : Services.Theme.fg
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px14
@@ -555,6 +546,7 @@ BasePopup {
                         width: 20
                         horizontalAlignment: Text.AlignHCenter
                         text: "󰒭"
+                        opacity: (root.mprisPlayer?.canGoNext ?? true) ? 1 : 0.35
                         color: transportRect.mprisSelected && root.mprisCol === 2 ? Services.Theme.accentFg : Services.Theme.fg
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px14
@@ -582,7 +574,7 @@ BasePopup {
                         visible: root.playerCount > 1
                         width: visible ? 34 : 0
                         horizontalAlignment: Text.AlignHCenter
-                        text: (Services.Media.playerIndex() + 1) + "/" + root.playerCount
+                        text: (Services.Media.activePlayerIndex + 1) + "/" + root.playerCount
                         color: transportRect.mprisSelected && root.mprisCol === 3 ? Services.Theme.accentFg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px10

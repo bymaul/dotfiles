@@ -289,18 +289,7 @@ Item {
                 font.pixelSize: Services.Theme.px11
             }
         }
-        property var lockPlayer: null
-        function refreshLockPlayer(): void {
-            lockPlayer = Services.Media.activePlayer();
-        }
-        Timer {
-            id: lockPlayerPoll
-            interval: 2000
-            running: mainRoot.visible
-            repeat: true
-            triggeredOnStart: true
-            onTriggered: mainRoot.refreshLockPlayer()
-        }
+        readonly property var lockPlayer: Services.Media.activePlayer
         Row {
             id: statusRow
             anchors {
@@ -441,7 +430,6 @@ Item {
         }
         onVisibleChanged: {
             if (mainRoot.visible) {
-                mainRoot.refreshLockPlayer();
                 if (root.claimsFocus)
                     initialFocus.restart();
             }

@@ -505,10 +505,10 @@ BasePopup {
     property int monRows: root.enabledCount > 1 ? 4 : 3
     property int monBlockH: 22 + root.monRows * Services.Theme.rowHeight + root.monRows * Services.Theme.listSpacing
     property int monCount: Services.Settings.monitors.length
-    property int monFootH: Services.Theme.rowHeight + Services.Theme.listSpacing + 14
+    property int monFootH: Services.Theme.rowHeight + Services.Theme.popupSpacing + 14
     property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Services.Theme.popupSpacing
 
-    property int mainSelH: root.hasMain ? 22 + Services.Theme.popupSpacing + Services.Theme.rowHeight : 0
+    property int mainSelH: root.hasMain ? Services.Theme.rowHeight : 0
     function contentHeight(): int {
         if (root.tab === 0)
             return Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH;

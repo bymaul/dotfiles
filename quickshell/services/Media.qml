@@ -75,65 +75,114 @@ Singleton {
         media.micToast();
     }
     property string preferredPlayer: ""
-    function playerList(): var {
+    function rawPlayers(): var {
         return [...(Mpris.players?.values ?? [])];
     }
+    function isUsable(p): bool {
+        if (!p)
+            return false;
+        if (p.canControl === false)
+            return false;
+        if (p.isPlaying)
+            return true;
+        if ((p.trackTitle ?? "") !== "")
+            return true;
+        return p.playbackState !== undefined && p.playbackState !== MprisPlaybackState.Stopped;
+    }
+    function playerList(): var {
+        const list = media.rawPlayers().filter(p => media.isUsable(p));
+        for (const p of list) {
+            p.isPlaying;
+            p.playbackState;
+            p.trackTitle;
+            p.canControl;
+        }
+        if (media.preferredPlayer !== "") {
+            const preferred = list.find(p => (p.dbusName ?? "") === media.preferredPlayer || (p.identity ?? "") === media.preferredPlayer);
+            if (preferred) {
+                const rest = list.filter(p => p !== preferred);
+                const playing = rest.filter(p => p.isPlaying);
+                const others = rest.filter(p => !p.isPlaying);
+                return [preferred, ...playing, ...others];
+            }
+        }
+        const playing = list.filter(p => p.isPlaying);
+        const rest = list.filter(p => !p.isPlaying);
+        return [...playing, ...rest];
+    }
+    readonly property int usableCount: media.playerList().length
+    readonly property var activePlayer: media.playerList().length > 0 ? media.playerList()[0] : null
+    readonly property int activePlayerIndex: media.playerList().indexOf(media.activePlayer)
     function playerCount(): int {
-        return media.playerList().length;
+        return media.usableCount;
     }
     function playerIndex(): int {
-        return media.playerList().indexOf(media.activePlayer());
-    }
-    function activePlayer(): var {
-        const list = media.playerList();
-        if (list.length === 0)
-            return null;
-        if (media.preferredPlayer !== "") {
-            const preferred = list.find(p => p.identity === media.preferredPlayer);
-            if (preferred)
-                return preferred;
-        }
-        return list.find(p => p.isPlaying) ?? list[0];
+        return media.activePlayerIndex;
     }
     function cyclePlayer(): void {
         const list = media.playerList();
         if (list.length < 2)
             return;
-        const next = list[(list.indexOf(media.activePlayer()) + 1) % list.length];
+        const idx = list.indexOf(media.activePlayer);
+        const next = list[(idx + 1) % list.length];
         if (next)
-            media.preferredPlayer = next.identity ?? "";
+            media.preferredPlayer = next.dbusName ?? next.identity ?? "";
     }
-    function mediaToast(): void {
-        const player = media.activePlayer();
-        if (!player)
+    function mediaToast(target): void {
+        const player = target ?? media.activePlayer;
+        if (!player) {
+            media.osd({app: "media", summary: "No media player", body: "Nothing playing", icon: "audio-x-generic-symbolic", syncId: "media"});
             return;
-        media.osd({app: "media", summary: player.trackTitle || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic", syncId: "media"});
+        }
+        media.osd({app: "media", summary: player.trackTitle || player.identity || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic", syncId: "media"});
     }
+    property var pendingToastPlayer: null
     Timer {
         id: mediaToastTimer
         interval: 400
         repeat: false
-        onTriggered: media.mediaToast()
+        onTriggered: {
+            media.mediaToast(media.pendingToastPlayer);
+            media.pendingToastPlayer = null;
+        }
     }
-    function transport(fn: string): void {
-        const player = media.activePlayer();
-        if (!player || typeof player[fn] !== "function")
-            return;
+    function transport(fn: string, target): bool {
+        const player = target ?? media.activePlayer;
+        if (!player) {
+            media.osd({app: "media", summary: "No media player", body: "Nothing to control", icon: "audio-x-generic-symbolic", syncId: "media"});
+            return false;
+        }
+        if (fn === "togglePlaying" && player.canTogglePlaying === false) {
+            media.osd({app: "media", summary: player.trackTitle || player.identity || "Media", body: "Play/pause not supported", icon: "audio-x-generic-symbolic", syncId: "media"});
+            return false;
+        }
+        if (fn === "next" && player.canGoNext === false) {
+            media.osd({app: "media", summary: player.trackTitle || player.identity || "Media", body: "No next track", icon: "audio-x-generic-symbolic", syncId: "media"});
+            return false;
+        }
+        if (fn === "previous" && player.canGoPrevious === false) {
+            media.osd({app: "media", summary: player.trackTitle || player.identity || "Media", body: "No previous track", icon: "audio-x-generic-symbolic", syncId: "media"});
+            return false;
+        }
+        if (typeof player[fn] !== "function")
+            return false;
         try {
             player[fn]();
         } catch (_) {
-            return;
+            return false;
         }
+        media.pendingToastPlayer = player;
         mediaToastTimer.restart();
+        return true;
     }
-    function mediaToggle(): void {
-        media.transport("togglePlaying");
+    function mediaToggle(target): void {
+        media.transport("togglePlaying", target);
     }
-    function mediaNext(): void {
-        media.transport("next");
+    function mediaNext(target): void {
+        media.transport("next", target);
     }
-    function mediaPrev(): void {
-        media.transport("previous");
+    function mediaPrev(target): void {
+        media.transport("previous", target);
     }
     property int pendingBrightness: -1
     function setBrightness(pct: real, quiet: bool): void {
