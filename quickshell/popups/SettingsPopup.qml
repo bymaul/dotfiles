@@ -67,6 +67,11 @@ BasePopup {
             root.closeDrop();
         root.clampSelection();
     }
+    onEnabledCountChanged: {
+        if (root.enabledCount < 2 && (root.openMainDrop || root.openMonPos !== ""))
+            root.closeDrop();
+        root.clampSelection();
+    }
 
     onVisibleChanged: {
         if (visible) {
@@ -84,6 +89,16 @@ BasePopup {
 
     function beginMonitorChange(): void {
         root.kickBusy();
+    }
+    function toggleMonitorEnabled(name: string): void {
+        if (name === "")
+            return;
+        if (Services.Settings.monitorEnabled(name) && !Services.Settings.canDisableMonitor(name)) {
+            Services.Settings.setMonitorEnabled(name, false);
+            return;
+        }
+        root.beginMonitorChange();
+        Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
     }
     function itemCount(): int {
         if (root.tab === 0)
@@ -197,28 +212,32 @@ BasePopup {
         const name = root.monitorNameAt(selectedIndex);
         if (name === "")
             return;
-        root.beginMonitorChange();
         const kind = (selectedIndex - root.monFirst) % root.monRows;
-        if (kind === 0)
-            Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
-        else if (kind === 1)
+        if (kind === 0) {
+            root.toggleMonitorEnabled(name);
+        } else if (kind === 1) {
+            root.beginMonitorChange();
             Services.Settings.setMonitorScale(name, Services.Settings.monitorScale(name) + dir * 0.05);
-        else if (kind === 2) {
+        } else if (kind === 2) {
             if (root.openMonRes === name) {
                 if (dir < 0)
                     root.closeDrop();
                 else
                     root.commitMonCursor();
-            } else
+            } else {
+                root.beginMonitorChange();
                 Services.Settings.cycleMonitorRes(name, dir);
+            }
         } else if (kind === 3) {
             if (root.openMonPos === name) {
                 if (dir < 0)
                     root.closeDrop();
                 else
                     root.commitMonPosCursor();
-            } else
+            } else {
+                root.beginMonitorChange();
                 Services.Settings.cycleMonitorPos(name, dir);
+            }
         }
         return;
     }
@@ -267,9 +286,8 @@ BasePopup {
         const name = root.monitorNameAt(selectedIndex);
         if (name === "")
             return;
-        root.beginMonitorChange();
         if ((selectedIndex - root.monFirst) % root.monRows === 0)
-            Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
+            root.toggleMonitorEnabled(name);
         else if ((selectedIndex - root.monFirst) % root.monRows === 2) {
             if (root.openMonRes === name)
                 root.commitMonCursor();
@@ -394,7 +412,7 @@ BasePopup {
         root.openMenu = {kind: "res", name: name};
     }
     function mainOptions(): var {
-        return ["auto"].concat(Services.Settings.monitors.map(m => String(m && m.name ? m.name : "")).filter(n => n !== ""));
+        return Services.Settings.mainMonitorOptions();
     }
     function toggleMonPosDrop(name: string): void {
         if (root.openMonPos === name) {
@@ -481,9 +499,10 @@ BasePopup {
 
     property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
     property int wpListH: root.wpCount * Services.Theme.listRowHeight + Math.max(0, root.wpCount - 1) * Services.Theme.listSpacing
-    property bool hasMain: root.monCount > 1
+    property int enabledCount: Services.Settings.enabledMonitors().length
+    property bool hasMain: root.enabledCount > 1
     property int monFirst: root.hasMain ? 1 : 0
-    property int monRows: root.monCount > 1 ? 4 : 3
+    property int monRows: root.enabledCount > 1 ? 4 : 3
     property int monBlockH: 22 + root.monRows * Services.Theme.rowHeight + root.monRows * Services.Theme.listSpacing
     property int monCount: Services.Settings.monitors.length
     property int monFootH: Services.Theme.rowHeight + Services.Theme.listSpacing + 14
@@ -1068,7 +1087,7 @@ BasePopup {
                         }
                     }
                     DropdownRow {
-                        visible: root.monCount > 1
+                        visible: root.enabledCount > 1
                         title: "Position"
                         selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
                         onHovered: {

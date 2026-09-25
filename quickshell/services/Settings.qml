@@ -271,7 +271,7 @@ Singleton {
         const pos = settings.monitorPos(name);
         if (pos !== "auto")
             s += "  " + pos;
-        if (live.disabled === true)
+        if (!settings.monitorEnabled(name) || live.disabled === true)
             s += "  (disabled)";
         return s;
     }
@@ -320,6 +320,8 @@ Singleton {
             return false;
         if (settings.monitorEnabled(name) !== (live.disabled !== true))
             return false;
+        if (!settings.monitorEnabled(name))
+            return true;
         if (typeof live.scale !== "number" || Math.abs(live.scale - settings.monitorScale(name)) > 0.001)
             return false;
         const cfg = settings.monitorCfg(name);
@@ -372,6 +374,8 @@ Singleton {
             return;
         }
         settings.putMonitorCfg(name, {enabled: on});
+        if (!on && settings.mainMonitor === name)
+            settings.mainMonitor = "auto";
         settings.applyMonitor(name);
         settings.scheduleSave();
     }
@@ -407,8 +411,18 @@ Singleton {
     property var monitors: []
     property var monitorConfigs: ({})
     property string mainMonitor: "auto"
+    function mainMonitorOptions(): var {
+        const names = settings.enabledMonitors().map(m => String(m && m.name ? m.name : "")).filter(n => n !== "");
+        return ["auto"].concat(names);
+    }
     function setMainMonitor(name: string): void {
-        settings.mainMonitor = (typeof name === "string" && name !== "") ? name : "auto";
+        let next = (typeof name === "string" && name !== "") ? name : "auto";
+        if (next !== "auto" && settings.monitorsReady) {
+            const live = settings.monitorLive(next);
+            if (!live || !settings.monitorEnabled(next))
+                next = "auto";
+        }
+        settings.mainMonitor = next;
         settings.scheduleSave();
     }
     property var barByScreen: ({})
@@ -445,7 +459,7 @@ Singleton {
     function mainScreen(screens, focusedName): var {
         const list = screens ?? [];
         const want = settings.mainMonitor;
-        if (typeof want === "string" && want !== "" && want !== "auto") {
+        if (typeof want === "string" && want !== "" && want !== "auto" && settings.monitorEnabled(want)) {
             const hit = list.find(s => s && s.name === want);
             if (hit)
                 return hit;
@@ -597,7 +611,7 @@ Singleton {
     }
     Process {
         id: wallpaperScan
-        command: ["sh", "-c", "for d in \"$HOME/dotfiles/wallpapers\" \"$HOME/Pictures/Wallpapers\"; do [ -d \"$d\" ] && find \"$d\" -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) 2>/dev/null; done | sort -u | head -n 20"]
+        command: ["sh", "-c", "for d in \"$HOME/dotfiles/wallpapers\" \"$HOME/Pictures/Wallpapers\"; do [ -d \"$d\" ] && find \"$d\" -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) 2>/dev/null; done | awk '!s[$0]++' | head -n 40 | { while IFS= read -r f; do md5sum \"$f\" 2>/dev/null; done; } | awk '{h=substr($0,1,32); p=substr($0,35); if (!s[h]++) print p}' | sort | head -n 20"]
         stdout: StdioCollector {
             onStreamFinished: {
                 settings.wallpapers = text.trim().split("\n").filter(s => s !== "");
@@ -621,7 +635,7 @@ Singleton {
                         live[m.name] = true;
                 }
                 settings.appliedMonitors = settings.appliedMonitors.filter(n => live[n]);
-                if (settings.monitors.length > 0 && settings.mainMonitor !== "auto" && !live[settings.mainMonitor]) {
+                if (settings.monitors.length > 0 && settings.mainMonitor !== "auto" && (!live[settings.mainMonitor] || !settings.monitorEnabled(settings.mainMonitor))) {
                     settings.mainMonitor = "auto";
                     settings.scheduleSave();
                 }

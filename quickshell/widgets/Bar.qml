@@ -220,10 +220,17 @@ PanelWindow {
             bar.followPopupAnchor();
         }
     }
-    onScreenChanged: bar.closePopups()
+    Connections {
+        target: Services.Settings
+        function onBarByScreenChanged(): void {
+            bar.followPopupAnchor();
+        }
+    }
+    onFocusedNameChanged: bar.followPopupAnchor()
+    onScreenChanged: bar.followPopupAnchor()
     readonly property int screenCount: Quickshell.screens.length
     onScreenCountChanged: {
-        bar.closePopups();
+        bar.followPopupAnchor();
         Services.Settings.refreshMonitors(true);
     }
     function revealHistory(i: int): void {
