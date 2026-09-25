@@ -30,7 +30,7 @@ Row {
             }
             MouseArea {
                 anchors.fill: parent
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: mouse => {
@@ -38,7 +38,9 @@ Row {
                     if (!item)
                         return;
                     try {
-                        if (mouse.button === Qt.LeftButton && !item.onlyMenu)
+                        if (mouse.button === Qt.MiddleButton && typeof item.secondaryActivate === "function")
+                            item.secondaryActivate();
+                        else if (mouse.button === Qt.LeftButton && !item.onlyMenu)
                             item.activate();
                         else if (item.hasMenu)
                             menuAnchor.open();
