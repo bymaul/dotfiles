@@ -28,6 +28,7 @@ BarIcon {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
         hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
         onEntered: root.armTip()
         onExited: root.hideTip()
         onWheel: event => {

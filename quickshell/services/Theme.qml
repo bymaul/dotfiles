@@ -58,7 +58,7 @@ Singleton {
     property int historyMax: 20
 
     property real volumeMax: 1.5
-    property real volumeStep: 0.05
+    property real volumeStep: 0.02
     property int brightnessStep: 5
     property int brightnessMin: 5
 

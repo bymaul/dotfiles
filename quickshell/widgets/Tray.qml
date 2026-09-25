@@ -31,6 +31,8 @@ Row {
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
                 onClicked: mouse => {
                     const item = trayIcon.modelData;
                     if (!item)
