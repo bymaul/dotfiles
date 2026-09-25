@@ -9,13 +9,13 @@ Row {
         delegate: Item {
             id: trayIcon
             required property var modelData
-            width: 18
-            height: 18
+            width: 15
+            height: 15
             Image {
                 anchors.fill: parent
                 source: modelData?.icon ?? ""
-                sourceSize.width: 18
-                sourceSize.height: 18
+                sourceSize.width: 15
+                sourceSize.height: 15
                 fillMode: Image.PreserveAspectFit
                 cache: true
                 asynchronous: true
