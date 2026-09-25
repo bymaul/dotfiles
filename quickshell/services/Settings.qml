@@ -279,6 +279,11 @@ Singleton {
         const q = !!quiet;
         if (typeof name !== "string" || name === "")
             return;
+        const live = settings.monitorLive(name);
+        if (live && settings.monitorInSync(name, live)) {
+            settings.lastApplyMsg = name + " already in sync";
+            return;
+        }
         if (!q && !settings.appliedMonitors.includes(name))
             settings.appliedMonitors = [...settings.appliedMonitors, name];
         if (!settings.monitorEnabled(name)) {
@@ -299,6 +304,32 @@ Singleton {
     }
     function monitorPosOptions(): var {
         return ["auto", "auto-right", "auto-left", "auto-up", "auto-down"];
+    }
+    function liveModeStr(live: var): string {
+        if (!live || typeof live.width !== "number" || typeof live.height !== "number")
+            return "";
+        if (typeof live.refreshRate === "number")
+            return live.width + "x" + live.height + "@" + live.refreshRate.toFixed(2) + "Hz";
+        return live.width + "x" + live.height;
+    }
+    // Pushing an identical hl.monitor() still reconfigures the output, churning
+    // Quickshell.screens. During reload incubation that churn segfaults in
+    // QWindow::setScreen, so skip applies that would change nothing.
+    function monitorInSync(name: string, live: var): bool {
+        if (!live)
+            return false;
+        if (settings.monitorEnabled(name) !== (live.disabled !== true))
+            return false;
+        if (typeof live.scale !== "number" || Math.abs(live.scale - settings.monitorScale(name)) > 0.001)
+            return false;
+        const cfg = settings.monitorCfg(name);
+        if (typeof cfg.res === "string" && cfg.res !== "" && cfg.res !== "preferred") {
+            if (cfg.res !== settings.liveModeStr(live))
+                return false;
+        }
+        if (settings.monitorPos(name) !== "auto")
+            return false;
+        return true;
     }
     function monitorPos(name: string): string {
         const cfg = settings.monitorCfg(name);
