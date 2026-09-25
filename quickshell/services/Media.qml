@@ -90,29 +90,36 @@ Singleton {
         return p.playbackState !== undefined && p.playbackState !== MprisPlaybackState.Stopped;
     }
     function playerList(): var {
-        const list = media.rawPlayers().filter(p => media.isUsable(p));
-        for (const p of list) {
+        const stable = media.stablePlayers();
+        for (const p of stable) {
             p.isPlaying;
             p.playbackState;
             p.trackTitle;
             p.canControl;
         }
         if (media.preferredPlayer !== "") {
-            const preferred = list.find(p => (p.dbusName ?? "") === media.preferredPlayer || (p.identity ?? "") === media.preferredPlayer);
-            if (preferred) {
-                const rest = list.filter(p => p !== preferred);
-                const playing = rest.filter(p => p.isPlaying);
-                const others = rest.filter(p => !p.isPlaying);
-                return [preferred, ...playing, ...others];
-            }
+            const preferred = stable.find(p => (p.dbusName ?? "") === media.preferredPlayer || (p.identity ?? "") === media.preferredPlayer);
+            if (preferred)
+                return [preferred, ...stable.filter(p => p !== preferred)];
         }
+        return stable;
+    }
+    function stablePlayers(): var {
+        const list = media.rawPlayers().filter(p => media.isUsable(p));
         const playing = list.filter(p => p.isPlaying);
         const rest = list.filter(p => !p.isPlaying);
+        const byBus = (a, b) => {
+            const ka = a.dbusName ?? a.identity ?? "";
+            const kb = b.dbusName ?? b.identity ?? "";
+            return ka < kb ? -1 : ka > kb ? 1 : 0;
+        };
+        playing.sort(byBus);
+        rest.sort(byBus);
         return [...playing, ...rest];
     }
     readonly property int usableCount: media.playerList().length
     readonly property var activePlayer: media.playerList().length > 0 ? media.playerList()[0] : null
-    readonly property int activePlayerIndex: media.playerList().indexOf(media.activePlayer)
+    readonly property int activePlayerIndex: media.stablePlayers().indexOf(media.activePlayer)
     function playerCount(): int {
         return media.usableCount;
     }
@@ -120,11 +127,10 @@ Singleton {
         return media.activePlayerIndex;
     }
     function cyclePlayer(): void {
-        const list = media.playerList();
-        if (list.length < 2)
+        const stable = media.stablePlayers();
+        if (stable.length < 2)
             return;
-        const idx = list.indexOf(media.activePlayer);
-        const next = list[(idx + 1) % list.length];
+        const next = stable[(stable.indexOf(media.activePlayer) + 1) % stable.length];
         if (next)
             media.preferredPlayer = next.dbusName ?? next.identity ?? "";
     }
@@ -134,7 +140,7 @@ Singleton {
             media.osd({app: "media", summary: "No media player", body: "Nothing playing", icon: "audio-x-generic-symbolic", syncId: "media"});
             return;
         }
-        media.osd({app: "media", summary: player.trackTitle || player.identity || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic", syncId: "media"});
+        media.osd({app: "media", summary: player.trackTitle || player.identity || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic", syncId: "media", hints: {playing: player.isPlaying ?? false}});
     }
     property var pendingToastPlayer: null
     Timer {

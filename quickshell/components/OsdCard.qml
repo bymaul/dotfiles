@@ -41,8 +41,17 @@ Rectangle {
             return "󰃟";
         if (key === "mic")
             return (summary.indexOf("Muted") !== -1 || summary.indexOf("No ") !== -1 || icon.indexOf("muted") !== -1) ? "󰍭" : "󰍬";
-        if (key === "media")
-            return "󰝚";
+        if (key === "media") {
+            card.seq;
+            var ph = n && n.hints ? n.hints["playing"] : undefined;
+            if (ph === undefined || ph === null) {
+                var ap = Services.Media.activePlayer;
+                if (!ap)
+                    return "󰝚";
+                ph = ap.isPlaying;
+            }
+            return ph ? "󰐊" : "󰏤";
+        }
         if (key === "caffeine")
             return "󰅶";
         if (key === "dnd")

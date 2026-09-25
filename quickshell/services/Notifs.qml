@@ -42,8 +42,12 @@ Singleton {
         return t && t.qsToastId !== undefined ? t.qsToastId : t;
     }
     function hideToast(n): void {
+        if (!n) {
+            console.warn("quickshell: hideToast called without notification");
+            return;
+        }
         const k = notifs.toastKey(n);
-        notifs.toasts = notifs.toasts.filter(t => notifs.toastKey(t) !== k);
+        notifs.toasts = notifs.toasts.filter(t => t !== n && notifs.toastKey(t) !== k);
     }
     function dismissToast(n): void {
         if (!n)
@@ -67,9 +71,30 @@ Singleton {
     }
     function flushPending(): void {
         const room = Math.max(0, Theme.toastMax - notifs.toasts.length);
-        notifs.toasts = [...notifs.pending.slice(0, room), ...notifs.toasts];
+        const restored = notifs.pending.slice(0, room);
+        for (const t of restored)
+            notifs.stampToast(t);
+        notifs.toasts = [...restored, ...notifs.toasts];
         notifs.pending = notifs.pending.slice(room);
         notifs.readCount = notifs.history.length;
+    }
+    function stampToast(n): void {
+        if (!n)
+            return;
+        try {
+            n.addedAt = Date.now();
+        } catch (_) {}
+    }
+    function sweepExpired(): void {
+        const now = Date.now();
+        for (const t of notifs.toasts) {
+            const exp = t ? t.expireTimeout : undefined;
+            if (!(exp > 0))
+                continue;
+            const age = now - (t.addedAt ?? now);
+            if (age > exp + 2000)
+                notifs.hideToast(t);
+        }
     }
     function safeDismiss(n): void {
         if (!n)
@@ -226,6 +251,7 @@ Singleton {
         }
         notification.tracked = true;
         notifs.trackClosed(notification);
+        notifs.stampToast(notification);
         if (Modes.dndActive && !notifs.bypassesDnd(notification))
             return;
         if (notifs.suppressToasts) {
@@ -252,7 +278,11 @@ Singleton {
                 cur.urgency = o.urgency ?? NotificationUrgency.Normal;
                 cur.appIcon = o.icon ?? "";
                 cur.expireTimeout = o.timeout ?? Theme.toastTimeout;
+                notifs.stampToast(cur);
                 cur.hints = {};
+                if (o.hints !== undefined)
+                    for (const hk in o.hints)
+                        cur.hints[hk] = o.hints[hk];
                 if (o.value !== undefined)
                     cur.hints["value"] = o.value;
                 cur.hints["x-canonical-private-synchronous"] = o.syncId;
@@ -264,6 +294,9 @@ Singleton {
             }
         }
         const hints = {};
+        if (o.hints !== undefined)
+            for (const hk in o.hints)
+                hints[hk] = o.hints[hk];
         if (o.value !== undefined)
             hints["value"] = o.value;
         if (o.syncId !== undefined)
@@ -317,6 +350,13 @@ Singleton {
         interval: 1000
         repeat: false
         onTriggered: notifs.persistHistory()
+    }
+    Timer {
+        id: expirySweep
+        interval: 10000
+        repeat: true
+        running: notifs.toasts.length > 0
+        onTriggered: notifs.sweepExpired()
     }
     Process {
         id: saver
