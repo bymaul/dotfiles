@@ -115,7 +115,7 @@ hl.gesture({
 local mainMod = "SUPER"
 local secondMod = "SUPER + SHIFT"
 
-hl.bind(mainMod .. " + B", hl.dsp.global("qs-bar:Toggle Control Panel"))
+hl.bind(mainMod .. " + A", hl.dsp.global("qs-bar:Toggle Control Panel"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
 hl.bind("ALT + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
