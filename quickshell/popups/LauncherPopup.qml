@@ -18,9 +18,6 @@ BasePopup {
     Shortcut { sequence: "Enter"; enabled: root.visible && !search.hasFocus; onActivated: root.launch() }
     Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Ctrl+N"; enabled: root.visible; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Ctrl+P"; enabled: root.visible; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Ctrl+Y"; enabled: root.visible; onActivated: root.launch() }
     property var appsCache: null
     property var entries: []
     readonly property bool runMode: String(search.text ?? "").trim().startsWith(">")
