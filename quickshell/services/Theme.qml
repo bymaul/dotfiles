@@ -60,7 +60,7 @@ Singleton {
     property real volumeMax: 1.5
     property real volumeStep: 0.02
     property int brightnessStep: 5
-    property int brightnessMin: 5
+    property int brightnessMin: 0
 
     property real sigHigh: 0.75
     property real sigMed: 0.5

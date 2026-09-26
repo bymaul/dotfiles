@@ -11,6 +11,7 @@ local fileManager = "nemo"
 hl.on("hyprland.start", function()
 	hl.exec_cmd("qs")
 	hl.exec_cmd("hypridle")
+	hl.exec_cmd("hyprsunset")
 	hl.exec_cmd("wl-paste --watch cliphist store")
 	hl.exec_cmd("wl-paste --type image --watch cliphist store")
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
@@ -41,7 +42,7 @@ hl.config({
 
 	decoration = {
 		rounding = 0,
-		rounding_power = 1,
+		rounding_power = 1.0,
 
 		active_opacity = 0.95,
 		inactive_opacity = 0.93,

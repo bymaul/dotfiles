@@ -48,10 +48,10 @@ BasePopup {
         return root.volumeIdx() + 1 + (root.mprisPlayer !== null ? 1 : 0);
     }
     function clearIdx(): int {
-        return Services.Notifs.history.length > 0 ? root.firstTileIdx() + 8 : -1;
+        return Services.Notifs.history.length > 0 ? root.firstTileIdx() + 9 : -1;
     }
     function firstHistIdx(): int {
-        return root.firstTileIdx() + 8 + (Services.Notifs.history.length > 0 ? 1 : 0);
+        return root.firstTileIdx() + 9 + (Services.Notifs.history.length > 0 ? 1 : 0);
     }
     function itemCount(): int {
         return root.firstHistIdx() + Services.Notifs.history.length;
@@ -297,7 +297,7 @@ BasePopup {
             root.activateDefaultAction();
             return;
         }
-        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Power.cycleProfile(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
+        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Modes.toggleBluelight(), () => Services.Power.cycleProfile(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
         const tile = root.selectedTile();
         if (tile >= 0 && tile < actions.length)
             actions[tile]();
@@ -647,29 +647,37 @@ BasePopup {
                 onHovered: root.selectIndex(root.firstTileIdx() + 4)
             }
             Tile {
+                glyph: "󰖔"
+                label: "Bluelight"
+                active: Services.Modes.bluelightActive
+                selected: root.selectedIndex === root.firstTileIdx() + 5
+                onClicked: Services.Modes.toggleBluelight()
+                onHovered: root.selectIndex(root.firstTileIdx() + 5)
+            }
+            Tile {
                 glyph: "󰓅"
                 label: Services.Power.profilesAvailable && Services.Power.profileName !== "" ? Services.Power.profileName : "Profile"
                 active: Services.Power.profileName === "performance"
                 available: Services.Power.profilesAvailable
-                selected: root.selectedIndex === root.firstTileIdx() + 5
+                selected: root.selectedIndex === root.firstTileIdx() + 6
                 onClicked: Services.Power.cycleProfile()
-                onHovered: root.selectIndex(root.firstTileIdx() + 5)
+                onHovered: root.selectIndex(root.firstTileIdx() + 6)
             }
             Tile {
                 glyph: ""
                 label: "Settings"
                 active: false
-                selected: root.selectedIndex === root.firstTileIdx() + 6
+                selected: root.selectedIndex === root.firstTileIdx() + 7
                 onClicked: bar.openSettingsFromPanel()
-                onHovered: root.selectIndex(root.firstTileIdx() + 6)
+                onHovered: root.selectIndex(root.firstTileIdx() + 7)
             }
             Tile {
                 glyph: "󰐥"
                 label: "Power"
                 active: false
-                selected: root.selectedIndex === root.firstTileIdx() + 7
+                selected: root.selectedIndex === root.firstTileIdx() + 8
                 onClicked: bar.openPowerFromPanel()
-                onHovered: root.selectIndex(root.firstTileIdx() + 7)
+                onHovered: root.selectIndex(root.firstTileIdx() + 8)
             }
         }
         HintText {

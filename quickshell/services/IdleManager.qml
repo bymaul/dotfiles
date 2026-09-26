@@ -28,20 +28,20 @@ Singleton {
         L.push("general {");
         L.push("    lock_cmd = qs ipc call bar lock");
         L.push("    before_sleep_cmd = loginctl lock-session");
-        L.push("    after_sleep_cmd = hyprctl dispatch dpms on");
+        L.push("    after_sleep_cmd = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"on\"))'");
         L.push("}");
         L.push("");
         if (idle.dimTimeout > 0) {
             L.push("listener {");
             L.push("    timeout = " + idle.dimTimeout);
-            L.push("    on-timeout = brightnessctl -s set 10");
-            L.push("    on-resume = brightnessctl -r");
+            L.push("    on-timeout = [ \"$(brightnessctl g)\" -gt 2500 ] && brightnessctl -s set 3%; hyprctl hyprsunset gamma 50");
+            L.push("    on-resume = brightnessctl -r; hyprctl hyprsunset gamma 100");
             L.push("}");
             L.push("");
             L.push("listener {");
             L.push("    timeout = " + idle.dimTimeout);
-            L.push("    on-timeout = brightnessctl -sd rgb:kbd_backlight set 0");
-            L.push("    on-resume = brightnessctl -rd rgb:kbd_backlight");
+            L.push("    on-timeout = brightnessctl -sd '*:kbd_backlight' set 0");
+            L.push("    on-resume = brightnessctl -rd '*:kbd_backlight'");
             L.push("}");
             L.push("");
         }
@@ -55,8 +55,8 @@ Singleton {
         if (idle.screenOffTimeout > 0) {
             L.push("listener {");
             L.push("    timeout = " + idle.screenOffTimeout);
-            L.push("    on-timeout = hyprctl dispatch dpms off");
-            L.push("    on-resume = hyprctl dispatch dpms on");
+            L.push("    on-timeout = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"off\"))'");
+            L.push("    on-resume = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"on\"))'");
             L.push("}");
             L.push("");
         }

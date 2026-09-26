@@ -21,6 +21,15 @@ Singleton {
         modes.dndActive = !modes.dndActive;
         Notifs.notify({app: "dnd", summary: modes.dndActive ? "DND on" : "DND off", syncId: "dnd", timeout: Theme.osdTimeout});
     }
+    property bool bluelightActive: false
+    function setBluelight(on: bool): void {
+        modes.bluelightActive = on;
+        Quickshell.execDetached(["hyprctl", "hyprsunset", "temperature", on ? "4000" : "6000"]);
+        Notifs.notify({app: "bluelight", summary: on ? "Bluelight on" : "Bluelight off", syncId: "bluelight", timeout: Theme.osdTimeout});
+    }
+    function toggleBluelight(): void {
+        modes.setBluelight(!modes.bluelightActive);
+    }
     Process {
         id: inhibitProc
         command: ["systemd-inhibit", "--what=idle:sleep", "--who=Quickshell", "--why=Caffeine mode", "sleep", "infinity"]

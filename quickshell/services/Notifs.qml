@@ -21,7 +21,7 @@ Singleton {
         return n?.hints ? n.hints["x-canonical-private-synchronous"] : undefined;
     }
     function isOwnFeedback(app: string): bool {
-        if (app === "dnd" || app === "caffeine" || app === "screenshot")
+        if (app === "dnd" || app === "caffeine" || app === "bluelight" || app === "screenshot")
             return true;
         return app === "volume" || app === "brightness" || app === "media" || app === "power" || app === "emoji" || app === "clipboard" || app === "settings";
     }

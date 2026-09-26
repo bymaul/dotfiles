@@ -424,7 +424,7 @@ log "checking requirements"
 missing=0
 for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
            yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
-           brightnessctl notify-send pipewire fastfetch upower loginctl; do
+           brightnessctl hyprsunset notify-send pipewire fastfetch upower loginctl; do
     if ! command -v "$bin" >/dev/null 2>&1; then
         printf '  \033[1;31m%s\033[0m missing\n' "$bin"
         missing=1

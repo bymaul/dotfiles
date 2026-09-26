@@ -4,6 +4,7 @@
 hyprland
 hypridle
 hyprpolkitagent
+hyprsunset
 quickshell
 kitty
 nemo
