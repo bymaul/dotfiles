@@ -1,5 +1,7 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Io
 import "../components"
 import "../components/FilterUtils.js" as FilterUtils
 import "../services" as Services
@@ -28,11 +30,10 @@ BasePopup {
     Shortcut { sequence: "k"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1, root.gridCols) }
     Shortcut { sequence: "h"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1, 1) }
     Shortcut { sequence: "l"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(1, 1) }
-    Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Ctrl+N"; enabled: root.visible; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Ctrl+P"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     property var entries: []
+    property string activeAddress: ""
+    property string activeClass: ""
+    property string clipTmp: "/tmp/qs-emoji-clip-restore"
     FilterState {
         id: filter
         onRefilterRequested: {
@@ -64,7 +65,14 @@ BasePopup {
             Services.EmojiHistory.load();
             search.text = "";
             filter.selMoved = false;
+            root.activeAddress = "";
+            root.activeClass = "";
+            root.pendingEmoji = "";
+            focusProbe.running = true;
             root.refilter();
+        } else {
+            if (focusProbe.running)
+                focusProbe.running = false;
         }
     }
     Connections {
@@ -127,12 +135,69 @@ BasePopup {
     function pick(): void {
         filter.flush();
         const entry = root.entries[resultGrid.currentIndex];
-        if (!entry)
+        if (!entry || saveProbe.running || restoreProbe.running || pasteTimer.running || restoreTimer.running)
             return;
         Services.EmojiHistory.record(entry.ch);
-        Quickshell.execDetached(["sh", "-c", 'printf %s "$1" | wl-copy; printf %s "$1" | cliphist store', "qs", entry.ch]);
-        Services.Notifs.notify({app: "emoji", summary: "Copied " + entry.ch + " " + entry.name, syncId: "emoji", timeout: Services.Theme.osdTimeout});
-        bar.closePopups();
+        if (root.activeAddress === "") {
+            Services.Notifs.notify({app: "emoji", summary: "No target window", timeout: Services.Theme.osdTimeout});
+            return;
+        }
+        root.pendingEmoji = entry.ch;
+        saveProbe.command = ["sh", "-c", 'f="$1"; e="$2"; cliphist list 2>/dev/null | head -n 1 | cut -f1 > "$f.maxid"; rm -f "$f" "$f.type"; if t=$(wl-paste --list-types 2>/dev/null | head -n 1) && [ -n "$t" ]; then printf "%s" "$t" > "$f.type"; wl-paste -t "$t" > "$f" 2>/dev/null || rm -f "$f" "$f.type"; fi; printf "%s" "$e" | wl-copy', "qs", root.clipTmp, entry.ch];
+        saveProbe.running = true;
+    }
+    Process {
+        id: saveProbe
+        onExited: exitCode => {
+            if (exitCode !== 0) {
+                Services.Notifs.notify({app: "emoji", summary: "Copy failed", body: "wl-copy failed", timeout: 5000});
+                return;
+            }
+            bar.closePopups();
+            pasteTimer.start();
+        }
+    }
+    Timer {
+        id: pasteTimer
+        interval: Services.Theme.grabDelay
+        repeat: false
+        onTriggered: root.pasteIntoActive()
+    }
+    function pasteIntoActive(): void {
+        if (root.activeAddress === "")
+            return;
+        const terminal = /kitty|alacritty|foot|wezterm|ghostty|konsole|gnome-terminal|xfce4-terminal|terminator|tilix|xterm|rxvt|hyper|tabby|stterm|\bst\b/.test(root.activeClass);
+        const mods = terminal ? "CTRL, SHIFT" : "CTRL";
+        Hyprland.dispatch("hl.dsp.send_shortcut({ mods = \"" + mods + "\", key = \"V\", window = \"address:" + root.activeAddress + "\" })");
+        restoreTimer.start();
+    }
+    Timer {
+        id: restoreTimer
+        interval: 500
+        repeat: false
+        onTriggered: {
+            restoreProbe.command = ["sh", "-c", 'f="$1"; e="$2"; if [ "$(wl-paste 2>/dev/null)" != "$e" ]; then rm -f "$f" "$f.type" "$f.maxid" "$f.all"; exit 0; fi; if [ -f "$f.type" ] && [ -f "$f" ]; then t=$(cat "$f.type"); case "$t" in text/*|TEXT|STRING|UTF8_STRING) wl-copy < "$f";; *) wl-copy -t "$t" < "$f";; esac 2>/dev/null || wl-copy < "$f"; else wl-copy --clear; fi; sleep 0.3; cliphist list 2>/dev/null > "$f.all"; if [ -s "$f.maxid" ]; then m=$(cat "$f.maxid"); while IFS= read -r line; do id=$(printf "%s\\n" "$line" | cut -f1); case "$id" in ""|*[!0-9]*) continue;; esac; if [ "$id" -gt "$m" ] 2>/dev/null; then printf "%s\\n" "$line" | cliphist delete; fi; done < "$f.all"; else line=$(grep -F -- "$e" "$f.all" 2>/dev/null | tail -n 1); [ -n "$line" ] && printf "%s\\n" "$line" | cliphist delete; fi; rm -f "$f" "$f.type" "$f.maxid" "$f.all"', "qs", root.clipTmp, root.pendingEmoji];
+            restoreProbe.running = true;
+        }
+    }
+    property string pendingEmoji: ""
+    Process {
+        id: restoreProbe
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                Services.Notifs.notify({app: "emoji", summary: "Clipboard restore failed", timeout: 5000});
+        }
+    }
+    Process {
+        id: focusProbe
+        command: ["sh", "-c", "hyprctl activewindow -j 2>/dev/null | jq -r '[.address,.class] | @tsv' 2>/dev/null"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const parts = text.trim().split("\t");
+                root.activeAddress = parts[0] ?? "";
+                root.activeClass = (parts[1] ?? "").toLowerCase();
+            }
+        }
     }
     PopupCard {
         SearchField {
@@ -188,7 +253,7 @@ BasePopup {
         }
         HintText {
             id: hint
-            text: root.selGroupName + " · / find · hjkl · ↵ copy"
+            text: root.selGroupName + " · / find · hjkl · ↵ paste · esc close"
         }
     }
 }
