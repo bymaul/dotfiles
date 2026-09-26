@@ -8,7 +8,6 @@ Singleton {
     id: power
 
     readonly property var lidOptions: ["suspend", "lock", "ignore"]
-    readonly property var buttonOptions: ["menu", "suspend", "lock", "poweroff", "ignore"]
     readonly property var criticalOptions: ["suspend", "hibernate", "poweroff", "lock", "notify"]
     readonly property var profileOptions: ["keep", "powersaver", "balanced", "performance"]
 

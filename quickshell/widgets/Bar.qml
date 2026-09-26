@@ -144,21 +144,9 @@ PanelWindow {
         sessionLock.locked = true;
     }
     function handlePowerKey(): void {
-        const action = Services.Settings.powerButtonAction;
-        if (action === "lock") {
-            bar.lockScreen();
-        } else if (action === "suspend") {
-            Services.Power.lock();
-            bar.closePopups();
-            Quickshell.execDetached(["systemctl", "suspend", "-i"]);
-        } else if (action === "poweroff") {
-            bar.closePopups();
-            Quickshell.execDetached(["systemctl", "poweroff", "-i"]);
-        } else if (action === "ignore") {
-            return;
-        } else {
-            bar.togglePower();
-        }
+        Services.Power.lock();
+        bar.closePopups();
+        Quickshell.execDetached(["systemctl", "suspend", "-i"]);
     }
     function screenshot(mode: string): void {
         screenshotTool.capture(mode);

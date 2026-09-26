@@ -15,7 +15,6 @@ BasePopup {
     Shortcut { sequence: "1"; enabled: root.visible; onActivated: root.tab = 0 }
     Shortcut { sequence: "2"; enabled: root.visible; onActivated: root.tab = 1 }
     Shortcut { sequence: "3"; enabled: root.visible; onActivated: root.tab = 2 }
-    Shortcut { sequence: "4"; enabled: root.visible; onActivated: root.tab = 3 }
     Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
@@ -24,8 +23,8 @@ BasePopup {
     Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.adjustSelected(-1) }
     Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.adjustSelected(1) }
-    Shortcut { sequence: "Tab"; enabled: root.visible && (root.tab === 2 || root.tab === 3); onActivated: root.tabStep(1) }
-    Shortcut { sequence: "Shift+Tab"; enabled: root.visible && (root.tab === 2 || root.tab === 3); onActivated: root.tabStep(-1) }
+    Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.tabStep(1) }
+    Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.tabStep(-1) }
     Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
@@ -54,13 +53,11 @@ BasePopup {
         root.selectedIndex = 0;
         root.closeDrop();
         root.syncWallCursor();
-        if (root.visible && root.tab === 3)
+        if (root.visible && root.tab === 2)
             Services.Settings.refreshMonitors(false);
     }
     onWpCountChanged: root.syncWallCursor()
     onMonCountChanged: {
-        if (root.monCount < 2 && (root.openMainDrop || root.openMonPos !== ""))
-            root.closeDrop();
         if (root.openMonRes !== "" && Services.Settings.monitorLive(root.openMonRes) === null)
             root.closeDrop();
         if (root.openMonPos !== "" && Services.Settings.monitorLive(root.openMonPos) === null)
@@ -68,7 +65,7 @@ BasePopup {
         root.clampSelection();
     }
     onEnabledCountChanged: {
-        if (root.enabledCount < 2 && (root.openMainDrop || root.openMonPos !== ""))
+        if (root.enabledCount < 2 && root.openMainDrop)
             root.closeDrop();
         root.clampSelection();
     }
@@ -79,7 +76,7 @@ BasePopup {
             root.closeDrop();
             root.syncWallCursor();
             Services.Settings.refreshWallpapers(false);
-            if (root.tab === 3)
+            if (root.tab === 2)
                 Services.Settings.refreshMonitors(false);
         } else {
             root.calmBusy();
@@ -102,11 +99,9 @@ BasePopup {
     }
     function itemCount(): int {
         if (root.tab === 0)
-            return root.wpCount + 1;
+            return root.wpRows + root.inputRows;
         if (root.tab === 1)
-            return 6;
-        if (root.tab === 2)
-            return 11;
+            return 10;
         return root.monFirst + root.monCount * root.monRows + 1;
     }
     function monLastIndex(): int {
@@ -126,19 +121,19 @@ BasePopup {
             wallList.currentIndex = -1;
     }
     function stepSelection(dir: int): void {
-        if (root.tab === 2 && root.openDropdown >= 0) {
+        if (root.tab === 1 && root.openDropdown >= 0) {
             root.moveCursor(root.dropdownOptions(root.openDropdown), dir);
             return;
         }
-        if (root.tab === 3 && root.openMainDrop) {
+        if (root.tab === 2 && root.openMainDrop) {
             root.moveCursor(root.mainOptions(), dir);
             return;
         }
-        if (root.tab === 3 && root.openMonRes !== "") {
+        if (root.tab === 2 && root.openMonRes !== "") {
             root.moveCursor(Services.Settings.monitorModes(root.openMonRes), dir);
             return;
         }
-        if (root.tab === 3 && root.openMonPos !== "") {
+        if (root.tab === 2 && root.openMonPos !== "") {
             root.moveCursor(Services.Settings.monitorPosOptions(), dir);
             return;
         }
@@ -147,9 +142,9 @@ BasePopup {
         root.syncWallCursor();
     }
     function tabStep(dir: int): void {
-        if (root.openDropdown >= 0 || root.openMainDrop || root.openMonRes !== "" || root.openMonPos !== "")
-            root.closeDrop();
-        root.stepSelection(dir);
+        root.closeDrop();
+        const n = 3;
+        root.tab = (root.tab + dir + n) % n;
     }
     function monitorNameAt(i: int): string {
         if (i < root.monFirst || i >= root.monFirst + root.monCount * root.monRows)
@@ -159,21 +154,18 @@ BasePopup {
     }
     function adjustSelected(dir: int): void {
         if (root.tab === 0) {
-            root.stepSelection(dir);
-            return;
-        }
-        if (root.tab === 1) {
-            switch (selectedIndex) {
-            case 0: Services.Settings.setBlurEnabled(!Services.Settings.blurEnabled); break;
-            case 1: Services.Settings.setTransparentFx(!Services.Settings.transparentFx); break;
-            case 2: Services.Settings.setAnimEnabled(!Services.Settings.animEnabled); break;
-            case 3: Services.Settings.setSensitivity(Services.Settings.sensitivity + dir * 0.1); break;
-            case 4: Services.Settings.setTouchScroll(Services.Settings.touchScroll + dir * 0.1); break;
-            case 5: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll); break;
+            if (selectedIndex < root.wpRows) {
+                root.stepSelection(dir);
+                return;
+            }
+            switch (selectedIndex - root.wpRows) {
+            case 0: Services.Settings.setSensitivity(Services.Settings.sensitivity + dir * 0.1); break;
+            case 1: Services.Settings.setTouchScroll(Services.Settings.touchScroll + dir * 0.1); break;
+            case 2: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll); break;
             }
             return;
         }
-        if (root.tab === 2) {
+        if (root.tab === 1) {
             if (root.openDropdown === selectedIndex && root.openDropdown >= 0) {
                 if (dir < 0)
                     root.closeDrop();
@@ -190,13 +182,12 @@ BasePopup {
             case 5: Services.Settings.setCriticalBatteryPct(Services.Settings.criticalBatteryPct + dir * 2); break;
             case 6: Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, dir)); break;
             case 7: Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, dir)); break;
-            case 8: Services.Settings.setPowerButtonAction(root.cycleOpt(Services.Power.buttonOptions, Services.Settings.powerButtonAction, dir)); break;
-            case 9: root.cycleActiveProfile(dir); break;
-            case 10: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
+            case 8: root.cycleActiveProfile(dir); break;
+            case 9: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
             }
             return;
         }
-        if (root.tab === 3 && root.hasMain && root.selectedIndex === 0) {
+        if (root.tab === 2 && root.selectedIndex === 0) {
             if (root.openMainDrop) {
                 if (dir < 0)
                     root.closeDrop();
@@ -207,7 +198,7 @@ BasePopup {
             root.cycleMainMonitor(dir);
             return;
         }
-        if (root.tab === 3 && root.selectedIndex === root.monLastIndex())
+        if (root.tab === 2 && root.selectedIndex === root.monLastIndex())
             return;
         const name = root.monitorNameAt(selectedIndex);
         if (name === "")
@@ -247,20 +238,11 @@ BasePopup {
                 Services.Settings.setWallpaper("");
             else if (selectedIndex <= root.wpCount)
                 Services.Settings.setWallpaper(Services.Settings.wallpapers[selectedIndex - 1] ?? "");
-            return;
-        }
-        if (root.tab === 1) {
-            if (selectedIndex === 0)
-                Services.Settings.setBlurEnabled(!Services.Settings.blurEnabled);
-            else if (selectedIndex === 1)
-                Services.Settings.setTransparentFx(!Services.Settings.transparentFx);
-            else if (selectedIndex === 2)
-                Services.Settings.setAnimEnabled(!Services.Settings.animEnabled);
-            else if (selectedIndex === 5)
+            else if (selectedIndex === root.wpRows + 2)
                 Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll);
             return;
         }
-        if (root.tab === 2) {
+        if (root.tab === 1) {
             if (root.openDropdown === selectedIndex && root.openDropdown >= 0) {
                 root.commitDropCursor();
                 return;
@@ -272,14 +254,14 @@ BasePopup {
             }
             return;
         }
-        if (root.tab === 3 && root.hasMain && root.selectedIndex === 0) {
+        if (root.tab === 2 && root.selectedIndex === 0) {
             if (root.openMainDrop)
                 root.commitMainCursor();
             else
                 root.toggleMainDrop();
             return;
         }
-        if (root.tab === 3 && root.selectedIndex === root.monLastIndex()) {
+        if (root.tab === 2 && root.selectedIndex === root.monLastIndex()) {
             Services.Settings.refreshMonitors(true);
             return;
         }
@@ -319,10 +301,10 @@ BasePopup {
         return Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
     }
     function isDropdownIndex(i: int): bool {
-        return root.tab === 2 && i >= 6 && i <= 10;
+        return root.tab === 1 && i >= 6 && i <= 9;
     }
     function dropEnabled(i: int): bool {
-        if (i === 9)
+        if (i === 8)
             return Services.Power.profilesAvailable;
         return true;
     }
@@ -332,10 +314,8 @@ BasePopup {
         if (i === 7)
             return Services.Power.lidOptions;
         if (i === 8)
-            return Services.Power.buttonOptions;
-        if (i === 9)
             return root.activeProfileOptions();
-        if (i === 10)
+        if (i === 9)
             return Services.Power.profileOptions;
         return [];
     }
@@ -345,10 +325,8 @@ BasePopup {
         if (i === 7)
             return Services.Settings.lidCloseAction;
         if (i === 8)
-            return Services.Settings.powerButtonAction;
-        if (i === 9)
             return Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd";
-        if (i === 10)
+        if (i === 9)
             return Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd";
         return "";
     }
@@ -357,12 +335,10 @@ BasePopup {
             Services.Settings.setCriticalBatteryAction(value);
         else if (i === 7)
             Services.Settings.setLidCloseAction(value);
-        else if (i === 8)
-            Services.Settings.setPowerButtonAction(value);
-        else if (i === 9) {
+        else if (i === 8) {
             if (Services.Power.profilesAvailable)
                 Services.Power.setProfileByName(value, false);
-        } else if (i === 10)
+        } else if (i === 9)
             Services.Settings.setPowerProfileOnBattery(value);
     }
     function openDrop(i: int): void {
@@ -441,6 +417,8 @@ BasePopup {
         root.commitMonPos(name, opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
     }
     function toggleMainDrop(): void {
+        if (root.enabledCount < 2)
+            return;
         if (root.openMainDrop) {
             root.closeDrop();
             return;
@@ -453,6 +431,8 @@ BasePopup {
         root.openMenu = {kind: "main"};
     }
     function cycleMainMonitor(dir: int): void {
+        if (root.enabledCount < 2)
+            return;
         const opts = root.mainOptions();
         if (opts.length === 0)
             return;
@@ -499,27 +479,33 @@ BasePopup {
 
     property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
     property int wpListH: root.wpCount * Services.Theme.listRowHeight + Math.max(0, root.wpCount - 1) * Services.Theme.listSpacing
+    property int wpRows: root.wpCount + 1
+    property int inputRows: 3
+    property int sectionH: 18
     property int enabledCount: Services.Settings.enabledMonitors().length
-    property bool hasMain: root.enabledCount > 1
-    property int monFirst: root.hasMain ? 1 : 0
-    property int monRows: root.enabledCount > 1 ? 4 : 3
-    property int monBlockH: 22 + root.monRows * Services.Theme.rowHeight + root.monRows * Services.Theme.listSpacing
+    property int monFirst: 1
+    property int monRows: 4
+    property int monCardPad: 8
+    property int monHeaderH: 22
+    property int monBlockH: root.monHeaderH + root.monRows * Services.Theme.rowHeight + root.monRows * Services.Theme.listSpacing + 2 * root.monCardPad
     property int monCount: Services.Settings.monitors.length
     property int monFootH: Services.Theme.rowHeight + Services.Theme.popupSpacing + 14
     property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Services.Theme.popupSpacing
 
-    property int mainSelH: root.hasMain ? Services.Theme.rowHeight : 0
+    property int mainSelH: Services.Theme.rowHeight
+    property int wallColH: Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH
+    property int inputColH: 3 * Services.Theme.rowHeight + 2 * Services.Theme.listSpacing
+    property int sysIdleH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
+    property int sysBattH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
+    property int sysProfH: 2 * Services.Theme.rowHeight + Services.Theme.listSpacing
     function contentHeight(): int {
         if (root.tab === 0)
-            return Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH;
+            return root.wallColH + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
         if (root.tab === 1)
-            return 6 * Services.Theme.rowHeight + 5 * Services.Theme.listSpacing;
-        if (root.tab === 2)
-            return 11 * Services.Theme.rowHeight + 10 * Services.Theme.listSpacing + Services.Theme.popupSpacing + 30;
-        const mainH = root.hasMain ? root.mainSelH + Services.Theme.popupSpacing : 0;
+            return root.sysIdleH + root.sysBattH + root.sysProfH + 3 * root.sectionH + 30 + 6 * Services.Theme.popupSpacing;
         if (root.monCount === 0)
-            return mainH + 30 + Services.Theme.popupSpacing + root.monFootH;
-        return mainH + root.monFullH + Services.Theme.popupSpacing + root.monFootH;
+            return root.mainSelH + Services.Theme.popupSpacing + 30 + Services.Theme.popupSpacing + root.monFootH;
+        return root.mainSelH + Services.Theme.popupSpacing + root.monFullH + Services.Theme.popupSpacing + root.monFootH;
     }
     PopupCard {
         Row {
@@ -528,91 +514,41 @@ BasePopup {
             height: Services.Theme.rowHeight
             spacing: Services.Theme.popupSpacing
             PopupButton {
-                label: "Appearance"
-                columns: 4
+                label: "General"
+                columns: 3
                 accent: root.tab === 0
                 selected: root.tab === 0
                 onClicked: root.tab = 0
             }
             PopupButton {
-                label: "Hyprland"
-                columns: 4
+                label: "System"
+                columns: 3
                 accent: root.tab === 1
                 selected: root.tab === 1
                 onClicked: root.tab = 1
             }
             PopupButton {
-                label: "System"
-                columns: 4
+                label: "Displays"
+                columns: 3
                 accent: root.tab === 2
                 selected: root.tab === 2
                 onClicked: root.tab = 2
-            }
-            PopupButton {
-                label: "Monitors"
-                columns: 4
-                accent: root.tab === 3
-                selected: root.tab === 3
-                onClicked: root.tab = 3
             }
         }
 
         Column {
             visible: root.tab === 0
             width: parent.width
-            spacing: Services.Theme.listSpacing
-            Rectangle {
+            spacing: Services.Theme.popupSpacing
+            Column {
                 width: parent.width
-                height: Services.Theme.listRowHeight
-                readonly property bool current: Services.Settings.wallpaperOverride === ""
-                readonly property bool selected: root.tab === 0 && root.selectedIndex === 0
-                color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : autoHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
-                border.width: (!selected && current) ? 1 : 0
-                border.color: Services.Theme.accent
-                Text {
-                    anchors {
-                        fill: parent
-                        leftMargin: 10
-                        rightMargin: 10
-                    }
-                    verticalAlignment: Text.AlignVCenter
-                    text: (parent.current ? "✓  " : "") + "Auto (default)"
-                    color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : autoHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px12
-                    elide: Text.ElideRight
-                }
-                MouseArea {
-                    id: autoHover
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onContainsMouseChanged: {
-                        if (containsMouse)
-                            root.selectedIndex = 0;
-                    }
-                    onClicked: {
-                        root.selectedIndex = 0;
-                        Services.Settings.setWallpaper("");
-                    }
-                }
-            }
-            ListView {
-                id: wallList
-                width: parent.width
-                height: root.wpListH
-                clip: true
                 spacing: Services.Theme.listSpacing
-                model: Services.Settings.wallpapers.slice(0, 4)
-                onCountChanged: root.syncWallCursor()
-                delegate: Rectangle {
-                    required property var modelData
-                    required property int index
-                    readonly property bool current: modelData === Services.Settings.wallpaperOverride
-                    readonly property bool selected: wallList.currentIndex === index
-                    width: ListView.view.width
+                Rectangle {
+                    width: parent.width
                     height: Services.Theme.listRowHeight
-                    color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : rowHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
+                    readonly property bool current: Services.Settings.wallpaperOverride === ""
+                    readonly property bool selected: root.tab === 0 && root.selectedIndex === 0
+                    color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : autoHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
                     border.width: (!selected && current) ? 1 : 0
                     border.color: Services.Theme.accent
                     Text {
@@ -622,28 +558,126 @@ BasePopup {
                             rightMargin: 10
                         }
                         verticalAlignment: Text.AlignVCenter
-                        text: (parent.current ? "✓  " : "") + String(modelData).split("/").pop()
-                        color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : rowHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                        text: (parent.current ? "✓  " : "") + "Auto (default)"
+                        color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : autoHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                         elide: Text.ElideRight
                     }
                     MouseArea {
-                        id: rowHover
+                        id: autoHover
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onContainsMouseChanged: {
-                            if (containsMouse) {
-                                wallList.currentIndex = index;
-                                root.selectedIndex = index + 1;
-                            }
+                            if (containsMouse)
+                                root.selectedIndex = 0;
                         }
                         onClicked: {
-                            wallList.currentIndex = index;
-                            root.selectedIndex = index + 1;
-                            Services.Settings.setWallpaper(modelData);
+                            root.selectedIndex = 0;
+                            Services.Settings.setWallpaper("");
                         }
+                    }
+                }
+                ListView {
+                    id: wallList
+                    width: parent.width
+                    height: root.wpListH
+                    clip: true
+                    spacing: Services.Theme.listSpacing
+                    model: Services.Settings.wallpapers.slice(0, 4)
+                    onCountChanged: root.syncWallCursor()
+                    delegate: Rectangle {
+                        required property var modelData
+                        required property int index
+                        readonly property bool current: modelData === Services.Settings.wallpaperOverride
+                        readonly property bool selected: wallList.currentIndex === index
+                        width: ListView.view.width
+                        height: Services.Theme.listRowHeight
+                        color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : rowHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
+                        border.width: (!selected && current) ? 1 : 0
+                        border.color: Services.Theme.accent
+                        Text {
+                            anchors {
+                                fill: parent
+                                leftMargin: 10
+                                rightMargin: 10
+                            }
+                            verticalAlignment: Text.AlignVCenter
+                            text: (parent.current ? "✓  " : "") + String(modelData).split("/").pop()
+                            color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : rowHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                            font.family: Services.Theme.font
+                            font.pixelSize: Services.Theme.px12
+                            elide: Text.ElideRight
+                        }
+                        MouseArea {
+                            id: rowHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: {
+                                if (containsMouse) {
+                                    wallList.currentIndex = index;
+                                    root.selectedIndex = index + 1;
+                                }
+                            }
+                            onClicked: {
+                                wallList.currentIndex = index;
+                                root.selectedIndex = index + 1;
+                                Services.Settings.setWallpaper(modelData);
+                            }
+                        }
+                    }
+                }
+            }
+            Text {
+                width: parent.width
+                height: root.sectionH
+                verticalAlignment: Text.AlignVCenter
+                text: "Mouse & touchpad"
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px11
+            }
+            Column {
+                width: parent.width
+                spacing: Services.Theme.listSpacing
+                SettingsRow {
+                    title: "Sensitivity"
+                    value: Services.Settings.sensitivity.toFixed(1)
+                    selected: root.tab === 0 && root.selectedIndex === root.wpRows + 0
+                    onHovered: root.selectedIndex = root.wpRows + 0
+                    SliderBar {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width
+                        minimum: -1
+                        maximum: 1
+                        value: Services.Settings.sensitivity
+                        onSliderMoved: value => Services.Settings.setSensitivity(value)
+                    }
+                }
+                SettingsRow {
+                    title: "Touchpad scroll"
+                    value: Services.Settings.touchScroll.toFixed(1)
+                    selected: root.tab === 0 && root.selectedIndex === root.wpRows + 1
+                    onHovered: root.selectedIndex = root.wpRows + 1
+                    SliderBar {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width
+                        minimum: 0.1
+                        maximum: 2
+                        value: Services.Settings.touchScroll
+                        onSliderMoved: value => Services.Settings.setTouchScroll(value)
+                    }
+                }
+                SettingsRow {
+                    title: "Natural scroll"
+                    value: Services.Settings.naturalScroll ? "On" : "Off"
+                    selected: root.tab === 0 && root.selectedIndex === root.wpRows + 2
+                    onHovered: root.selectedIndex = root.wpRows + 2
+                    SettingsSwitch {
+                        on: Services.Settings.naturalScroll
+                        onToggled: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll)
                     }
                 }
             }
@@ -652,83 +686,21 @@ BasePopup {
         Column {
             visible: root.tab === 1
             width: parent.width
-            spacing: Services.Theme.listSpacing
+            spacing: Services.Theme.popupSpacing
+            Text {
+                width: parent.width
+                height: root.sectionH
+                verticalAlignment: Text.AlignVCenter
+                text: "Idle"
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px11
+            }
+            Column {
+                width: parent.width
+                spacing: Services.Theme.listSpacing
             SettingsRow {
-                title: "Blur"
-                value: Services.Settings.blurEnabled ? "On" : "Off"
                 selected: root.tab === 1 && root.selectedIndex === 0
-                onHovered: root.selectedIndex = 0
-                SettingsSwitch {
-                    on: Services.Settings.blurEnabled
-                    onToggled: Services.Settings.setBlurEnabled(!Services.Settings.blurEnabled)
-                }
-            }
-            SettingsRow {
-                title: "Transparency"
-                value: Services.Settings.transparentFx ? "On" : "Off"
-                selected: root.tab === 1 && root.selectedIndex === 1
-                onHovered: root.selectedIndex = 1
-                SettingsSwitch {
-                    on: Services.Settings.transparentFx
-                    onToggled: Services.Settings.setTransparentFx(!Services.Settings.transparentFx)
-                }
-            }
-            SettingsRow {
-                title: "Animations"
-                value: Services.Settings.animEnabled ? "On" : "Off"
-                selected: root.tab === 1 && root.selectedIndex === 2
-                onHovered: root.selectedIndex = 2
-                SettingsSwitch {
-                    on: Services.Settings.animEnabled
-                    onToggled: Services.Settings.setAnimEnabled(!Services.Settings.animEnabled)
-                }
-            }
-            SettingsRow {
-                title: "Sensitivity"
-                value: Services.Settings.sensitivity.toFixed(1)
-                selected: root.tab === 1 && root.selectedIndex === 3
-                onHovered: root.selectedIndex = 3
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: -1
-                    maximum: 1
-                    value: Services.Settings.sensitivity
-                    onSliderMoved: value => Services.Settings.setSensitivity(value)
-                }
-            }
-            SettingsRow {
-                title: "Touchpad scroll"
-                value: Services.Settings.touchScroll.toFixed(1)
-                selected: root.tab === 1 && root.selectedIndex === 4
-                onHovered: root.selectedIndex = 4
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 0.1
-                    maximum: 2
-                    value: Services.Settings.touchScroll
-                    onSliderMoved: value => Services.Settings.setTouchScroll(value)
-                }
-            }
-            SettingsRow {
-                title: "Natural scroll"
-                value: Services.Settings.naturalScroll ? "On" : "Off"
-                selected: root.tab === 1 && root.selectedIndex === 5
-                onHovered: root.selectedIndex = 5
-                SettingsSwitch {
-                    on: Services.Settings.naturalScroll
-                    onToggled: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll)
-                }
-            }
-        }
-
-        Column {
-            visible: root.tab === 2
-            width: parent.width
-            spacing: Services.Theme.listSpacing
-            SettingsRow {
-                selected: root.tab === 2 && root.selectedIndex === 0
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 0;
@@ -745,7 +717,7 @@ BasePopup {
                 }
             }
             SettingsRow {
-                selected: root.tab === 2 && root.selectedIndex === 1
+                selected: root.tab === 1 && root.selectedIndex === 1
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 1;
@@ -762,7 +734,7 @@ BasePopup {
                 }
             }
             SettingsRow {
-                selected: root.tab === 2 && root.selectedIndex === 2
+                selected: root.tab === 1 && root.selectedIndex === 2
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 2;
@@ -779,7 +751,7 @@ BasePopup {
                 }
             }
             SettingsRow {
-                selected: root.tab === 2 && root.selectedIndex === 3
+                selected: root.tab === 1 && root.selectedIndex === 3
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 3;
@@ -795,8 +767,22 @@ BasePopup {
                     onSliderMoved: value => Services.Settings.setSuspendTimeout(Math.round(value / 5) * 300)
                 }
             }
+            }
+            Text {
+                width: parent.width
+                height: root.sectionH
+                verticalAlignment: Text.AlignVCenter
+                text: "Battery"
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px11
+            }
+            Column {
+                width: parent.width
+                spacing: Services.Theme.listSpacing
+                z: root.openDropdown === 6 || root.openDropdown === 7 ? 50 : 0
             SettingsRow {
-                selected: root.tab === 2 && root.selectedIndex === 4
+                selected: root.tab === 1 && root.selectedIndex === 4
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 4;
@@ -813,7 +799,7 @@ BasePopup {
                 }
             }
             SettingsRow {
-                selected: root.tab === 2 && root.selectedIndex === 5
+                selected: root.tab === 1 && root.selectedIndex === 5
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 5;
@@ -831,7 +817,7 @@ BasePopup {
                 }
             }
             DropdownRow {
-                selected: root.tab === 2 && root.selectedIndex === 6
+                selected: root.tab === 1 && root.selectedIndex === 6
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 6;
@@ -854,7 +840,7 @@ BasePopup {
                 }
             }
             DropdownRow {
-                selected: root.tab === 2 && root.selectedIndex === 7
+                selected: root.tab === 1 && root.selectedIndex === 7
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 7;
@@ -876,16 +862,31 @@ BasePopup {
                     root.closeDrop();
                 }
             }
+            }
+            Text {
+                width: parent.width
+                height: root.sectionH
+                verticalAlignment: Text.AlignVCenter
+                text: "Profiles"
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px11
+            }
+            Column {
+                width: parent.width
+                spacing: Services.Theme.listSpacing
+                z: root.openDropdown === 8 || root.openDropdown === 9 ? 50 : 0
             DropdownRow {
-                selected: root.tab === 2 && root.selectedIndex === 8
+                selected: root.tab === 1 && root.selectedIndex === 8
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 8;
                 }
-                title: "Power button"
+                title: "Active profile"
                 z: root.openDropdown === 8 ? 100 : 0
-                options: Services.Power.buttonOptions
-                current: Services.Settings.powerButtonAction
+                options: root.activeProfileOptions()
+                current: Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd"
+                dropEnabled: Services.Power.profilesAvailable
                 dropOpen: root.openDropdown === 8
                 cursor: root.dropCursor
                 openUp: true
@@ -901,16 +902,15 @@ BasePopup {
                 }
             }
             DropdownRow {
-                selected: root.tab === 2 && root.selectedIndex === 9
+                selected: root.tab === 1 && root.selectedIndex === 9
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 9;
                 }
-                title: "Active profile"
+                title: "On battery"
                 z: root.openDropdown === 9 ? 100 : 0
-                options: root.activeProfileOptions()
-                current: Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd"
-                dropEnabled: Services.Power.profilesAvailable
+                options: Services.Power.profileOptions
+                current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
                 dropOpen: root.openDropdown === 9
                 cursor: root.dropCursor
                 openUp: true
@@ -925,36 +925,13 @@ BasePopup {
                     root.closeDrop();
                 }
             }
-            DropdownRow {
-                selected: root.tab === 2 && root.selectedIndex === 10
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = 10;
-                }
-                title: "On battery"
-                z: root.openDropdown === 10 ? 100 : 0
-                options: Services.Power.profileOptions
-                current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
-                dropOpen: root.openDropdown === 10
-                cursor: root.dropCursor
-                openUp: true
-                onHeaderClicked: {
-                    root.selectedIndex = 10;
-                    root.toggleDrop(10);
-                }
-                onOptionHovered: index => root.dropCursor = index
-                onOptionClicked: value => {
-                    root.selectedIndex = 10;
-                    root.applyDropValue(10, value);
-                    root.closeDrop();
-                }
             }
             Text {
                 width: parent.width
                 height: 30
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-                text: "Idle rows write hypridle.conf. Lid close needs logind: bin/qs-power-logind. Power key applies instantly."
+                text: "Idle rows write hypridle.conf. Lid close needs logind: bin/qs-power-logind. Power key suspends."
                 color: Services.Theme.dim
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px10
@@ -962,13 +939,12 @@ BasePopup {
         }
 
         Column {
-            visible: root.tab === 3
+            visible: root.tab === 2
             width: parent.width
             spacing: Services.Theme.popupSpacing
             DropdownRow {
-                visible: root.hasMain
                 title: "Main display"
-                selected: root.tab === 3 && root.selectedIndex === 0
+                selected: root.tab === 2 && root.selectedIndex === 0
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 0;
@@ -976,6 +952,7 @@ BasePopup {
                 z: root.openMainDrop ? 100 : 0
                 options: root.mainOptions()
                 current: Services.Settings.mainMonitor
+                dropEnabled: root.enabledCount > 1
                 dropOpen: root.openMainDrop
                 cursor: root.dropCursor
                 onHeaderClicked: {
@@ -1008,34 +985,41 @@ BasePopup {
                 z: root.openMonRes !== "" || root.openMonPos !== "" ? 50 : 0
                 Repeater {
                     model: Services.Settings.monitors
-                    delegate: Column {
+                    delegate: Rectangle {
                         required property var modelData
                         required property int index
                         readonly property string monName: String(modelData.name ?? "")
+                        readonly property bool monOn: Services.Settings.monitorEnabled(monName)
                         width: parent.width
                         height: root.monBlockH
-                        spacing: Services.Theme.listSpacing
+                        color: Services.Theme.transparent
+                        border.width: 1
+                        border.color: Services.Theme.border
                         z: root.openMonRes === monName || root.openMonPos === monName ? 100 : 0
+                        Column {
+                            anchors.fill: parent
+                            anchors.margins: root.monCardPad
+                            spacing: Services.Theme.listSpacing
                     Text {
                         width: parent.width
-                        height: 22
+                        height: root.monHeaderH
                         verticalAlignment: Text.AlignVCenter
                         text: Services.Settings.monitorSummary(monName)
-                        color: Services.Theme.fg
+                        color: monOn ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                         elide: Text.ElideRight
                     }
                     SettingsRow {
-                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 0
+                    selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 0
                     onHovered: {
                         if (!root.anyDropOpen())
                             root.selectedIndex = root.monFirst + index * root.monRows + 0;
                     }
                         title: "Enabled"
-                        value: Services.Settings.monitorEnabled(monName) ? "On" : "Off"
+                        value: monOn ? "On" : "Off"
                         SettingsSwitch {
-                            on: Services.Settings.monitorEnabled(monName)
+                            on: monOn
                             disabled: !Services.Settings.canDisableMonitor(monName)
                             onToggled: {
                                 root.beginMonitorChange();
@@ -1044,7 +1028,8 @@ BasePopup {
                         }
                     }
                     SettingsRow {
-                    selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 1
+                    opacity: monOn ? 1 : 0.45
+                    selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 1
                     onHovered: {
                         if (!root.anyDropOpen())
                             root.selectedIndex = root.monFirst + index * root.monRows + 1;
@@ -1064,8 +1049,9 @@ BasePopup {
                         }
                     }
                     DropdownRow {
+                        opacity: monOn ? 1 : 0.45
                         title: "Resolution"
-                        selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 2
+                        selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 2
                         onHovered: {
                             if (!root.anyDropOpen())
                                 root.selectedIndex = root.monFirst + index * root.monRows + 2;
@@ -1087,9 +1073,9 @@ BasePopup {
                         }
                     }
                     DropdownRow {
-                        visible: root.enabledCount > 1
+                        opacity: monOn ? 1 : 0.45
                         title: "Position"
-                        selected: root.tab === 3 && root.selectedIndex === root.monFirst + index * root.monRows + 3
+                        selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 3
                         onHovered: {
                             if (!root.anyDropOpen())
                                 root.selectedIndex = root.monFirst + index * root.monRows + 3;
@@ -1110,13 +1096,14 @@ BasePopup {
                             root.commitMonPos(monName, value);
                         }
                     }
+                        }
                     }
                 }
             }
             PopupButton {
                 label: "Re-detect displays"
                 columns: 1
-                selected: root.tab === 3 && root.selectedIndex === root.monLastIndex()
+                selected: root.tab === 2 && root.selectedIndex === root.monLastIndex()
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = root.monLastIndex();
@@ -1141,7 +1128,7 @@ BasePopup {
 
         HintText {
             id: hint
-            text: "1-4 tabs · jk move · hl adjust · ↵ open/pick"
+            text: "1-3 tabs · jk move · hl adjust · ↵ open/pick"
         }
     }
 }

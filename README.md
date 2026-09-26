@@ -26,7 +26,7 @@ Plus a **Nerd Font**, and **starship** (installed via `zinit` from GitHub releas
 
 ## Power management
 
-Idle dim/lock/DPMS/suspend is owned by quickshell (Settings popup, System tab writes `hypridle.conf`). The power button is handled live by quickshell per the System tab setting. Lid close goes through systemd-logind:
+Idle dim/lock/DPMS/suspend is owned by quickshell (Settings popup, System tab writes `hypridle.conf`). The power button always suspends (quickshell locks, then suspends). Lid close goes through systemd-logind:
 
 ```sh
 qs-power-logind --apply

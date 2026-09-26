@@ -9,10 +9,6 @@ Singleton {
     property string wallpaperOverride: ""
     property var wallpapers: []
 
-    property bool blurEnabled: true
-    property bool transparentFx: true
-    property bool animEnabled: true
-
     property real sensitivity: 0
     property real touchScroll: 0.8
     property bool naturalScroll: true
@@ -26,7 +22,6 @@ Singleton {
     property int criticalBatteryPct: 10
     property string criticalBatteryAction: "suspend"
     property string lidCloseAction: "suspend"
-    property string powerButtonAction: "menu"
     property string powerProfileOnBattery: "keep"
 
     property bool loaded: false
@@ -58,9 +53,6 @@ Singleton {
     function snapshot(): var {
         return {
             wallpaperOverride: settings.wallpaperOverride,
-            blurEnabled: settings.blurEnabled,
-            transparentFx: settings.transparentFx,
-            animEnabled: settings.animEnabled,
             sensitivity: settings.sensitivity,
             touchScroll: settings.touchScroll,
             naturalScroll: settings.naturalScroll,
@@ -72,7 +64,6 @@ Singleton {
             criticalBatteryPct: settings.criticalBatteryPct,
             criticalBatteryAction: settings.criticalBatteryAction,
             lidCloseAction: settings.lidCloseAction,
-            powerButtonAction: settings.powerButtonAction,
             powerProfileOnBattery: settings.powerProfileOnBattery,
             mainMonitor: settings.mainMonitor,
             monitorConfigs: settings.monitorConfigs
@@ -83,9 +74,6 @@ Singleton {
         if (!obj || typeof obj !== "object")
             return;
         settings.wallpaperOverride = settings.pickStr(obj.wallpaperOverride, "");
-        settings.blurEnabled = settings.pickBool(obj.blurEnabled, true);
-        settings.transparentFx = settings.pickBool(obj.transparentFx, true);
-        settings.animEnabled = settings.pickBool(obj.animEnabled, true);
         settings.sensitivity = settings.num(obj.sensitivity, 0, -1, 1);
         settings.touchScroll = settings.num(obj.touchScroll, 0.8, 0.1, 2);
         settings.naturalScroll = settings.pickBool(obj.naturalScroll, true);
@@ -97,7 +85,6 @@ Singleton {
         settings.criticalBatteryPct = Math.min(Math.round(settings.num(obj.criticalBatteryPct, 10, 3, 30)), settings.lowBatteryPct);
         settings.criticalBatteryAction = settings.pickOpt(obj.criticalBatteryAction, "suspend", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
         settings.lidCloseAction = settings.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
-        settings.powerButtonAction = settings.pickOpt(obj.powerButtonAction, "menu", ["menu", "suspend", "lock", "poweroff", "ignore"]);
         settings.powerProfileOnBattery = settings.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
         settings.mainMonitor = settings.pickStr(obj.mainMonitor, "auto");
         if (obj.monitorConfigs && typeof obj.monitorConfigs === "object") {
@@ -124,9 +111,6 @@ Singleton {
     }
 
     function applyAll(): void {
-        HyprBridge.hypr("decoration:blur:enabled", settings.blurEnabled ? "true" : "false");
-        settings.applyTransparency();
-        HyprBridge.hypr("animations:enabled", settings.animEnabled ? "true" : "false");
         HyprBridge.hypr("input:sensitivity", String(settings.sensitivity));
         HyprBridge.hypr("input:touchpad:scroll_factor", String(settings.touchScroll));
         HyprBridge.hypr("input:touchpad:natural_scroll", settings.naturalScroll ? "true" : "false");
@@ -161,27 +145,6 @@ Singleton {
         wallpaperScan.running = true;
     }
 
-    function setBlurEnabled(on: bool): void {
-        settings.blurEnabled = on;
-        HyprBridge.hypr("decoration:blur:enabled", on ? "true" : "false");
-        settings.scheduleSave();
-    }
-    function applyTransparency(): void {
-        if (settings.transparentFx)
-            HyprBridge.evalCode("hl.config({decoration = {active_opacity = 0.97, inactive_opacity = 0.95}})");
-        else
-            HyprBridge.evalCode("hl.config({decoration = {active_opacity = 1.0, inactive_opacity = 1.0}})");
-    }
-    function setTransparentFx(on: bool): void {
-        settings.transparentFx = on;
-        settings.applyTransparency();
-        settings.scheduleSave();
-    }
-    function setAnimEnabled(on: bool): void {
-        settings.animEnabled = on;
-        HyprBridge.hypr("animations:enabled", on ? "true" : "false");
-        settings.scheduleSave();
-    }
     function setSensitivity(v: real): void {
         settings.sensitivity = Math.round(Math.max(-1, Math.min(1, v)) * 10) / 10;
         HyprBridge.hypr("input:sensitivity", String(settings.sensitivity));
@@ -518,12 +481,6 @@ Singleton {
         if (!["suspend", "lock", "ignore"].includes(v))
             return;
         settings.lidCloseAction = v;
-        settings.scheduleSave();
-    }
-    function setPowerButtonAction(v: string): void {
-        if (!["menu", "suspend", "lock", "poweroff", "ignore"].includes(v))
-            return;
-        settings.powerButtonAction = v;
         settings.scheduleSave();
     }
     function setPowerProfileOnBattery(v: string): void {
