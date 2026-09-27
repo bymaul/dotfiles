@@ -272,7 +272,7 @@ BasePopup {
             root.run(cmd);
             return;
         }
-        const term = Quickshell.env("TERMINAL") ?? "foot";
+        const term = Quickshell.env("TERMINAL") ?? "kitty";
         root.run([term].concat(cmd));
     }
     function run(cmd: var): void {

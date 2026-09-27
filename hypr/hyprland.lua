@@ -5,7 +5,7 @@ hl.monitor({
 	scale = "1.2",
 })
 
-local terminal = "foot"
+local terminal = "kitty"
 local fileManager = "nemo"
 
 hl.on("hyprland.start", function()

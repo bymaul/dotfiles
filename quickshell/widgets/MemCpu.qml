@@ -30,13 +30,15 @@ Item {
         cursorShape: Qt.PointingHandCursor
         onClicked: {
             if (!btop.running) {
+                const term = Quickshell.env("TERMINAL") ?? "kitty";
+                btop.command = term === "kitty" ? ["kitty", "--class", "btop", "btop"] : [term, "-e", "btop"];
                 btop.running = true;
             }
         }
     }
     Process {
         id: btop
-        command: ["foot", "--app-id=btop", "btop"]
+        command: ["kitty", "--class", "btop", "btop"]
         running: false
         onExited: btop.running = false
     }

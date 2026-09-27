@@ -6,7 +6,7 @@ hypridle
 hyprpolkitagent
 hyprsunset
 quickshell
-foot
+kitty
 nemo
 nvim
 tmux
