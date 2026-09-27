@@ -20,6 +20,7 @@ Singleton {
 
     property int lowBatteryPct: 20
     property int criticalBatteryPct: 10
+    property int criticalBatteryMins: 15
     property string criticalBatteryAction: "suspend"
     property string lidCloseAction: "suspend"
     property string powerProfileOnBattery: "keep"
@@ -62,6 +63,7 @@ Singleton {
             suspendTimeout: settings.suspendTimeout,
             lowBatteryPct: settings.lowBatteryPct,
             criticalBatteryPct: settings.criticalBatteryPct,
+            criticalBatteryMins: settings.criticalBatteryMins,
             criticalBatteryAction: settings.criticalBatteryAction,
             lidCloseAction: settings.lidCloseAction,
             powerProfileOnBattery: settings.powerProfileOnBattery,
@@ -83,6 +85,7 @@ Singleton {
         settings.suspendTimeout = Math.round(settings.num(obj.suspendTimeout, 1800, 0, 7200));
         settings.lowBatteryPct = Math.round(settings.num(obj.lowBatteryPct, 20, 5, 50));
         settings.criticalBatteryPct = Math.min(Math.round(settings.num(obj.criticalBatteryPct, 10, 3, 30)), settings.lowBatteryPct);
+        settings.criticalBatteryMins = Math.round(settings.num(obj.criticalBatteryMins, 15, 5, 60));
         settings.criticalBatteryAction = settings.pickOpt(obj.criticalBatteryAction, "suspend", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
         settings.lidCloseAction = settings.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
         settings.powerProfileOnBattery = settings.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
@@ -469,6 +472,10 @@ Singleton {
     }
     function setCriticalBatteryPct(v: real): void {
         settings.criticalBatteryPct = Math.min(Math.round(Math.max(3, Math.min(30, v))), settings.lowBatteryPct);
+        settings.scheduleSave();
+    }
+    function setCriticalBatteryMins(v: real): void {
+        settings.criticalBatteryMins = Math.round(Math.max(5, Math.min(60, v)));
         settings.scheduleSave();
     }
     function setCriticalBatteryAction(v: string): void {

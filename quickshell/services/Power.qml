@@ -89,6 +89,9 @@ Singleton {
         function onCriticalBatteryPctChanged(): void {
             power.evaluate();
         }
+        function onCriticalBatteryMinsChanged(): void {
+            power.evaluate();
+        }
         function onCriticalBatteryActionChanged(): void {
             power.evaluate();
         }
@@ -100,6 +103,19 @@ Singleton {
     }
 
     Component.onCompleted: power.maybeArmCharger()
+
+    // Safety net for a stuck/drifting gauge: percentage alone may never hit
+    // the critical mark while time-to-empty keeps falling.
+    Timer {
+        id: battPoll
+        interval: 60000
+        running: true
+        repeat: true
+        onTriggered: {
+            if (power.discharging)
+                power.evaluate();
+        }
+    }
 
     property int validSamples: 0
     function evaluate(): void {
@@ -126,15 +142,17 @@ Singleton {
         const p = power.pct;
         const low = Settings.lowBatteryPct;
         const crit = Math.min(Settings.criticalBatteryPct, low);
+        const tte = power.battery?.timeToEmpty ?? 0;
+        const timeCrit = tte > 60 && tte <= Settings.criticalBatteryMins * 60;
         if (!power.lowFired && p <= low) {
             power.lowFired = true;
             Notifs.notify({app: "power", summary: "Low battery " + p + "%", body: "Plug in the charger", icon: "battery-low-symbolic", value: p, syncId: "battery", timeout: 8000});
         }
-        if (!power.criticalFired && p <= crit) {
+        if (!power.criticalFired && (p <= crit || timeCrit)) {
             power.criticalFired = true;
-            Notifs.notify({app: "power", summary: "Critical battery " + p + "%", body: power.actionLabel(Settings.criticalBatteryAction), icon: "battery-caution-symbolic", urgency: NotificationUrgency.Critical, syncId: "battery", timeout: 15000});
+            Notifs.notify({app: "power", summary: "Critical battery " + p + "%", body: power.actionLabel(Settings.criticalBatteryAction) + (timeCrit ? " · ~" + power.fmtDur(tte) + " left" : ""), icon: "battery-caution-symbolic", urgency: NotificationUrgency.Critical, syncId: "battery", timeout: 15000});
         }
-        if (!power.actionFired && p <= crit) {
+        if (!power.actionFired && (p <= crit || timeCrit)) {
             power.actionFired = true;
             power.runCriticalAction();
         }
