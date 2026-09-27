@@ -27,25 +27,47 @@ Singleton {
     onPctChanged: power.evaluate()
     onChargingChanged: {
         power.evaluate();
+        power.maybeArmCharger();
         power.chargerToast();
     }
     onHasBatteryChanged: {
         power.evaluate();
+        if (!power.hasBattery) {
+            chargerGrace.stop();
+            power.chargerReady = false;
+        } else {
+            power.maybeArmCharger();
+        }
         power.chargerToast();
     }
 
-    property bool chargerArmed: false
+    property bool chargerReady: false
+    property bool lastCharging: false
+    Timer {
+        id: chargerGrace
+        interval: 5000
+        repeat: false
+        onTriggered: {
+            power.chargerReady = true;
+            power.lastCharging = power.charging;
+        }
+    }
+    function maybeArmCharger(): void {
+        if (power.hasBattery && Settings.loaded && !power.chargerReady && !chargerGrace.running)
+            chargerGrace.restart();
+    }
     function chargerToast(): void {
         if (!power.hasBattery)
             return;
-        if (!power.chargerArmed) {
-            power.chargerArmed = true;
-            return;
-        }
         if (!Settings.loaded)
             return;
-        const p = power.pct;
+        if (!power.chargerReady)
+            return;
         const charging = power.charging;
+        if (charging === power.lastCharging)
+            return;
+        power.lastCharging = charging;
+        const p = power.pct;
         if (charging)
             Notifs.notify({app: "power", summary: "Charger connected", body: power.chargerBody(true, p), icon: "battery-good-charging-symbolic", value: p, syncId: "charger", timeout: Theme.osdTimeout});
         else
@@ -72,9 +94,12 @@ Singleton {
         }
         function onLoadedChanged(): void {
             power.evaluate();
+            power.maybeArmCharger();
             power.chargerToast();
         }
     }
+
+    Component.onCompleted: power.maybeArmCharger()
 
     property int validSamples: 0
     function evaluate(): void {
