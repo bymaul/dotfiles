@@ -22,10 +22,8 @@ Singleton {
     }
 
     function cycleProfile(dir: int): void {
-        if (!asus.hasAsusctl) {
-            asus.notifyMissing();
+        if (!asus.hasAsusctl)
             return;
-        }
         const order = asus.profileOptions;
         let i = order.indexOf(asus.profile);
         if (i < 0)
@@ -37,33 +35,22 @@ Singleton {
     function setProfile(name: string, quiet: bool): void {
         if (!asus.profileOptions.includes(name))
             return;
-        if (!asus.hasAsusctl) {
-            asus.notifyMissing();
+        if (!asus.hasAsusctl)
             return;
-        }
         asus.profile = name;
         Quickshell.execDetached(["asusctl", "profile", "set", name]);
-        if (!quiet)
-            Notifs.notify({app: "power", summary: "ASUS profile: " + name, syncId: "asus-profile", timeout: Theme.osdTimeout});
         refreshSoon.restart();
     }
 
     function setChargeLimit(v: real): void {
         const next = Math.round(Math.max(20, Math.min(100, v)));
-        if (!asus.hasAsusctl) {
-            asus.notifyMissing();
+        if (!asus.hasAsusctl)
             return;
-        }
         if (next === asus.chargeLimit)
             return;
         asus.chargeLimit = next;
         Quickshell.execDetached(["asusctl", "battery", "limit", String(next)]);
-        Notifs.notify({app: "power", summary: "Charge limit: " + next + "%", syncId: "asus-charge", value: next, timeout: Theme.osdTimeout});
         refreshSoon.restart();
-    }
-
-    function notifyMissing(): void {
-        Notifs.notify({app: "power", summary: "asusctl not installed", body: "sudo pacman -S asusctl", syncId: "asus-missing", timeout: Theme.toastTimeout});
     }
 
     Timer {

@@ -301,12 +301,9 @@ Singleton {
         if (name !== "powersaver" && name !== "balanced" && name !== "performance")
             return;
         if (name === "performance" && !PowerProfiles.hasPerformanceProfile) {
-            Notifs.notify({app: "power", summary: "No performance profile", body: "This system only offers balanced / power-saver", syncId: "power-profile", timeout: Theme.osdTimeout});
             return;
         }
         PowerProfiles.profile = name === "performance" ? PowerProfile.Performance : name === "powersaver" ? PowerProfile.PowerSaver : PowerProfile.Balanced;
-        if (!quiet)
-            Notifs.notify({app: "power", summary: "Profile: " + name, syncId: "power-profile", timeout: Theme.osdTimeout});
     }
     function cycleProfile(): void {
         const order = ["balanced", "powersaver", "performance"];

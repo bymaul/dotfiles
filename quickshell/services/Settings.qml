@@ -336,7 +336,6 @@ Singleton {
     function setMonitorEnabled(name: string, on: bool): void {
         if (!on && !settings.canDisableMonitor(name)) {
             settings.lastApplyMsg = "Cannot disable " + name + " (only display)";
-            Notifs.notify({app: "settings", summary: settings.lastApplyMsg, syncId: "settings-apply", timeout: 3000});
             return;
         }
         settings.putMonitorCfg(name, {enabled: on});
@@ -643,11 +642,8 @@ Singleton {
             const failed = exitCode !== 0 || /error|failed|invalid|unknown|not found|no such/i.test(detail);
             if (!failed) {
                 settings.lastApplyMsg = monApply.jobLabel + " applied";
-                if (!monApply.jobQuiet)
-                    Notifs.notify({app: "settings", summary: settings.lastApplyMsg, syncId: "settings-apply", timeout: 1500});
             } else {
                 settings.lastApplyMsg = "Failed: " + monApply.jobLabel + (detail !== "" ? " (" + detail.slice(0, 120) + ")" : "");
-                Notifs.notify({app: "settings", summary: "Setting failed", body: settings.lastApplyMsg, syncId: "settings-apply", timeout: 5000});
             }
             settings.pumpApply();
         }
