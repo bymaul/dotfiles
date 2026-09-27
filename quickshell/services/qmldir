@@ -1,3 +1,4 @@
+singleton Asus 1.0 Asus.qml
 singleton EmojiHistory 1.0 EmojiHistory.qml
 singleton HyprBridge 1.0 HyprBridge.qml
 singleton IdleManager 1.0 IdleManager.qml

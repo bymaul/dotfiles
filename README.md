@@ -38,6 +38,16 @@ qs-power-logind --apply
 
 Reboot afterwards - logind only reads the drop-in at startup.
 
+## ASUS laptops (optional)
+
+On ASUS ROG/TUF machines, quickshell picks up `asusctl` when present (no service to enable - `asusd` starts via udev; keep `power-profiles-daemon` running):
+
+```sh
+sudo pacman -S asusctl
+```
+
+This switches the control-panel profile tile and the System tab `Active profile` row to the vendor `Quiet / Balanced / Performance` profiles, and adds a `Charge limit` row on top of the Battery section. Without it everything falls back to PPD, so non-ASUS machines need nothing.
+
 ## Two-repo sync
 
 Shared configs (`nvim`, `starship`, `bat`, `lazygit`, `opencode`, `zsh`, `tmux`, `fastfetch`, `git`) mirror into [`bymaul/winfiles`](https://github.com/bymaul/winfiles) via a sync workflow; pushes touching them open an auto-merged PR there. Needs a `repo`-scoped PAT as `GH_TOKEN` in both repos.

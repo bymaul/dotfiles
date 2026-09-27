@@ -37,6 +37,12 @@ BasePopup {
             root.kickBusy();
         }
     }
+    Connections {
+        target: Services.Asus
+        function onAvailableChanged(): void {
+            root.clampSelection();
+        }
+    }
 
     property int selectedIndex: 0
     // Single source of truth for open menus. null when closed, otherwise
@@ -55,6 +61,8 @@ BasePopup {
         root.syncWallCursor();
         if (root.visible && root.tab === 2)
             Services.Settings.refreshMonitors(false);
+        if (root.visible && root.tab === 1)
+            Services.Asus.refresh();
     }
     onWpCountChanged: root.syncWallCursor()
     onMonCountChanged: {
@@ -78,6 +86,8 @@ BasePopup {
             Services.Settings.refreshWallpapers(false);
             if (root.tab === 2)
                 Services.Settings.refreshMonitors(false);
+            if (root.tab === 1)
+                Services.Asus.refresh();
         } else {
             root.calmBusy();
             root.closeDrop();
@@ -101,7 +111,7 @@ BasePopup {
         if (root.tab === 0)
             return root.wpRows + root.inputRows;
         if (root.tab === 1)
-            return 10;
+            return 10 + root.asusRows;
         return root.monFirst + root.monCount * root.monRows + 1;
     }
     function monLastIndex(): int {
@@ -173,7 +183,11 @@ BasePopup {
                     root.commitDropCursor();
                 return;
             }
-            switch (selectedIndex) {
+            if (root.asusRows === 1 && selectedIndex === 4) {
+                Services.Asus.setChargeLimit(Services.Asus.chargeLimit + dir * 5);
+                return;
+            }
+            switch (selectedIndex - root.asusRows) {
             case 0: Services.Settings.setDimTimeout(Services.Settings.dimTimeout + dir * 30); break;
             case 1: Services.Settings.setLockTimeout(Services.Settings.lockTimeout + dir * 60); break;
             case 2: Services.Settings.setScreenOffTimeout(Services.Settings.screenOffTimeout + dir * 60); break;
@@ -291,6 +305,10 @@ BasePopup {
     }
 
     function cycleActiveProfile(dir: int): void {
+        if (Services.Asus.available) {
+            Services.Asus.cycleProfile(dir);
+            return;
+        }
         if (!Services.Power.profilesAvailable)
             return;
         const order = Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
@@ -298,47 +316,54 @@ BasePopup {
     }
 
     function activeProfileOptions(): var {
+        if (Services.Asus.available)
+            return Services.Asus.profileOptions;
         return Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
     }
     function isDropdownIndex(i: int): bool {
-        return root.tab === 1 && i >= 6 && i <= 9;
+        return root.tab === 1 && i >= root.sysIdx(6) && i <= root.sysIdx(9);
     }
     function dropEnabled(i: int): bool {
-        if (i === 8)
-            return Services.Power.profilesAvailable;
+        if (i === root.sysIdx(8))
+            return Services.Asus.available || Services.Power.profilesAvailable;
         return true;
     }
     function dropdownOptions(i: int): var {
-        if (i === 6)
+        if (i === root.sysIdx(6))
             return Services.Power.criticalOptions;
-        if (i === 7)
+        if (i === root.sysIdx(7))
             return Services.Power.lidOptions;
-        if (i === 8)
+        if (i === root.sysIdx(8))
             return root.activeProfileOptions();
-        if (i === 9)
+        if (i === root.sysIdx(9))
             return Services.Power.profileOptions;
         return [];
     }
     function dropdownCurrent(i: int): string {
-        if (i === 6)
+        if (i === root.sysIdx(6))
             return Services.Settings.criticalBatteryAction;
-        if (i === 7)
+        if (i === root.sysIdx(7))
             return Services.Settings.lidCloseAction;
-        if (i === 8)
+        if (i === root.sysIdx(8)) {
+            if (Services.Asus.available)
+                return Services.Asus.profile !== "" ? Services.Asus.profile : "…";
             return Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd";
-        if (i === 9)
+        }
+        if (i === root.sysIdx(9))
             return Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd";
         return "";
     }
     function applyDropValue(i: int, value: string): void {
-        if (i === 6)
+        if (i === root.sysIdx(6))
             Services.Settings.setCriticalBatteryAction(value);
-        else if (i === 7)
+        else if (i === root.sysIdx(7))
             Services.Settings.setLidCloseAction(value);
-        else if (i === 8) {
-            if (Services.Power.profilesAvailable)
+        else if (i === root.sysIdx(8)) {
+            if (Services.Asus.available)
+                Services.Asus.setProfile(value, false);
+            else if (Services.Power.profilesAvailable)
                 Services.Power.setProfileByName(value, false);
-        } else if (i === 9)
+        } else if (i === root.sysIdx(9))
             Services.Settings.setPowerProfileOnBattery(value);
     }
     function openDrop(i: int): void {
@@ -496,13 +521,21 @@ BasePopup {
     property int wallColH: Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH
     property int inputColH: 3 * Services.Theme.rowHeight + 2 * Services.Theme.listSpacing
     property int sysIdleH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
-    property int sysBattH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
+    property int sysBattH: (4 + root.asusRows) * Services.Theme.rowHeight + (3 + root.asusRows) * Services.Theme.listSpacing
     property int sysProfH: 2 * Services.Theme.rowHeight + Services.Theme.listSpacing
+    // Extra System-tab rows inserted above the Battery section when asusd is
+    // present. Battery/Profile row indices below shift by this offset.
+    property int asusRows: Services.Asus.available ? 1 : 0
+    function sysIdx(n: int): int {
+        return n + root.asusRows;
+    }
     function contentHeight(): int {
         if (root.tab === 0)
             return root.wallColH + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
-        if (root.tab === 1)
-            return root.sysIdleH + root.sysBattH + root.sysProfH + 3 * root.sectionH + 30 + 6 * Services.Theme.popupSpacing;
+        if (root.tab === 1) {
+            let h = root.sysIdleH + root.sysBattH + root.sysProfH + 3 * root.sectionH + 30 + 6 * Services.Theme.popupSpacing;
+            return h;
+        }
         if (root.monCount === 0)
             return root.mainSelH + Services.Theme.popupSpacing + 30 + Services.Theme.popupSpacing + root.monFootH;
         return root.mainSelH + Services.Theme.popupSpacing + root.monFullH + Services.Theme.popupSpacing + root.monFootH;
@@ -780,12 +813,30 @@ BasePopup {
             Column {
                 width: parent.width
                 spacing: Services.Theme.listSpacing
-                z: root.openDropdown === 6 || root.openDropdown === 7 ? 50 : 0
+                z: root.openDropdown === root.sysIdx(6) || root.openDropdown === root.sysIdx(7) ? 50 : 0
             SettingsRow {
+                visible: Services.Asus.available
                 selected: root.tab === 1 && root.selectedIndex === 4
                 onHovered: {
                     if (!root.anyDropOpen())
                         root.selectedIndex = 4;
+                }
+                title: "Charge limit"
+                value: Services.Asus.chargeLimit + "%"
+                SliderBar {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    minimum: 20
+                    maximum: 100
+                    value: Services.Asus.chargeLimit
+                    onSliderMoved: value => Services.Asus.setChargeLimit(Math.round(value / 5) * 5)
+                }
+            }
+            SettingsRow {
+                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(4)
+                onHovered: {
+                    if (!root.anyDropOpen())
+                        root.selectedIndex = root.sysIdx(4);
                 }
                 title: "Low battery"
                 value: Services.Settings.lowBatteryPct + "%"
@@ -799,10 +850,10 @@ BasePopup {
                 }
             }
             SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === 5
+                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(5)
                 onHovered: {
                     if (!root.anyDropOpen())
-                        root.selectedIndex = 5;
+                        root.selectedIndex = root.sysIdx(5);
                 }
                 title: "Critical battery"
                 titleWidth: 124
@@ -817,48 +868,48 @@ BasePopup {
                 }
             }
             DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === 6
+                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(6)
                 onHovered: {
                     if (!root.anyDropOpen())
-                        root.selectedIndex = 6;
+                        root.selectedIndex = root.sysIdx(6);
                 }
                 title: "Critical action"
-                z: root.openDropdown === 6 ? 100 : 0
+                z: root.openDropdown === root.sysIdx(6) ? 100 : 0
                 options: Services.Power.criticalOptions
                 current: Services.Settings.criticalBatteryAction
-                dropOpen: root.openDropdown === 6
+                dropOpen: root.openDropdown === root.sysIdx(6)
                 cursor: root.dropCursor
                 onHeaderClicked: {
-                    root.selectedIndex = 6;
-                    root.toggleDrop(6);
+                    root.selectedIndex = root.sysIdx(6);
+                    root.toggleDrop(root.sysIdx(6));
                 }
                 onOptionHovered: index => root.dropCursor = index
                 onOptionClicked: value => {
-                    root.selectedIndex = 6;
-                    root.applyDropValue(6, value);
+                    root.selectedIndex = root.sysIdx(6);
+                    root.applyDropValue(root.sysIdx(6), value);
                     root.closeDrop();
                 }
             }
             DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === 7
+                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(7)
                 onHovered: {
                     if (!root.anyDropOpen())
-                        root.selectedIndex = 7;
+                        root.selectedIndex = root.sysIdx(7);
                 }
                 title: "Lid close"
-                z: root.openDropdown === 7 ? 100 : 0
+                z: root.openDropdown === root.sysIdx(7) ? 100 : 0
                 options: Services.Power.lidOptions
                 current: Services.Settings.lidCloseAction
-                dropOpen: root.openDropdown === 7
+                dropOpen: root.openDropdown === root.sysIdx(7)
                 cursor: root.dropCursor
                 onHeaderClicked: {
-                    root.selectedIndex = 7;
-                    root.toggleDrop(7);
+                    root.selectedIndex = root.sysIdx(7);
+                    root.toggleDrop(root.sysIdx(7));
                 }
                 onOptionHovered: index => root.dropCursor = index
                 onOptionClicked: value => {
-                    root.selectedIndex = 7;
-                    root.applyDropValue(7, value);
+                    root.selectedIndex = root.sysIdx(7);
+                    root.applyDropValue(root.sysIdx(7), value);
                     root.closeDrop();
                 }
             }
@@ -875,53 +926,53 @@ BasePopup {
             Column {
                 width: parent.width
                 spacing: Services.Theme.listSpacing
-                z: root.openDropdown === 8 || root.openDropdown === 9 ? 50 : 0
+                z: root.openDropdown === root.sysIdx(8) || root.openDropdown === root.sysIdx(9) ? 50 : 0
             DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === 8
+                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(8)
                 onHovered: {
                     if (!root.anyDropOpen())
-                        root.selectedIndex = 8;
+                        root.selectedIndex = root.sysIdx(8);
                 }
                 title: "Active profile"
-                z: root.openDropdown === 8 ? 100 : 0
-                options: root.activeProfileOptions()
-                current: Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd"
-                dropEnabled: Services.Power.profilesAvailable
-                dropOpen: root.openDropdown === 8
+                z: root.openDropdown === root.sysIdx(8) ? 100 : 0
+                options: root.dropdownOptions(root.sysIdx(8))
+                current: root.dropdownCurrent(root.sysIdx(8))
+                dropEnabled: root.dropEnabled(root.sysIdx(8))
+                dropOpen: root.openDropdown === root.sysIdx(8)
                 cursor: root.dropCursor
                 openUp: true
                 onHeaderClicked: {
-                    root.selectedIndex = 8;
-                    root.toggleDrop(8);
+                    root.selectedIndex = root.sysIdx(8);
+                    root.toggleDrop(root.sysIdx(8));
                 }
                 onOptionHovered: index => root.dropCursor = index
                 onOptionClicked: value => {
-                    root.selectedIndex = 8;
-                    root.applyDropValue(8, value);
+                    root.selectedIndex = root.sysIdx(8);
+                    root.applyDropValue(root.sysIdx(8), value);
                     root.closeDrop();
                 }
             }
             DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === 9
+                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(9)
                 onHovered: {
                     if (!root.anyDropOpen())
-                        root.selectedIndex = 9;
+                        root.selectedIndex = root.sysIdx(9);
                 }
                 title: "On battery"
-                z: root.openDropdown === 9 ? 100 : 0
+                z: root.openDropdown === root.sysIdx(9) ? 100 : 0
                 options: Services.Power.profileOptions
                 current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
-                dropOpen: root.openDropdown === 9
+                dropOpen: root.openDropdown === root.sysIdx(9)
                 cursor: root.dropCursor
                 openUp: true
                 onHeaderClicked: {
-                    root.selectedIndex = 9;
-                    root.toggleDrop(9);
+                    root.selectedIndex = root.sysIdx(9);
+                    root.toggleDrop(root.sysIdx(9));
                 }
                 onOptionHovered: index => root.dropCursor = index
                 onOptionClicked: value => {
-                    root.selectedIndex = 9;
-                    root.applyDropValue(9, value);
+                    root.selectedIndex = root.sysIdx(9);
+                    root.applyDropValue(root.sysIdx(9), value);
                     root.closeDrop();
                 }
             }

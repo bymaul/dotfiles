@@ -171,6 +171,12 @@ BasePopup {
         if (audio)
             audio.muted = !audio.muted;
     }
+    function cycleProfileTile(): void {
+        if (Services.Asus.available)
+            Services.Asus.cycleProfile(1);
+        else
+            Services.Power.cycleProfile();
+    }
     function adjustSelected(dir: int): void {
         const kind = root.selectedKind();
         if (kind === "brightness")
@@ -297,7 +303,7 @@ BasePopup {
             root.activateDefaultAction();
             return;
         }
-        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Modes.toggleBluelight(), () => Services.Power.cycleProfile(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
+        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Modes.toggleBluelight(), () => root.cycleProfileTile(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
         const tile = root.selectedTile();
         if (tile >= 0 && tile < actions.length)
             actions[tile]();
@@ -656,11 +662,11 @@ BasePopup {
             }
             Tile {
                 glyph: "󰓅"
-                label: Services.Power.profilesAvailable && Services.Power.profileName !== "" ? Services.Power.profileName : "Profile"
-                active: Services.Power.profileName === "performance"
-                available: Services.Power.profilesAvailable
+                label: Services.Asus.available ? (Services.Asus.profile !== "" ? Services.Asus.profile : "Profile") : (Services.Power.profilesAvailable && Services.Power.profileName !== "" ? Services.Power.profileName : "Profile")
+                active: Services.Asus.available ? Services.Asus.profile === "Performance" : Services.Power.profileName === "performance"
+                available: Services.Asus.available || Services.Power.profilesAvailable
                 selected: root.selectedIndex === root.firstTileIdx() + 6
-                onClicked: Services.Power.cycleProfile()
+                onClicked: root.cycleProfileTile()
                 onHovered: root.selectIndex(root.firstTileIdx() + 6)
             }
             Tile {
