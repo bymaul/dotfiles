@@ -1,64 +1,48 @@
 pragma Singleton
 import QtQuick
 import Quickshell
-import Quickshell.Io
 
 Singleton {
     id: root
     property string source: ""
-    property int probeIndex: 0
-    readonly property string homeDir: Quickshell.env("HOME") ?? ""
-    readonly property var candidates: {
-        const out = [];
-        if (root.homeDir !== "") {
-            for (const ext of ["jpg", "jpeg", "png", "webp"]) {
-                out.push(root.homeDir + "/dotfiles/wallpapers/pavel-the-sakura." + ext);
-            }
-            for (const ext of ["jpg", "jpeg", "png", "webp"]) {
-                out.push(root.homeDir + "/dotfiles/wallpapers/wallpaper." + ext);
-            }
-            for (const ext of ["jpg", "jpeg", "png", "webp"]) {
-                out.push(root.homeDir + "/Pictures/Wallpapers/wallpaper." + ext);
-            }
-        }
-        out.push(Quickshell.shellDir + "/wallpaper-1.jpg");
-        return out;
-    }
-    function probeNext(): void {
-        if (probe.running)
-            return;
-        if (root.probeIndex >= root.candidates.length) {
-            console.warn("[wallpaper] no wallpaper found, tried: " + root.candidates.join(", "));
-            Notifs.notify({app: "wallpaper", summary: "No wallpaper found", body: "Add ~/dotfiles/wallpapers/wallpaper-1.jpg", syncId: "wallpaper", timeout: 8000});
-            return;
-        }
-        probe.command = ["test", "-r", root.candidates[root.probeIndex]];
-        probe.running = true;
-    }
-    // Called by Settings: explicit pick wins, empty resets to auto-probe.
+    property string override: ""
+    property bool scanDone: false
+    property bool notifiedEmpty: false
+
+    // Called by Settings: explicit pick wins, empty resets to auto.
     function applyOverride(path: string): void {
-        if (path === "") {
-            if (probe.running)
-                probe.running = false;
-            root.probeIndex = 0;
-            root.source = "";
-            root.probeNext();
-        } else if (typeof path === "string" && path !== "") {
-            if (probe.running)
-                probe.running = false;
-            root.source = "file://" + path;
-        }
+        root.override = typeof path === "string" ? path : "";
+        root.resolve();
     }
-    Process {
-        id: probe
-        onExited: exitCode => {
-            if (exitCode === 0)
-                root.source = "file://" + root.candidates[root.probeIndex];
-            else {
-                root.probeIndex++;
-                root.probeNext();
-            }
+
+    // Single source of truth for discovery is Settings.wallpapers, which
+    // scans ~/dotfiles/wallpapers and ~/Pictures/Wallpapers.
+    function resolve(): void {
+        if (root.override !== "") {
+            root.notifiedEmpty = false;
+            root.source = "file://" + root.override;
+            return;
         }
-        Component.onCompleted: root.probeNext()
+        const first = Settings.wallpapers.length > 0 ? Settings.wallpapers[0] : "";
+        if (first !== "") {
+            root.notifiedEmpty = false;
+            root.source = "file://" + first;
+            return;
+        }
+        root.source = "";
+        if (!root.scanDone || root.notifiedEmpty)
+            return;
+        root.notifiedEmpty = true;
+        console.warn("[wallpaper] no wallpaper found");
+        Notifs.notify({app: "wallpaper", summary: "No wallpaper found", body: "Add an image to ~/dotfiles/wallpapers or ~/Pictures/Wallpapers", syncId: "wallpaper", timeout: 8000});
+    }
+
+    Connections {
+        target: Settings
+        function onWallpapersChanged() {
+            root.scanDone = true;
+            if (root.override === "")
+                root.resolve();
+        }
     }
 }

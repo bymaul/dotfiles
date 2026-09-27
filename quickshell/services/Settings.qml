@@ -552,6 +552,7 @@ Singleton {
                 }
                 settings.loaded = true;
                 settings.applyAll();
+                settings.refreshWallpapers(true);
                 settings.applyScannedMonitors();
             }
         }
@@ -562,6 +563,7 @@ Singleton {
             if (exitCode !== 0) {
                 settings.loaded = true;
                 settings.applyAll();
+                settings.refreshWallpapers(true);
             }
         }
         Component.onCompleted: loader.running = true
@@ -573,6 +575,10 @@ Singleton {
             onStreamFinished: {
                 settings.wallpapers = text.trim().split("\n").filter(s => s !== "");
             }
+        }
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                settings.wallpapers = [];
         }
     }
     Process {
