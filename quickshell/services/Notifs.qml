@@ -29,7 +29,7 @@ Singleton {
         if (!n || n.qsInternal !== true)
             return false;
         const k = n.qsSyncKey;
-        return k === "volume" || k === "brightness" || k === "mic" || k === "media" || k === "charger" || k === "caffeine" || k === "dnd";
+        return k === "volume" || k === "brightness" || k === "mic" || k === "media" || k === "charger" || k === "battery" || k === "caffeine" || k === "dnd";
     }
     function bypassesDnd(n): bool {
         if (n?.qsInternal === true)

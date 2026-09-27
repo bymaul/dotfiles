@@ -56,7 +56,7 @@ Rectangle {
             return "󰅶";
         if (key === "dnd")
             return "";
-        if (key === "charger") {
+        if (key === "charger" || key === "battery") {
             if (summary === "Charger connected")
                 return "󰂄";
             var cv = Number(card.valueHint);
@@ -112,7 +112,17 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: 20
             text: card.glyph
-            color: Services.Theme.fg
+            color: {
+                card.seq;
+                var n = card.notification;
+                var key = n && n.qsSyncKey ? String(n.qsSyncKey) : "";
+                if (key === "battery") {
+                    var bv = n && n.hints ? Number(n.hints["value"]) : NaN;
+                    if (!isNaN(bv) && bv <= Services.Settings.criticalBatteryPct)
+                        return Services.Theme.danger;
+                }
+                return Services.Theme.fg;
+            }
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px13
         }
@@ -124,7 +134,7 @@ Rectangle {
                 card.seq;
                 var n = card.notification;
                 var key = n && n.qsSyncKey ? String(n.qsSyncKey) : "";
-                if (key === "charger" && card.hasProgress)
+                if ((key === "charger" || key === "battery") && card.hasProgress)
                     return Math.round(Number(card.valueHint)) + "%";
                 return card.notification.summary;
             }
