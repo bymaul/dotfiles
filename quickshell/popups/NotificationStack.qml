@@ -9,6 +9,7 @@ Item {
     required property var bar
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
     readonly property var popupScreen: Services.Settings.popupScreen(Quickshell.screens, root.focusedName)
+    readonly property var osdScreen: Services.Settings.mainScreen(Quickshell.screens)
     PanelWindow {
         id: toastWin
         screen: root.popupScreen
@@ -51,7 +52,7 @@ Item {
     }
     PanelWindow {
         id: osdWin
-        screen: root.popupScreen
+        screen: root.osdScreen
         anchors {
             bottom: true
         }
@@ -59,7 +60,7 @@ Item {
         exclusiveZone: 0
         implicitWidth: Services.Theme.osdWidth
         implicitHeight: osdList.contentHeight
-        visible: osdList.count > 0 && root.popupScreen !== null
+        visible: osdList.count > 0 && root.osdScreen !== null
         color: Services.Theme.transparent
         WlrLayershell.namespace: "qs-osd"
         WlrLayershell.layer: WlrLayer.Overlay
