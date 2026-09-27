@@ -40,6 +40,7 @@ BasePopup {
     Connections {
         target: Services.Asus
         function onAvailableChanged(): void {
+            root.keepSysRow();
             root.clampSelection();
         }
     }
@@ -59,6 +60,7 @@ BasePopup {
         root.selectedIndex = 0;
         root.closeDrop();
         root.syncWallCursor();
+        root.syncLastAsusRows();
         if (root.visible && root.tab === 2)
             Services.Settings.refreshMonitors(false);
         if (root.visible && root.tab === 1)
@@ -83,6 +85,7 @@ BasePopup {
             root.selectedIndex = 0;
             root.closeDrop();
             root.syncWallCursor();
+            root.syncLastAsusRows();
             Services.Settings.refreshWallpapers(false);
             if (root.tab === 2)
                 Services.Settings.refreshMonitors(false);
@@ -122,6 +125,22 @@ BasePopup {
     }
     function clampSelection(): void {
         selectedIndex = Services.Theme.clamp(selectedIndex, 0, Math.max(0, root.itemCount() - 1));
+    }
+    property int lastAsusRows: 0
+    // The Asus charge-limit row appears at index 4 once asusctl is detected,
+    // pushing every row below it down one slot. Keep the highlight on the same
+    // logical row instead of the same absolute index.
+    function keepSysRow(): void {
+        const delta = root.asusRows - root.lastAsusRows;
+        root.lastAsusRows = root.asusRows;
+        if (delta === 0 || root.tab !== 1)
+            return;
+        root.closeDrop();
+        if (root.selectedIndex >= 4)
+            root.selectedIndex = Math.max(4, root.selectedIndex + delta);
+    }
+    function syncLastAsusRows(): void {
+        root.lastAsusRows = root.asusRows;
     }
     function syncWallCursor(): void {
         root.clampSelection();
@@ -187,7 +206,10 @@ BasePopup {
                 Services.Asus.setChargeLimit(Services.Asus.chargeLimit + dir * 5);
                 return;
             }
-            switch (selectedIndex - root.asusRows) {
+            // Idle rows 0-3 sit before the Asus charge-limit row and take no
+            // offset; rows below it shift by asusRows.
+            const rel = selectedIndex >= 4 + root.asusRows ? selectedIndex - root.asusRows : selectedIndex;
+            switch (rel) {
             case 0: Services.Settings.setDimTimeout(Services.Settings.dimTimeout + dir * 30); break;
             case 1: Services.Settings.setLockTimeout(Services.Settings.lockTimeout + dir * 60); break;
             case 2: Services.Settings.setScreenOffTimeout(Services.Settings.screenOffTimeout + dir * 60); break;
