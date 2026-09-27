@@ -32,7 +32,7 @@ usage() {
 PKGS=(
     "dir hypr .config/hypr"
     "dir quickshell .config/quickshell"
-    "dir kitty .config/kitty"
+    "dir foot .config/foot"
     "dir bat .config/bat"
     "dir btop .config/btop"
     "dir fastfetch .config/fastfetch"
@@ -53,7 +53,7 @@ PKGS=(
 declare -A CATS=(
     [desktop]="hypr quickshell gtk vague-theme"
     [shell]="zsh starship tmux mise git"
-    [tools]="kitty bat btop fastfetch lazygit nvim opencode yazi bin"
+    [tools]="foot bat btop fastfetch lazygit nvim opencode yazi bin"
 )
 
 MODE=install
@@ -422,7 +422,7 @@ fi
 
 log "checking requirements"
 missing=0
-for bin in hyprctl quickshell kitty nvim tmux zsh starship lazygit \
+for bin in hyprctl quickshell foot nvim tmux zsh starship lazygit \
            yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
            brightnessctl hyprsunset notify-send pipewire fastfetch upower loginctl; do
     if ! command -v "$bin" >/dev/null 2>&1; then

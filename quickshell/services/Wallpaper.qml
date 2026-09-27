@@ -12,7 +12,7 @@ Singleton {
         const out = [];
         if (root.homeDir !== "") {
             for (const ext of ["jpg", "jpeg", "png", "webp"]) {
-                out.push(root.homeDir + "/dotfiles/wallpapers/wallpaper-1." + ext);
+                out.push(root.homeDir + "/dotfiles/wallpapers/pavel-the-sakura." + ext);
             }
             for (const ext of ["jpg", "jpeg", "png", "webp"]) {
                 out.push(root.homeDir + "/dotfiles/wallpapers/wallpaper." + ext);
