@@ -6,7 +6,7 @@
       "version": "'v1'"
     },
     "canola.nvim": {
-      "rev": "8173bc716f29797ce0ad94359565a20e17a0b88c",
+      "rev": "407c8949deafb39c5aa373bb06f9796c09e0635e",
       "src": "https://forge.barrettruth.com/barrettruth/canola.nvim"
     },
     "conform.nvim": {
@@ -14,7 +14,7 @@
       "src": "https://github.com/stevearc/conform.nvim"
     },
     "fff": {
-      "rev": "e3f694a2e4f82bb755418e8d305dcff779c59c27",
+      "rev": "89c19270ea2dfc20829a7429f72022571558093e",
       "src": "https://github.com/dmtrKovalenko/fff"
     },
     "friendly-snippets": {
@@ -26,7 +26,7 @@
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
     "mason-lspconfig.nvim": {
-      "rev": "137bd0feba2c1885545b6934d36f5e5aa6adb486",
+      "rev": "b3298993d55fa194279b5eb9dbfb3a43da65cadf",
       "src": "https://github.com/mason-org/mason-lspconfig.nvim"
     },
     "mason-tool-installer.nvim": {
@@ -42,7 +42,7 @@
       "src": "https://github.com/echasnovski/mini.nvim"
     },
     "nvim-treesitter": {
-      "rev": "f603a2f4da48728f80257fb5fbb90145fd1dc173",
+      "rev": "728e031f6b11d03d1f0708b7dc4fb0f1d9c8a137",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter"
     },
     "nvim-ts-autotag": {
