@@ -7,6 +7,7 @@ hl.monitor({
 
 local terminal = "kitty"
 local fileManager = "nemo"
+local browser = "helium-browser"
 
 hl.on("hyprland.start", function()
 	hl.exec_cmd("qs")
@@ -119,6 +120,7 @@ local secondMod = "SUPER + SHIFT"
 
 hl.bind(mainMod .. " + A", hl.dsp.global("qs-bar:Toggle Control Panel"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
 hl.bind("ALT + Space", hl.dsp.global("qs-bar:Toggle Launcher"))
 hl.bind(mainMod .. " + period", hl.dsp.global("qs-bar:Toggle Emoji"))
