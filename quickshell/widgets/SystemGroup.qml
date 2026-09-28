@@ -11,12 +11,22 @@ Item {
     Row {
         id: row
         spacing: Services.Theme.groupSpacing
-        CaffeineIcon {}
-        DndIcon {}
+        CaffeineIcon {
+            bar: root.bar
+        }
+        DndIcon {
+            bar: root.bar
+        }
         MemCpu {
             bar: root.bar
         }
-        NetworkGroup {
+        WifiIcon {
+            bar: root.bar
+        }
+        BluetoothIcon {
+            bar: root.bar
+        }
+        VolumeIcon {
             bar: root.bar
         }
     }

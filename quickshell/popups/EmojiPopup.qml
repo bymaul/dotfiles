@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import "../components"
 import "../components/FilterUtils.js" as FilterUtils
+import "../components/PasteUtils.js" as PasteUtils
 import "../services" as Services
 import "../emoji/emoji.js" as EmojiData
 BasePopup {
@@ -33,7 +34,11 @@ BasePopup {
     property var entries: []
     property string activeAddress: ""
     property string activeClass: ""
-    property string clipTmp: "/tmp/qs-emoji-clip-restore"
+    readonly property string runtimeDir: (Quickshell.env("XDG_RUNTIME_DIR") ?? "") !== "" ? Quickshell.env("XDG_RUNTIME_DIR") : "/tmp"
+    property string clipTmp: root.runtimeDir + "/qs-emoji-clip-restore"
+    function validAddress(addr: string): bool {
+        return PasteUtils.validAddress(addr);
+    }
     FilterState {
         id: filter
         onRefilterRequested: {
@@ -88,7 +93,7 @@ BasePopup {
         filter.selMoved = true;
     }
     function refilter(): void {
-        const q = String(search.text ?? "").toLowerCase().trim();
+        const q = String(search.text ?? "").toLowerCase().trim().slice(0, 256);
         const main = [];
         for (const e of EmojiData.EMOJI) {
             const score = FilterUtils.matchScoreLn(e[2], q);
@@ -96,26 +101,26 @@ BasePopup {
                 main.push({ch: e[0], name: e[1], g: e[3], key: e[0], score: q === "" ? 1 : score});
         }
         main.sort((a, b) => (a.score - b.score) || (root.groupRank(a.g) - root.groupRank(b.g)) || ((a.name < b.name) ? -1 : (a.name > b.name) ? 1 : 0));
-        let out = main;
+        let out = main.slice(0, Services.Theme.resultMax * 5);
         if (q === "") {
-            const seen = {};
+            const seen = new Set();
             const head = [];
             for (const ch of Services.EmojiHistory.recents) {
-                if (seen[ch])
+                if (seen.has(ch))
                     continue;
-                seen[ch] = true;
+                seen.add(ch);
                 const e = root.entryFor(ch);
                 if (e)
                     head.push({ch: ch, name: e[1], g: e[3], key: ch, score: 0});
             }
-            out = head.concat(main.filter(m => !seen[m.ch]));
+            out = head.concat(main.filter(m => !seen.has(m.ch))).slice(0, Services.Theme.resultMax * 5);
         }
         root.applyResults(out);
     }
     property var emojiByChar: null
     function entryFor(ch: string): var {
         if (!root.emojiByChar) {
-            const m = {};
+            const m = Object.create(null);
             for (const e of EmojiData.EMOJI)
                 m[e[0]] = e;
             root.emojiByChar = m;
@@ -137,18 +142,20 @@ BasePopup {
         const entry = root.entries[resultGrid.currentIndex];
         if (!entry || saveProbe.running || restoreProbe.running || pasteTimer.running || restoreTimer.running)
             return;
-        Services.EmojiHistory.record(entry.ch);
-        if (root.activeAddress === "") {
+        if (!root.validAddress(root.activeAddress)) {
             Services.Notifs.notify({app: "emoji", summary: "No target window", timeout: Services.Theme.osdTimeout});
             return;
         }
+        Services.EmojiHistory.record(entry.ch);
         root.pendingEmoji = entry.ch;
         saveProbe.command = ["sh", "-c", 'f="$1"; e="$2"; cliphist list 2>/dev/null | head -n 1 | cut -f1 > "$f.maxid"; rm -f "$f" "$f.type"; if t=$(wl-paste --list-types 2>/dev/null | head -n 1) && [ -n "$t" ]; then printf "%s" "$t" > "$f.type"; wl-paste -t "$t" > "$f" 2>/dev/null || rm -f "$f" "$f.type"; fi; printf "%s" "$e" | wl-copy', "qs", root.clipTmp, entry.ch];
         saveProbe.running = true;
+        saveTimeout.restart();
     }
     Process {
         id: saveProbe
         onExited: exitCode => {
+            saveTimeout.stop();
             if (exitCode !== 0) {
                 Services.Notifs.notify({app: "emoji", summary: "Copy failed", body: "wl-copy failed", timeout: 5000});
                 return;
@@ -158,16 +165,26 @@ BasePopup {
         }
     }
     Timer {
+        id: saveTimeout
+        interval: 8000
+        repeat: false
+        onTriggered: {
+            if (saveProbe.running) {
+                saveProbe.running = false;
+                Services.Notifs.notify({app: "emoji", summary: "Copy timed out", body: "wl-copy hung", timeout: 5000});
+            }
+        }
+    }
+    Timer {
         id: pasteTimer
         interval: Services.Theme.grabDelay
         repeat: false
         onTriggered: root.pasteIntoActive()
     }
     function pasteIntoActive(): void {
-        if (root.activeAddress === "")
+        if (!root.validAddress(root.activeAddress))
             return;
-        const terminal = /kitty|alacritty|foot|wezterm|ghostty|konsole|gnome-terminal|xfce4-terminal|terminator|tilix|xterm|rxvt|hyper|tabby|stterm|\bst\b/.test(root.activeClass);
-        const mods = terminal ? "CTRL, SHIFT" : "CTRL";
+        const mods = PasteUtils.pasteMods(root.activeClass);
         Hyprland.dispatch("hl.dsp.send_shortcut({ mods = \"" + mods + "\", key = \"V\", window = \"address:" + root.activeAddress + "\" })");
         restoreTimer.start();
     }
@@ -193,9 +210,9 @@ BasePopup {
         command: ["sh", "-c", "hyprctl activewindow -j 2>/dev/null | jq -r '[.address,.class] | @tsv' 2>/dev/null"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const parts = text.trim().split("\t");
-                root.activeAddress = parts[0] ?? "";
-                root.activeClass = (parts[1] ?? "").toLowerCase();
+                const r = PasteUtils.parseFocusProbe(text);
+                root.activeAddress = r.address;
+                root.activeClass = r.winClass;
             }
         }
     }

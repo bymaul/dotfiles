@@ -75,7 +75,7 @@ Singleton {
     }
     function chargerBody(charging: bool, p: int): string {
         let s = p + "% · " + (charging ? "Charging" : "Discharging");
-        const t = charging ? power.battery?.timeToFull : power.battery?.timeToEmpty;
+        const t = charging ? power.battery?.timeToFull ?? 0 : power.battery?.timeToEmpty ?? 0;
         if (t > 60)
             s += " · " + power.fmtDur(t) + (charging ? " to full" : " left");
         return s;
@@ -197,7 +197,7 @@ Singleton {
         if (!power.hasBattery)
             return "No battery";
         let s = power.pct + "% · " + (power.charging ? "Charging" : "Discharging");
-        const t = power.charging ? power.battery.timeToFull : power.battery.timeToEmpty;
+        const t = power.charging ? power.battery?.timeToFull ?? 0 : power.battery?.timeToEmpty ?? 0;
         if (t > 60)
             s += " · " + power.fmtDur(t) + (power.charging ? " to full" : " left");
         return s;
@@ -232,8 +232,8 @@ Singleton {
         path: power.lidStatePath
         printErrors: false
         onLoaded: {
-            const t = lidState.text();
-            if (t.includes("missing") || t === "") {
+            const t = String(lidState.text() ?? "");
+            if (t === "") {
                 power.lidPresent = false;
                 return;
             }

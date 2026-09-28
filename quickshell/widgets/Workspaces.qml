@@ -7,7 +7,7 @@ Row {
         horizontalCenter: parent.horizontalCenter
         verticalCenter: parent.verticalCenter
     }
-    spacing: 4
+    spacing: Services.Theme.listSpacing
     required property string screenName
     readonly property var pool: {
         const all = Hyprland.workspaces && Hyprland.workspaces.values ? Hyprland.workspaces.values : [];
@@ -38,7 +38,7 @@ Row {
         return [...ids].sort((a, b) => a - b);
     }
     function workspaceById(id: int): var {
-        return root.wsById[id] ?? null;
+        return (root.wsById ?? {})[id] ?? null;
     }
     readonly property var wsById: {
         const m = {};

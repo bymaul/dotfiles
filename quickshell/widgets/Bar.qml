@@ -22,16 +22,14 @@ PanelWindow {
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
     property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
     screen: bar.mainScreen ?? Quickshell.screens[0] ?? null
-    readonly property string mainName: bar.mainScreen && bar.mainScreen.name ? bar.mainScreen.name : ""
+    readonly property string mainName: bar.mainScreen?.name ?? ""
 
     function currentPopupAnchor(): var {
         const anchor = Services.Settings.barForScreen(bar.focusedName);
         return anchor ?? bar;
     }
     function syncBarReg(): void {
-        Services.Settings.unregisterBar(bar);
-        if (bar.mainName !== "")
-            Services.Settings.registerBar(bar.mainName, bar);
+        Services.Settings.syncBar(bar, bar.mainName);
     }
     Component.onCompleted: bar.syncBarReg()
     Component.onDestruction: Services.Settings.unregisterBar(bar)
@@ -86,6 +84,8 @@ PanelWindow {
             openExclusive(target, controlPanelPopup);
     }
     function openExclusive(target, returnTo = null): void {
+        if (!target)
+            return;
         const open = !target.visible;
         bar.closePopups();
         if (open) {
@@ -99,49 +99,12 @@ PanelWindow {
         if (open && target.useGrab !== false && typeof target.regrab === "function")
             target.regrab();
     }
-    function toggleCalendar(): void {
-        bar.togglePopup("calendar");
-    }
-    function toggleControl(): void {
-        bar.togglePopup("control");
-    }
-    function toggleWifi(): void {
-        bar.togglePopup("wifi");
-    }
-    function openWifiFromPanel(): void {
-        bar.openFromPanel("wifi");
-    }
-    function toggleBluetooth(): void {
-        bar.togglePopup("bluetooth");
-    }
-    function openBluetoothFromPanel(): void {
-        bar.openFromPanel("bluetooth");
-    }
-    function togglePower(): void {
-        bar.togglePopup("power");
-    }
-    function openPowerFromPanel(): void {
-        bar.openFromPanel("power");
-    }
-    function openSettingsFromPanel(): void {
-        bar.openFromPanel("settings");
-    }
-    function toggleSettings(): void {
-        bar.togglePopup("settings");
-    }
-    function toggleLauncher(): void {
-        bar.togglePopup("launcher");
-    }
-    function toggleClipboard(): void {
-        bar.togglePopup("clipboard");
-    }
-    function toggleEmoji(): void {
-        bar.togglePopup("emoji");
-    }
     function lockScreen(): void {
         bar.closePopups();
-        lockContext.reset();
-        sessionLock.locked = true;
+        if (lockContext && typeof lockContext.reset === "function")
+            lockContext.reset();
+        if (sessionLock)
+            sessionLock.locked = true;
     }
     function handlePowerKey(): void {
         Services.Power.lock();
@@ -156,7 +119,7 @@ PanelWindow {
         const popups = bar.rightPopups;
         let bottom = 0;
         for (const p of popups) {
-            if (p.visible && p.height > 0)
+            if (p && p.visible && p.height > 0)
                 bottom = Math.max(bottom, top + (p.extraTop ?? 0) + p.height);
         }
         return bottom;
@@ -165,7 +128,7 @@ PanelWindow {
         const popups = bar.rightPopups;
         let w = 0;
         for (const p of popups) {
-            if (p.visible)
+            if (p && p.visible)
                 w = Math.max(w, p.width);
         }
         return w > 0 ? w : Services.Theme.popupWidth;
@@ -201,9 +164,6 @@ PanelWindow {
     }
     Connections {
         target: Hyprland
-        function onFocusedMonitorChanged(): void {
-            bar.followPopupAnchor();
-        }
         function onFocusedWorkspaceChanged(): void {
             bar.followPopupAnchor();
         }
@@ -233,7 +193,7 @@ PanelWindow {
 
     Process {
         id: depCheck
-        command: ["sh", "-c", "for b in cliphist wl-copy hyprctl jq brightnessctl notify-send systemd-inhibit hypridle upower loginctl; do command -v \"$b\" >/dev/null || printf '%s\\n' \"$b\"; done"]
+        command: ["sh", "-c", "for b in cliphist wl-copy hyprctl jq brightnessctl notify-send systemd-inhibit hypridle upower loginctl btop; do command -v \"$b\" >/dev/null || printf '%s\\n' \"$b\"; done"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const missing = text.trim().split("\n").filter(s => s !== "");
@@ -248,16 +208,12 @@ PanelWindow {
         Component.onCompleted: depCheck.running = true
     }
 
-    WindowTitle {
+    MonitorHeader {
         screenName: bar.mainName
     }
     SystemClock {
         id: systemClock
         precision: SystemClock.Minutes
-    }
-    Workspaces {
-        id: workspaces
-        screenName: bar.mainName
     }
     Row {
         id: systemStatus
@@ -344,13 +300,13 @@ PanelWindow {
         return !(bar.sessionLock && bar.sessionLock.locked === true);
     }
 
-    GlobalShortcut { appid: "qs-bar"; name: "Toggle Power Menu"; description: "Open the power menu"; onPressed: { if (bar.unlocked()) bar.togglePower(); } }
+    GlobalShortcut { appid: "qs-bar"; name: "Toggle Power Menu"; description: "Open the power menu"; onPressed: { if (bar.unlocked()) bar.togglePopup("power"); } }
     GlobalShortcut { appid: "qs-bar"; name: "Power Key"; description: "Handle the power key per settings"; onPressed: bar.handlePowerKey() }
-    GlobalShortcut { appid: "qs-bar"; name: "Toggle Control Panel"; description: "Open the control panel"; onPressed: { if (bar.unlocked()) bar.toggleControl(); } }
-    GlobalShortcut { appid: "qs-bar"; name: "Toggle Launcher"; description: "Open the application launcher"; onPressed: { if (bar.unlocked()) bar.toggleLauncher(); } }
-    GlobalShortcut { appid: "qs-bar"; name: "Toggle Clipboard"; description: "Open the clipboard history picker"; onPressed: { if (bar.unlocked()) bar.toggleClipboard(); } }
-    GlobalShortcut { appid: "qs-bar"; name: "Toggle Emoji"; description: "Open the emoji picker"; onPressed: { if (bar.unlocked()) bar.toggleEmoji(); } }
-    GlobalShortcut { appid: "qs-bar"; name: "Settings"; description: "Open settings"; onPressed: { if (bar.unlocked()) bar.toggleSettings(); } }
+    GlobalShortcut { appid: "qs-bar"; name: "Toggle Control Panel"; description: "Open the control panel"; onPressed: { if (bar.unlocked()) bar.togglePopup("control"); } }
+    GlobalShortcut { appid: "qs-bar"; name: "Toggle Launcher"; description: "Open the application launcher"; onPressed: { if (bar.unlocked()) bar.togglePopup("launcher"); } }
+    GlobalShortcut { appid: "qs-bar"; name: "Toggle Clipboard"; description: "Open the clipboard history picker"; onPressed: { if (bar.unlocked()) bar.togglePopup("clipboard"); } }
+    GlobalShortcut { appid: "qs-bar"; name: "Toggle Emoji"; description: "Open the emoji picker"; onPressed: { if (bar.unlocked()) bar.togglePopup("emoji"); } }
+    GlobalShortcut { appid: "qs-bar"; name: "Settings"; description: "Open settings"; onPressed: { if (bar.unlocked()) bar.togglePopup("settings"); } }
     GlobalShortcut { appid: "qs-bar"; name: "Lock Screen"; description: "Lock the session"; onPressed: bar.lockScreen() }
     GlobalShortcut { appid: "qs-bar"; name: "Screenshot Area"; description: "Screenshot a selected area"; onPressed: { if (bar.unlocked()) bar.screenshot("area"); } }
     GlobalShortcut { appid: "qs-bar"; name: "Screenshot Full"; description: "Screenshot the full screen"; onPressed: { if (bar.unlocked()) bar.screenshot("full"); } }

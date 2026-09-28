@@ -21,7 +21,7 @@ BasePopup {
     property var appsCache: null
     property var entries: []
     readonly property bool runMode: String(search.text ?? "").trim().startsWith(">")
-    readonly property string runQuery: String(search.text ?? "").trim().slice(1).trim().toLowerCase()
+    readonly property string runQuery: String(search.text ?? "").trim().slice(1).trim().toLowerCase().slice(0, 256)
     FilterState {
         id: filter
         onRefilterRequested: {
@@ -75,9 +75,9 @@ BasePopup {
     }
     function refilter(): void {
         if (root.runMode)
-            root.refilterRun(root.runQuery);
+            root.refilterRun(root.runQuery.slice(0, 256));
         else
-            root.refilterApps(String(search.text ?? "").toLowerCase().trim());
+            root.refilterApps(String(search.text ?? "").toLowerCase().trim().slice(0, 256));
     }
     function hlQuery(): string {
         return root.runMode ? root.runQuery : String(search.text ?? "").toLowerCase().trim();
@@ -106,15 +106,15 @@ BasePopup {
             if (empty) {
                 best = 1;
             } else {
-                best = FilterUtils.matchScore(String(app.name ?? ""), q);
+                best = FilterUtils.matchScoreLn(String(app.name ?? "").toLowerCase(), q);
                 if (best !== 0)
-                    best = Math.min(best, FilterUtils.matchScore(String(app.genericName ?? ""), q));
+                    best = Math.min(best, FilterUtils.matchScoreLn(String(app.genericName ?? "").toLowerCase(), q));
                 if (best !== 0)
-                    best = Math.min(best, FilterUtils.matchScore(String(app.comment ?? ""), q));
+                    best = Math.min(best, FilterUtils.matchScoreLn(String(app.comment ?? "").toLowerCase(), q));
                 if (best !== 0) {
                     const kws = app.keywords ?? [];
                     for (const h of kws) {
-                        best = Math.min(best, FilterUtils.matchScore(String(h ?? ""), q));
+                        best = Math.min(best, FilterUtils.matchScoreLn(String(h ?? "").toLowerCase(), q));
                         if (best === 0)
                             break;
                     }

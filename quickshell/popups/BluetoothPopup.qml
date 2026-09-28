@@ -378,25 +378,10 @@ DeviceListBase {
                                 font.pixelSize: Services.Theme.px10
                             }
                         }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 24
-                            horizontalAlignment: Text.AlignHCenter
-                            text: "󰅖"
-                            color: row.selected ? Services.Theme.fg : forgetArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                            font.family: Services.Theme.font
-                            font.pixelSize: Services.Theme.px13
+                        ForgetButton {
+                            selected: row.selected
                             visible: (modelData.paired || modelData.bonded) && !row.connected
-                            MouseArea {
-                                id: forgetArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: mouse => {
-                                    mouse.accepted = true;
-                                    root.forgetSelected();
-                                }
-                            }
+                            onForget: root.forgetSelected()
                         }
                     }
                 }

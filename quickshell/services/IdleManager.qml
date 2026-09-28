@@ -55,7 +55,7 @@ Singleton {
         if (idle.screenOffTimeout > 0) {
             L.push("listener {");
             L.push("    timeout = " + idle.screenOffTimeout);
-            L.push("    on-timeout = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"off\"))'");
+            L.push("    on-timeout = loginctl lock-session; hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"off\"))'");
             L.push("    on-resume = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"on\"))'");
             L.push("}");
             L.push("");
@@ -63,13 +63,17 @@ Singleton {
         if (idle.suspendTimeout > 0) {
             L.push("listener {");
             L.push("    timeout = " + idle.suspendTimeout);
-            L.push("    on-timeout = systemctl suspend");
+            L.push("    on-timeout = loginctl lock-session; systemctl suspend");
             L.push("}");
             L.push("");
         }
         return L.join("\n");
     }
     function writeNow(): void {
+        if (!idle.targetFile || idle.targetFile === "") {
+            console.warn("quickshell: IdleManager targetFile empty, skipping write");
+            return;
+        }
         if (writer.running) {
             idle.dirty = true;
             return;
@@ -95,7 +99,8 @@ Singleton {
                 Notifs.notify({app: "settings", summary: "Idle config write failed", body: idle.targetFile, timeout: 5000});
                 return;
             }
-            restarter.running = true;
+            if (!restarter.running)
+                restarter.running = true;
         }
     }
     Process {

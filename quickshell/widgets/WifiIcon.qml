@@ -7,8 +7,8 @@ BarIcon {
     required property var bar
     readonly property bool connected: Services.Wifi.connected != null
     readonly property bool wired: Services.Wifi.wiredConnected
-    readonly property string wiredName: Services.Wifi.wiredDevice ? Services.Wifi.wiredDevice.name : ""
-    readonly property real level: connected ? Number(Services.Wifi.connected.signalStrength ?? 0) || 0 : 0
+    readonly property string wiredName: Services.Wifi.wiredDevice?.name ?? ""
+    readonly property real level: connected ? Number(Services.Wifi.connected?.signalStrength ?? 0) || 0 : 0
     glyph: {
         if (root.wired)
             return "󰈀";
@@ -26,11 +26,11 @@ BarIcon {
         if (!Networking.wifiEnabled)
             lines.push("Wi-Fi off");
         else if (Services.Wifi.connected)
-            lines.push("Wi-Fi: " + Services.Wifi.connected.name);
+            lines.push("Wi-Fi: " + (Services.Wifi.connected?.name ?? "connected"));
         else
             lines.push("Wi-Fi: not connected");
         return lines.join("\n");
     }
     tipAnchor: root.bar
-    onClicked: bar.toggleWifi()
+    onClicked: bar.togglePopup("wifi")
 }

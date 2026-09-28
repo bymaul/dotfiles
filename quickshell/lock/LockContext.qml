@@ -8,16 +8,21 @@ Scope {
     property bool unlockInProgress: false
     property bool showFailure: false
     property string authMessage: ""
-    property string activeSurface: ""
+    property int failedAttempts: 0
     onCurrentTextChanged: {
         showFailure = false;
         authMessage = "";
     }
     function tryUnlock(): void {
-        if (currentText === "" || unlockInProgress)
+        if (currentText === "" || unlockInProgress || lockout.running)
             return;
         unlockInProgress = true;
         pam.start();
+    }
+    Timer {
+        id: lockout
+        interval: 1000
+        repeat: false
     }
     function clearAuth(): void {
         currentText = "";
@@ -28,7 +33,6 @@ Scope {
     function reset(): void {
         if (pam.active)
             pam.abort();
-        root.activeSurface = "";
         root.clearAuth();
     }
     PamContext {
@@ -40,16 +44,23 @@ Scope {
                 root.authMessage = message;
         }
         onError: error => {
+            root.currentText = "";
             root.authMessage = "Auth error: " + error;
             root.unlockInProgress = false;
         }
         onCompleted: result => {
             if (result === PamResult.Success) {
+                root.failedAttempts = 0;
                 root.clearAuth();
                 root.unlocked();
             } else if (root.authMessage === "") {
                 root.currentText = "";
                 root.showFailure = true;
+                root.failedAttempts += 1;
+                if (root.failedAttempts >= 5)
+                    lockout.restart();
+            } else {
+                root.currentText = "";
             }
             root.unlockInProgress = false;
         }

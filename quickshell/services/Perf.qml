@@ -37,8 +37,9 @@ Singleton {
         perf.cpuIdle = idle;
     }
     function parseMem(text: string): void {
-        const totalMatch = text.match(/MemTotal:\s+(\d+)/);
-        const availMatch = text.match(/MemAvailable:\s+(\d+)/);
+        const src = String(text ?? "");
+        const totalMatch = src.match(/MemTotal:\s+(\d+)/);
+        const availMatch = src.match(/MemAvailable:\s+(\d+)/);
         if (totalMatch && availMatch) {
             const totalKb = parseInt(totalMatch[1]);
             const availKb = parseInt(availMatch[1]);

@@ -58,7 +58,11 @@ Singleton {
         interval: 15000
         running: true
         repeat: true
-        onTriggered: asus.refresh()
+        onTriggered: {
+            if (!asus.hasAsusctl && !asus.hasPlatformProfile && !asus.hasChargeControl)
+                return;
+            asus.refresh();
+        }
     }
     Timer {
         id: refreshSoon

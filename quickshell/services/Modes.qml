@@ -45,8 +45,6 @@ Singleton {
         id: caffeineCheck
         command: ["sh", "-c", "command -v systemd-inhibit >/dev/null"]
         onExited: exitCode => {
-            if (caffeineCheck.running)
-                return;
             if (exitCode !== 0)
                 Notifs.notify({app: "caffeine", summary: "Caffeine unavailable", body: "systemd-inhibit not found", timeout: Theme.osdTimeout});
             else if (!modes.caffeineActive)

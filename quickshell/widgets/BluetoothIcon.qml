@@ -7,7 +7,7 @@ BarIcon {
     glyph: {
       if (!Bluetooth.defaultAdapter || !Bluetooth.defaultAdapter.enabled)
         return "󰂲";
-      const vals = Bluetooth.devices ? Bluetooth.devices.values : [];
+      const vals = Bluetooth.devices?.values ?? [];
       for (let i = 0; i < vals.length; i++) {
         const d = vals[i];
         if (d && (d.connected || d.state === BluetoothDeviceState.Connected))
@@ -22,7 +22,7 @@ BarIcon {
             return "No Bluetooth adapter";
         if (!adapter.enabled)
             return "Bluetooth off";
-        const vals = Bluetooth.devices ? Bluetooth.devices.values : [];
+        const vals = Bluetooth.devices?.values ?? [];
         for (let i = 0; i < vals.length; i++) {
             const d = vals[i];
             if (d && (d.connected || d.state === BluetoothDeviceState.Connected))
@@ -38,5 +38,5 @@ BarIcon {
         return "On · not connected";
     }
     tipAnchor: bar
-    onClicked: bar.toggleBluetooth()
+    onClicked: bar.togglePopup("bluetooth")
 }

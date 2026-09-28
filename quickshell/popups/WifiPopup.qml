@@ -22,6 +22,9 @@ DeviceListBase {
     property string authError: ""
     property var pendingNetwork: null
     property int selectedButton: 1
+    function quitArmed(): bool {
+        return root.authTarget === null;
+    }
     function cancelOrClose(): void {
         if (root.authTarget)
             root.cancelAuth();
@@ -94,9 +97,12 @@ DeviceListBase {
         const net = root.resolveAuthNetwork();
         if (!net)
             return;
+        const psk = String(field.text ?? "");
+        if (psk === "" || psk.length > 256)
+            return;
         root.authError = "Connecting...";
         root.pendingNetwork = net;
-        net.connectWithPsk(field.text);
+        net.connectWithPsk(psk);
         field.text = "";
         field.forceActiveFocus();
     }
@@ -207,25 +213,10 @@ DeviceListBase {
                         font.pixelSize: Services.Theme.px12
                         visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
                     }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 24
-                        horizontalAlignment: Text.AlignHCenter
-                        text: "󰅖"
-                        color: row.selected ? Services.Theme.fg : forgetArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                        font.family: Services.Theme.font
-                        font.pixelSize: Services.Theme.px13
+                    ForgetButton {
+                        selected: row.selected
                         visible: modelData.known && !modelData.connected
-                        MouseArea {
-                            id: forgetArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: mouse => {
-                                mouse.accepted = true;
-                                root.forgetSelected();
-                            }
-                        }
+                        onForget: root.forgetSelected()
                     }
                 }
             }
@@ -269,6 +260,7 @@ DeviceListBase {
                     verticalAlignment: TextInput.AlignVCenter
                     color: Services.Theme.fg
                     echoMode: TextInput.Password
+                    maximumLength: 256
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
                     Keys.onReturnPressed: root.doConnect()

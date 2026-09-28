@@ -10,7 +10,7 @@ BarIcon {
     glyphColor: root.hasUnread ? Services.Theme.accent : Services.Theme.dim
     tipText: "Notifications"
     tipAnchor: bar
-    onClicked: bar.toggleControl()
+    onClicked: bar.togglePopup("control")
     Rectangle {
         anchors {
             top: parent.top

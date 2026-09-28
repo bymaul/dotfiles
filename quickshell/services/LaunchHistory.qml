@@ -128,9 +128,10 @@ Singleton {
                         if (typeof r.k !== "string")
                             continue;
                         const e = counts[r.k] ?? {c: 0, t: 0};
-                        e.c += (typeof r.c === "number" ? r.c : 1);
-                        if (typeof r.t === "number" && r.t > e.t)
-                            e.t = r.t;
+                        const dc = (typeof r.c === "number" && isFinite(r.c)) ? Math.max(0, Math.min(100000, r.c)) : 1;
+                        e.c += dc;
+                        if (typeof r.t === "number" && isFinite(r.t) && r.t > e.t)
+                            e.t = Math.min(r.t, Date.now());
                         counts[r.k] = e;
                     } catch (_) {}
                 }

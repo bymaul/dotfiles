@@ -4,7 +4,7 @@ import "../components"
 import "../services" as Services
 BarIcon {
     id: root
-    property var bar
+    required property var bar
     visible: Services.Power.hasBattery
     anchors.verticalCenter: parent.verticalCenter
     showPointer: false

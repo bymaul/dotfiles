@@ -32,7 +32,7 @@ Item {
         root.currentFile = file;
         root.currentText = text;
         root.currentNewline = newline;
-        writer.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s' + (newline ? '\\n' : '') + '" "$1" > "$2"', "qs", text, file];
+        writer.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s' + (newline ? '\\n' : '') + '" "$1" > "$2.tmp"; mv -f "$2.tmp" "$2"', "qs", text, file];
         writer.running = true;
     }
     Process {

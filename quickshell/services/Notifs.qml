@@ -14,7 +14,8 @@ Singleton {
     property int toastSeq: 0
     readonly property string historyFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
-        const base = xdg !== "" ? xdg : (Quickshell.env("HOME") ?? "") + "/.local/share";
+        const home = Quickshell.env("HOME") ?? "";
+        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
         return base + "/quickshell/notif-history.json";
     }
     function syncIdOf(n): var {
@@ -158,7 +159,27 @@ Singleton {
     }
     function filepathOf(notification): string {
         const hints = notification?.hints;
-        return hints && typeof hints["filepath"] === "string" ? hints["filepath"] : "";
+        const p = hints && typeof hints["filepath"] === "string" ? hints["filepath"] : "";
+        return notifs.safeFilepath(p);
+    }
+    function safeFilepath(p: string): string {
+        if (typeof p !== "string" || p === "" || p.length > 4096)
+            return "";
+        if (p.startsWith("file://")) {
+            const stripped = p.slice(7);
+            if (!stripped.startsWith("/") || stripped.includes("\n") || stripped.includes("\0"))
+                return "";
+            const lower = stripped.toLowerCase();
+            if (lower.endsWith(".desktop") || lower.endsWith(".sh") || lower.endsWith(".exe"))
+                return "";
+            return stripped;
+        }
+        if (!p.startsWith("/") || p.includes("\n") || p.includes("\0") || p.includes(".."))
+            return "";
+        const lower = p.toLowerCase();
+        if (lower.endsWith(".desktop") || lower.endsWith(".sh") || lower.endsWith(".exe"))
+            return "";
+        return p;
     }
     function activateAction(notification, action): bool {
         if (!notification || !action)
@@ -166,10 +187,13 @@ Singleton {
         const path = notifs.filepathOf(notification);
         const id = action?.identifier ?? "";
         if (path !== "" && (id === "open" || id === "path" || id === "default")) {
-            if (id === "path")
+            if (id === "path") {
+                if (path.length > 4096)
+                    return false;
                 Quickshell.execDetached(["sh", "-c", 'printf "%s" "$1" | wl-copy', "qs", path]);
-            else
+            } else {
                 Quickshell.execDetached(["xdg-open", path]);
+            }
             return true;
         }
         try {
@@ -280,7 +304,7 @@ Singleton {
                 cur.expireTimeout = o.timeout ?? Theme.toastTimeout;
                 notifs.stampToast(cur);
                 cur.hints = {};
-                if (o.hints !== undefined)
+                if (o.hints !== undefined && typeof o.hints === "object" && o.hints !== null)
                     for (const hk in o.hints)
                         cur.hints[hk] = o.hints[hk];
                 if (o.value !== undefined)
@@ -294,7 +318,7 @@ Singleton {
             }
         }
         const hints = {};
-        if (o.hints !== undefined)
+        if (o.hints !== undefined && typeof o.hints === "object" && o.hints !== null)
             for (const hk in o.hints)
                 hints[hk] = o.hints[hk];
         if (o.value !== undefined)
@@ -360,6 +384,10 @@ Singleton {
     }
     Process {
         id: saver
+        onExited: exitCode => {
+            if (exitCode !== 0)
+                persistTimer.restart();
+        }
     }
     Process {
         id: historyLoader

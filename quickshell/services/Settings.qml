@@ -31,10 +31,14 @@ Singleton {
 
     readonly property string settingsFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
-        const base = xdg !== "" ? xdg : (Quickshell.env("HOME") ?? "") + "/.local/share";
+        const home = Quickshell.env("HOME") ?? "";
+        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
         return base + "/quickshell/settings.json";
     }
-    readonly property string hypridleFile: (Quickshell.env("HOME") ?? "") + "/.config/hypr/hypridle.conf"
+    readonly property string hypridleFile: {
+        const home = Quickshell.env("HOME") ?? "";
+        return (home !== "" ? home : "/tmp") + "/.config/hypr/hypridle.conf";
+    }
 
     function num(v, d, lo, hi): real {
         if (typeof v !== "number" || isNaN(v))
@@ -90,6 +94,7 @@ Singleton {
         settings.lidCloseAction = settings.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
         settings.powerProfileOnBattery = settings.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
         settings.mainMonitor = settings.pickStr(obj.mainMonitor, "auto");
+        settings.enforceIdleOrder();
         if (obj.monitorConfigs && typeof obj.monitorConfigs === "object") {
             const clean = {};
             for (const name of Object.keys(obj.monitorConfigs)) {
@@ -243,7 +248,7 @@ Singleton {
     }
     function applyMonitor(name: string, quiet: bool): void {
         const q = !!quiet;
-        if (typeof name !== "string" || name === "")
+        if (typeof name !== "string" || name === "" || name.length > 128)
             return;
         const live = settings.monitorLive(name);
         if (live && settings.monitorInSync(name, live)) {
@@ -402,6 +407,11 @@ Singleton {
         next[name] = win;
         settings.barByScreen = next;
     }
+    function syncBar(win: var, name: string): void {
+        settings.unregisterBar(win);
+        if (typeof name === "string" && name !== "" && win)
+            settings.registerBar(name, win);
+    }
     function unregisterBar(win: var): void {
         if (!win)
             return;
@@ -450,18 +460,31 @@ Singleton {
     }
     function setLockTimeout(v: real): void {
         settings.lockTimeout = Math.round(Math.max(0, Math.min(3600, v)));
+        settings.enforceIdleOrder();
         settings.writeIdleConf();
         settings.scheduleSave();
     }
     function setScreenOffTimeout(v: real): void {
         settings.screenOffTimeout = Math.round(Math.max(0, Math.min(3600, v)));
+        settings.enforceIdleOrder();
         settings.writeIdleConf();
         settings.scheduleSave();
     }
     function setSuspendTimeout(v: real): void {
         settings.suspendTimeout = Math.round(Math.max(0, Math.min(7200, v)));
+        settings.enforceIdleOrder();
         settings.writeIdleConf();
         settings.scheduleSave();
+    }
+    function enforceIdleOrder(): void {
+        if (settings.lockTimeout > 0) {
+            if (settings.screenOffTimeout > 0 && settings.screenOffTimeout < settings.lockTimeout)
+                settings.screenOffTimeout = settings.lockTimeout;
+            if (settings.suspendTimeout > 0 && settings.suspendTimeout < settings.screenOffTimeout && settings.screenOffTimeout > 0)
+                settings.suspendTimeout = settings.screenOffTimeout;
+            if (settings.suspendTimeout > 0 && settings.screenOffTimeout === 0 && settings.suspendTimeout < settings.lockTimeout)
+                settings.suspendTimeout = settings.lockTimeout;
+        }
     }
     function setLowBatteryPct(v: real): void {
         settings.lowBatteryPct = Math.round(Math.max(5, Math.min(50, v)));
@@ -635,11 +658,12 @@ Singleton {
         onExited: exitCode => {
             if (monApply.dropNextExit) {
                 monApply.dropNextExit = false;
+                settings.pumpApply();
                 return;
             }
             applyTimeout.stop();
             const detail = (monErr.text + " " + monOut.text).trim();
-            const failed = exitCode !== 0 || /error|failed|invalid|unknown|not found|no such/i.test(detail);
+            const failed = exitCode !== 0;
             if (!failed) {
                 settings.lastApplyMsg = monApply.jobLabel + " applied";
             } else {
@@ -657,7 +681,6 @@ Singleton {
                 monApply.running = false;
                 monApply.dropNextExit = true;
                 settings.lastApplyMsg = "Timed out: " + monApply.jobLabel;
-                settings.pumpApply();
             }
         }
     }

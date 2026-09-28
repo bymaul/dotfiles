@@ -25,6 +25,13 @@ function matchScore(text, q) {
     return matchScoreLn(String(text ?? "").toLowerCase(), String(q ?? "").toLowerCase());
 }
 
+// Contract: matchScoreLn requires pre-lowered args (emoji.js e[2] is
+// stored lowercase, RunMode.binaries carry .ln). Lower once per field,
+// not per comparison.
+function scoreLowered(hayLower, needLower) {
+    return matchScoreLn(hayLower, needLower);
+}
+
 function escHtml(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

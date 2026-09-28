@@ -1,21 +1,22 @@
 import QtQuick
 import Quickshell
 import Quickshell.Services.SystemTray
+import "../services" as Services
 Row {
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 6
+    spacing: Services.Theme.traySpacing
     Repeater {
         model: SystemTray.items
         delegate: Item {
             id: trayIcon
             required property var modelData
-            width: 15
-            height: 15
+            width: Services.Theme.traySize
+            height: Services.Theme.traySize
             Image {
                 anchors.fill: parent
                 source: modelData?.icon ?? ""
-                sourceSize.width: 15
-                sourceSize.height: 15
+                sourceSize.width: Services.Theme.traySize
+                sourceSize.height: Services.Theme.traySize
                 fillMode: Image.PreserveAspectFit
                 cache: true
                 asynchronous: true

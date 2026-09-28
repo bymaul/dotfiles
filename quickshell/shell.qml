@@ -36,16 +36,16 @@ ShellRoot {
             bar.closePopups();
         }
         function toggleControl(): void {
-            bar.toggleControl();
+            bar.togglePopup("control");
         }
         function togglePower(): void {
-            bar.togglePower();
+            bar.togglePopup("power");
         }
         function toggleEmoji(): void {
-            bar.toggleEmoji();
+            bar.togglePopup("emoji");
         }
         function settings(): void {
-            bar.toggleSettings();
+            bar.togglePopup("settings");
         }
             function settingsState(): string {
                 return JSON.stringify({monitors: Services.Settings.monitors, configs: Services.Settings.monitorConfigs, lastApply: Services.Settings.lastApplyMsg, monitorsReady: Services.Settings.monitorsReady, canDisableEdp: Services.Settings.monitors.length > 0 ? Services.Settings.canDisableMonitor(Services.Settings.monitors[0].name) : null});

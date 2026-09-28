@@ -7,7 +7,7 @@ BarIcon {
     required property var bar
     property var sink: Pipewire.defaultAudioSink
     PwObjectTracker {
-        objects: [root.sink]
+        objects: root.sink ? [root.sink] : []
     }
     readonly property real level: root.sink?.audio?.volume ?? 0
     readonly property bool muted: root.sink?.audio?.muted ?? false
@@ -23,7 +23,7 @@ BarIcon {
     glyphColor: root.level > 1 ? Services.Theme.warn : Services.Theme.fg
     tipText: root.muted ? "Muted" : "Volume " + Math.round(root.level * 100) + "%"
     tipAnchor: root.bar
-    onClicked: bar.toggleControl()
+    onClicked: bar.togglePopup("control")
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton

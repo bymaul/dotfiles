@@ -27,22 +27,11 @@ PanelWindow {
         color: Services.Theme.border
     }
     WlrLayershell.namespace: "qs-bar"
-    readonly property string slimName: slim.targetScreen && slim.targetScreen.name ? slim.targetScreen.name : ""
-    Component.onCompleted: {
-        if (slim.slimName !== "")
-            Services.Settings.registerBar(slim.slimName, slim);
-    }
+    readonly property string slimName: slim.targetScreen?.name ?? ""
+    Component.onCompleted: Services.Settings.syncBar(slim, slim.slimName)
     Component.onDestruction: Services.Settings.unregisterBar(slim)
-    onSlimNameChanged: {
-        Services.Settings.unregisterBar(slim);
-        if (slim.slimName !== "")
-            Services.Settings.registerBar(slim.slimName, slim);
-    }
-    Workspaces {
-        id: workspaces
-        screenName: slim.slimName
-    }
-    WindowTitle {
+    onSlimNameChanged: Services.Settings.syncBar(slim, slim.slimName)
+    MonitorHeader {
         screenName: slim.slimName
     }
 }

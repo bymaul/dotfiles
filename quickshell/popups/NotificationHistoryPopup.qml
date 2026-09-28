@@ -29,6 +29,10 @@ BasePopup {
         if (visible)
             polishTimer.restart();
     }
+    PanelNavKeys {
+        host: root
+        panel: root.panel
+    }
     Timer {
         id: polishTimer
         interval: Services.Theme.focusDelay
@@ -37,10 +41,6 @@ BasePopup {
             if (root.visible)
                 historyList.positionViewAtIndex(0, ListView.Beginning);
         }
-    }
-    PanelNavKeys {
-        host: root
-        panel: root.panel
     }
     Column {
         anchors {

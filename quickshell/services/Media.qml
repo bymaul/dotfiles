@@ -52,7 +52,7 @@ Singleton {
     function adjustVolume(delta: real, quiet: bool): void {
         const audio = media.sink?.audio;
         if (audio)
-            audio.volume = Theme.clamp(audio.volume + delta, 0, Theme.volumeMax);
+            audio.volume = Theme.clamp((audio.volume ?? 0) + delta, 0, Theme.volumeMax);
         if (!quiet)
             media.volumeToast();
     }

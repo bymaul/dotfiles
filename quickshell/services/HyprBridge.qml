@@ -46,6 +46,8 @@ Singleton {
         return '"' + String(v ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ") + '"';
     }
     function luaFor(key: string, value: string): string {
+        if (!key)
+            return "";
         const parts = key.split(":");
         let inner = bridge.luaVal(value);
         for (let i = parts.length - 1; i >= 0; i--) {

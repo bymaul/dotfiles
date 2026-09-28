@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
 import "../components"
+import "../components/PasteUtils.js" as PasteUtils
 import "../services" as Services
 BasePopup {
     id: root
@@ -39,9 +40,16 @@ BasePopup {
     property string activeClass: ""
     property bool wipeConfirm: false
     property int wipeChoice: 1
-    property string thumbDir: "/tmp/qs-cliphist-thumbs"
+    readonly property string runtimeDir: (Quickshell.env("XDG_RUNTIME_DIR") ?? "") !== "" ? Quickshell.env("XDG_RUNTIME_DIR") : "/tmp"
+    property string thumbDir: root.runtimeDir + "/qs-cliphist-thumbs"
     property var thumbs: ({})
     property bool thumbPending: false
+    function validId(id: string): bool {
+        return /^[0-9]+$/.test(String(id ?? ""));
+    }
+    function validAddress(addr: string): bool {
+        return PasteUtils.validAddress(addr);
+    }
     onVisibleChanged: {
         if (visible) {
             root.reset();
@@ -76,6 +84,8 @@ BasePopup {
             if (tab <= 0)
                 continue;
             const id = line.slice(0, tab);
+            if (!root.validId(id))
+                continue;
             const preview = line.slice(tab + 1);
             const isImage = preview.startsWith("[[ binary data");
             const sizeMatch = isImage ? preview.match(/(\d+(?:\.\d+)?\s*[KMGT]?i?B)/) : null;
@@ -113,7 +123,7 @@ BasePopup {
         const lines = [];
         for (let i = 0; i < root.entries.length && lines.length < 10; i++) {
             const e = root.entries[i];
-            if (e && e.isImage && !root.thumbs[e.id])
+            if (e && e.isImage && root.validId(e.id) && !root.thumbs[e.id])
                 lines.push(e.line);
         }
         if (lines.length === 0)
@@ -130,7 +140,10 @@ BasePopup {
             const tab = line.indexOf("\t");
             if (tab <= 0)
                 continue;
-            next[line.slice(0, tab)] = line.slice(tab + 1);
+            const id = line.slice(0, tab);
+            if (!root.validId(id))
+                continue;
+            next[id] = line.slice(tab + 1);
             changed = true;
         }
         if (changed)
@@ -160,7 +173,7 @@ BasePopup {
         root.pendingIndex = Math.max(0, clipList.currentIndex);
         root.wipeConfirm = false;
         root.deleteQueue.push(entry.line);
-        if (entry.id !== undefined && entry.id !== "") {
+        if (entry.id !== undefined && entry.id !== "" && root.validId(entry.id)) {
             Quickshell.execDetached(["rm", "-f", root.thumbDir + "/" + entry.id + ".png"]);
             if (root.thumbs[entry.id]) {
                 const next = Object.assign({}, root.thumbs);
@@ -269,10 +282,9 @@ BasePopup {
         onTriggered: root.pasteIntoActive()
     }
     function pasteIntoActive(): void {
-        if (root.activeAddress === "")
+        if (!root.validAddress(root.activeAddress))
             return;
-        const terminal = /kitty|alacritty|foot|wezterm|ghostty|konsole|gnome-terminal|xfce4-terminal|terminator|tilix|xterm|rxvt|hyper|tabby|stterm|\bst\b/.test(root.activeClass);
-        const mods = terminal ? "CTRL, SHIFT" : "CTRL";
+        const mods = PasteUtils.pasteMods(root.activeClass);
         Hyprland.dispatch("hl.dsp.send_shortcut({ mods = \"" + mods + "\", key = \"V\", window = \"address:" + root.activeAddress + "\" })");
     }
     Process {
@@ -280,9 +292,9 @@ BasePopup {
         command: ["sh", "-c", "hyprctl activewindow -j 2>/dev/null | jq -r '[.address,.class] | @tsv' 2>/dev/null"]
         stdout: StdioCollector {
             onStreamFinished: {
-                const parts = text.trim().split("\t");
-                root.activeAddress = parts[0] ?? "";
-                root.activeClass = (parts[1] ?? "").toLowerCase();
+                const r = PasteUtils.parseFocusProbe(text);
+                root.activeAddress = r.address;
+                root.activeClass = r.winClass;
             }
         }
     }

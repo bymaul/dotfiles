@@ -33,6 +33,7 @@ Rectangle {
         color: Services.Theme.fg
         font.family: Services.Theme.font
         font.pixelSize: Services.Theme.px13
+        maximumLength: 256
         Keys.onUpPressed: root.upPressed()
         Keys.onDownPressed: root.downPressed()
         Keys.onReturnPressed: root.accepted()

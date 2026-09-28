@@ -6,7 +6,11 @@ import Quickshell.Io
 import "../services" as Services
 Scope {
     id: root
-    readonly property string shotDir: (Quickshell.env("HOME") ?? "/tmp") + "/Pictures/Screenshots"
+    readonly property string runtimeDir: (Quickshell.env("XDG_RUNTIME_DIR") ?? "") !== "" ? Quickshell.env("XDG_RUNTIME_DIR") : "/tmp"
+    readonly property string shotDir: {
+        const home = Quickshell.env("HOME") ?? "";
+        return (home !== "" ? home : root.runtimeDir) + "/Pictures/Screenshots";
+    }
     readonly property var targetScreen: {
         const want = Hyprland.focusedMonitor?.name ?? "";
         return Quickshell.screens.find(s => s.name === want) ?? Quickshell.screens[0] ?? null;
@@ -15,13 +19,14 @@ Scope {
     property string pendingFile: ""
     property var snapScreen: null
     property bool winResolved: false
-    property string tmpFile: "/tmp/qs-screenshot-full.png"
+    property string tmpFile: root.runtimeDir + "/qs-screenshot-full.png"
     property bool freezeForPicker: false
     property real lastScale: 1
     property bool dirsReady: false
     property int stillAttempts: 0
+    property int captureSeq: 0
     function stamp(): string {
-        return Qt.formatDateTime(new Date(), "yyyy-MM-dd_HH-mm-ss");
+        return Qt.formatDateTime(new Date(), "yyyy-MM-dd_HH-mm-ss-zzz") + "-" + (root.captureSeq++);
     }
     Component.onCompleted: mkdir.running = true
     function capture(mode: string): void {
@@ -109,34 +114,40 @@ Scope {
                 root.startPending();
         }
     }
-    property var retryResult: null
-    property string retryFile: ""
+    property var retryQueue: []
     function saveShot(result: var, file: string): void {
+        if (!file || file === "") {
+            Services.Notifs.notify({app: "screenshot", summary: "Screenshot save failed", body: "No destination", timeout: 5000});
+            return;
+        }
         if (result.saveToFile(file)) {
             root.finishShot(file);
             return;
         }
-        if (root.retryResult) {
+        root.retryQueue.push({result: result, file: file});
+        if (!fixupDir.running)
+            fixupDir.running = true;
+        else if (root.retryQueue.length > 5) {
+            const dropped = root.retryQueue.shift();
             Services.Notifs.notify({app: "screenshot", summary: "Screenshot save failed", body: root.shotDir, timeout: 5000});
-            return;
         }
-        root.retryResult = result;
-        root.retryFile = file;
-        fixupDir.running = true;
     }
     Process {
         id: fixupDir
         command: ["mkdir", "-p", root.shotDir]
         onExited: exitCode => {
-            const result = root.retryResult;
-            const file = root.retryFile;
-            root.retryResult = null;
-            root.retryFile = "";
-            if (exitCode !== 0 || !result || !result.saveToFile(file)) {
+            const queue = root.retryQueue;
+            root.retryQueue = [];
+            if (exitCode !== 0) {
                 Services.Notifs.notify({app: "screenshot", summary: "Screenshot save failed", body: root.shotDir, timeout: 5000});
                 return;
             }
-            root.finishShot(file);
+            for (const item of queue) {
+                if (item && item.result && item.file && item.result.saveToFile(item.file))
+                    root.finishShot(item.file);
+                else
+                    Services.Notifs.notify({app: "screenshot", summary: "Screenshot save failed", body: root.shotDir, timeout: 5000});
+            }
         }
     }
     function showCapture(freeze: bool): void {
@@ -159,8 +170,9 @@ Scope {
         winTimeout.stop();
         if (winProbe.running)
             winProbe.running = false;
-        Services.Notifs.notify({app: "screenshot", summary: "Window info unavailable", body: "Falling back to full screenshot", timeout: 3000});
-        root.captureScreen();
+        root.pendingMode = "";
+        root.snapScreen = null;
+        Services.Notifs.notify({app: "screenshot", summary: "Window capture failed", body: "Window info unavailable, aborted", timeout: 3000});
     }
     function freezeStill(): void {
         root.showCapture(true);
@@ -174,8 +186,9 @@ Scope {
                 root.winResolved = true;
                 const m = text.trim().match(/(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(\d+)\s+(\d+)/);
                 if (!m) {
-                    Services.Notifs.notify({app: "screenshot", summary: "Window info unavailable", body: "Falling back to full screenshot", timeout: 3000});
-                    root.captureScreen();
+                    Services.Notifs.notify({app: "screenshot", summary: "Window capture failed", body: "Window info unavailable, aborted", timeout: 3000});
+                    root.pendingMode = "";
+                    root.snapScreen = null;
                     return;
                 }
                 const mx = parseInt(m[1]), my = parseInt(m[2]);
@@ -239,6 +252,8 @@ Scope {
                 if (root.freezeForPicker) {
                     root.freezeForPicker = false;
                     picker.close();
+                } else if (captureWin.visible) {
+                    Services.Notifs.notify({app: "screenshot", summary: "Capture failed", body: "Timed out", timeout: 5000});
                 }
                 root.pendingMode = "";
                 root.snapScreen = null;

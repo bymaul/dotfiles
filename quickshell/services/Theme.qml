@@ -43,6 +43,10 @@ Singleton {
     property int barHeight: 34
     property int groupSpacing: 12
     property int listSpacing: 4
+    property int traySize: 15
+    property int traySpacing: 6
+    property int titleMax: 420
+    property int titleMargin: 10
     property int listVisible: 7
     property int resultMax: 40
     property int tileHeight: 40

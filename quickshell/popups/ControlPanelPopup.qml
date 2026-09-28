@@ -14,6 +14,7 @@ BasePopup {
     PanelNavKeys {
         host: root
         panel: root
+        navActive: !(bar.historyPanel?.visible ?? false)
     }
     onVisibleChanged: {
         if (visible) {
@@ -303,7 +304,7 @@ BasePopup {
             root.activateDefaultAction();
             return;
         }
-        const actions = [() => bar.openWifiFromPanel(), () => bar.openBluetoothFromPanel(), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Modes.toggleBluelight(), () => root.cycleProfileTile(), () => bar.openSettingsFromPanel(), () => bar.openPowerFromPanel()];
+        const actions = [() => bar.openFromPanel("wifi"), () => bar.openFromPanel("bluetooth"), () => root.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Modes.toggleBluelight(), () => root.cycleProfileTile(), () => bar.openFromPanel("settings"), () => bar.openFromPanel("power")];
         const tile = root.selectedTile();
         if (tile >= 0 && tile < actions.length)
             actions[tile]();
@@ -615,7 +616,7 @@ BasePopup {
                 label: "Wi-Fi"
                 active: Networking.wifiEnabled
                 selected: root.selectedIndex === root.firstTileIdx() + 0
-                onClicked: bar.openWifiFromPanel()
+                onClicked: bar.openFromPanel("wifi")
                 onHovered: root.selectIndex(root.firstTileIdx() + 0)
             }
             Tile {
@@ -624,7 +625,7 @@ BasePopup {
                 active: Bluetooth.defaultAdapter?.enabled ?? false
                 available: Bluetooth.defaultAdapter != null
                 selected: root.selectedIndex === root.firstTileIdx() + 1
-                onClicked: bar.openBluetoothFromPanel()
+                onClicked: bar.openFromPanel("bluetooth")
                 onHovered: root.selectIndex(root.firstTileIdx() + 1)
             }
             Tile {
@@ -674,7 +675,7 @@ BasePopup {
                 label: "Settings"
                 active: false
                 selected: root.selectedIndex === root.firstTileIdx() + 7
-                onClicked: bar.openSettingsFromPanel()
+                onClicked: bar.openFromPanel("settings")
                 onHovered: root.selectIndex(root.firstTileIdx() + 7)
             }
             Tile {
@@ -682,7 +683,7 @@ BasePopup {
                 label: "Power"
                 active: false
                 selected: root.selectedIndex === root.firstTileIdx() + 8
-                onClicked: bar.openPowerFromPanel()
+                onClicked: bar.openFromPanel("power")
                 onHovered: root.selectIndex(root.firstTileIdx() + 8)
             }
         }
