@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Bluetooth
+import Quickshell.Io
 import "../components"
 import "../services" as Services
 DeviceListBase {
@@ -8,10 +9,7 @@ DeviceListBase {
     implicitWidth: Services.Theme.popupWidth
     implicitHeight: 36 + 36 + Services.Theme.listHeight(Services.Theme.listVisible) + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
     targetList: btList
-    Shortcut { sequence: "t"; enabled: root.visible; onActivated: root.toggleTrust() }
-    property string opMessage: ""
-    property bool opError: false
-    property var rawDevices: (Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.devices && Bluetooth.defaultAdapter.devices.values) ? Bluetooth.defaultAdapter.devices.values : []
+    property var rawDevices: Bluetooth.devices?.values ?? []
     property var sortedDevices: {
         const devs = root.rawDevices.slice();
         function rank(d) {
@@ -21,43 +19,32 @@ DeviceListBase {
                 return 0;
             if (d.pairing || d.state === BluetoothDeviceState.Connecting || d.state === BluetoothDeviceState.Disconnecting)
                 return 1;
-            if (d.address !== "" && d.address === root.pendingAddr)
+            if (d.address !== "" && d.address === root.pairingAddr)
                 return 1;
-            if (d.paired || d.trusted)
+            if (d.paired || d.bonded)
                 return 2;
             return 3;
         }
-        function labelOf(d) {
-            const n = (d.name || d.deviceName || d.address || "").toLowerCase();
-            return n;
+        function keyOf(d) {
+            return (d.name || d.deviceName || d.address || "").toLowerCase() + "\0" + (d.address || "");
         }
-        devs.sort(function (a, b) {
-            const r = rank(a) - rank(b);
-            if (r !== 0)
-                return r;
-            const la = labelOf(a);
-            const lb = labelOf(b);
-            if (la < lb)
-                return -1;
-            if (la > lb)
-                return 1;
-            const aa = (a && a.address) ? a.address : "";
-            const ab = (b && b.address) ? b.address : "";
-            if (aa < ab)
-                return -1;
-            if (aa > ab)
-                return 1;
-            return 0;
-        });
+        devs.sort((a, b) => rank(a) - rank(b) || (keyOf(a) < keyOf(b) ? -1 : keyOf(a) > keyOf(b) ? 1 : 0));
         return devs;
     }
     onVisibleChanged: {
         if (visible) {
             root.resetNav();
-            root.clearOp();
-        } else {
-            opClear.stop();
+            root.autoScanOnOpen();
         }
+    }
+    function autoScanOnOpen(): void {
+        const adapter = Bluetooth.defaultAdapter;
+        if (!adapter || !adapter.enabled || adapter.discovering)
+            return;
+        if (root.sortedDevices.some(d => d && (d.connected || d.state === BluetoothDeviceState.Connected)))
+            return;
+        adapter.discovering = true;
+        scanTimeout.restart();
     }
     function activateRow(): void {
         root.activateDevice(root.selectedDevice());
@@ -76,25 +63,10 @@ DeviceListBase {
             return;
         if (device.pairing) {
             device.cancelPair();
-            if (device.address === root.pendingAddr)
-                root.clearPending();
-            root.setOp("Pairing cancelled", false);
             return;
         }
         if (device.connected || device.state === BluetoothDeviceState.Connected) {
-            if (device.address === root.pendingAddr)
-                root.clearPending();
-            root.setOp("Disconnecting " + root.deviceLabel(device) + "...", false);
             device.disconnect();
-            return;
-        }
-        if (device.paired || device.bonded) {
-            root.pendingAddr = device.address;
-            root.pendingAuto = false;
-            root.pendingSince = Date.now();
-            opWatch.restart();
-            root.setOp("Connecting " + root.deviceLabel(device) + "...", false);
-            device.connect();
             return;
         }
         const adapter = Bluetooth.defaultAdapter;
@@ -102,73 +74,56 @@ DeviceListBase {
             if (!adapter.enabled)
                 adapter.enabled = true;
             adapter.pairable = true;
-            if (!adapter.discovering) {
-                adapter.discovering = true;
-                scanTimeout.restart();
+            if (adapter.discovering)
+                adapter.discovering = false;
+        }
+        if (device.paired || device.bonded) {
+            device.connected = !device.connected;
+            return;
+        }
+        if (root.pairingAddr !== "")
+            return;
+        root.pairError = "";
+        root.pairingAddr = device.address;
+        pairProc.command = ["sh", "-c", 'timeout 30 bluetoothctl pair "$1" && bluetoothctl trust "$1" && timeout 30 bluetoothctl connect "$1"', "sh", device.address];
+        pairProc.running = true;
+    }
+    property string pairingAddr: ""
+    property string pairError: ""
+    Timer {
+        id: pairErrorClear
+        interval: 5000
+        repeat: false
+        onTriggered: root.pairError = ""
+    }
+    Process {
+        id: pairProc
+        stdout: StdioCollector {
+        }
+        stderr: StdioCollector {
+        }
+        onExited: exitCode => {
+            root.pairingAddr = "";
+            if (exitCode !== 0) {
+                root.pairError = "Pairing failed - try again";
+                pairErrorClear.restart();
             }
         }
-        if (!device.trusted)
-            device.trusted = true;
-        root.pendingAddr = device.address;
-        root.pendingAuto = true;
-        root.pendingSince = Date.now();
-        opWatch.restart();
-        root.setOp("Pairing " + root.deviceLabel(device) + "...", false);
-        device.pair();
     }
-    property string pendingAddr: ""
-    property bool pendingAuto: false
-    property double pendingSince: 0
-    readonly property int pairTimeoutMs: 30000
-    readonly property int connectTimeoutMs: 12000
-    function findDevice(addr: string): var {
-        if (addr === "")
-            return null;
-        const devs = root.sortedDevices;
-        for (let i = 0; i < devs.length; i++) {
-            const d = devs[i];
-            if (d && d.address === addr)
-                return d;
+    function deviceGlyph(dev: var): string {
+        const icon = String(dev?.icon || "").toLowerCase();
+        const kinds = [["headset", "󰋋"], ["headphone", "󰋋"], ["audio", "󰓃"], ["phone", "󰄜"], ["mouse", "󰍽"], ["keyboard", "󰌌"], ["watch", "󰖉"], ["gaming", "󰊗"], ["joypad", "󰊗"], ["joystick", "󰊗"]];
+        for (let i = 0; i < kinds.length; i++) {
+            if (icon.includes(kinds[i][0]))
+                return kinds[i][1];
         }
-        return null;
-    }
-    function deviceLabel(dev: var): string {
-        if (!dev)
-            return "";
-        return dev.name || dev.deviceName || dev.address;
-    }
-    function clearPending(): void {
-        root.pendingAddr = "";
-        root.pendingAuto = false;
-        root.pendingSince = 0;
-        opWatch.stop();
-    }
-    function setOp(msg: string, isError: bool): void {
-        root.opMessage = msg;
-        root.opError = isError;
-        if (isError)
-            opClear.stop();
-        else
-            opClear.restart();
-    }
-    function clearOp(): void {
-        opClear.stop();
-        root.opMessage = "";
-        root.opError = false;
-    }
-    function failPending(dev: var, what: string): void {
-        const name = root.deviceLabel(dev);
-        if (what === "Pairing")
-            root.setOp("Pairing failed" + (name !== "" ? ": " + name : "") + " - retry scan", true);
-        else
-            root.setOp("Connect failed" + (name !== "" ? ": " + name : "") + " - retry", true);
-        root.clearPending();
+        if (dev && (dev.connected || dev.state === BluetoothDeviceState.Connected))
+            return "󰂯";
+        return "󰂲";
     }
     function toggleEnabled(): void {
-        if (Bluetooth.defaultAdapter) {
+        if (Bluetooth.defaultAdapter)
             Bluetooth.defaultAdapter.enabled = !Bluetooth.defaultAdapter.enabled;
-            root.clearOp();
-        }
     }
     function toggleScan(): void {
         if (!Bluetooth.defaultAdapter)
@@ -180,102 +135,40 @@ DeviceListBase {
             scanTimeout.stop();
     }
     Timer {
-        id: opClear
-        interval: 5000
-        repeat: false
-        onTriggered: root.clearOp()
-    }
-    Timer {
         id: scanTimeout
         interval: Services.Theme.scanTimeout
         repeat: false
         onTriggered: {
-            if (root.pendingAddr !== "") {
-                if (Bluetooth.defaultAdapter && !Bluetooth.defaultAdapter.discovering)
-                    Bluetooth.defaultAdapter.discovering = true;
-                scanTimeout.restart();
-                return;
-            }
             if (Bluetooth.defaultAdapter)
                 Bluetooth.defaultAdapter.discovering = false;
-        }
-    }
-    Timer {
-        id: opWatch
-        interval: 1000
-        repeat: true
-        onTriggered: {
-            if (root.pendingAddr === "") {
-                opWatch.stop();
-                return;
-            }
-            const dev = root.findDevice(root.pendingAddr);
-            if (!dev) {
-                root.setOp("Device lost - scan again", true);
-                root.clearPending();
-                return;
-            }
-            const elapsed = Date.now() - root.pendingSince;
-            if (root.pendingAuto) {
-                if ((dev.paired || dev.bonded) && !dev.pairing) {
-                    if (!dev.trusted)
-                        dev.trusted = true;
-                    root.pendingAuto = false;
-                    root.pendingSince = Date.now();
-                    root.setOp("Paired, connecting " + root.deviceLabel(dev) + "...", false);
-                    dev.connect();
-                    return;
-                }
-                if (elapsed > root.pairTimeoutMs) {
-                    if (dev.pairing)
-                        dev.cancelPair();
-                    root.failPending(dev, "Pairing");
-                }
-                return;
-            }
-            if (dev.connected || dev.state === BluetoothDeviceState.Connected) {
-                root.setOp("Connected: " + root.deviceLabel(dev), false);
-                root.clearPending();
-                return;
-            }
-            if (elapsed > root.connectTimeoutMs)
-                root.failPending(dev, "Connect");
         }
     }
     function forgetSelected(): void {
         const dev = root.selectedDevice();
         if (dev && (dev.paired || dev.bonded) && !(dev.connected || dev.state === BluetoothDeviceState.Connected)) {
-            if (dev.address === root.pendingAddr)
-                root.clearPending();
-            root.setOp("Forgot " + root.deviceLabel(dev), false);
             dev.forget();
+            const forgetAdapter = Bluetooth.defaultAdapter;
+            if (forgetAdapter && forgetAdapter.enabled && !forgetAdapter.discovering) {
+                forgetAdapter.discovering = true;
+                scanTimeout.restart();
+            }
         }
-    }
-    function toggleTrust(): void {
-        const dev = root.selectedDevice();
-        if (dev)
-            dev.trusted = !dev.trusted;
     }
     function statusText(dev: var): string {
         let s = "Available";
-        const isConnected = dev.connected || dev.state === BluetoothDeviceState.Connected;
-        if (dev.address !== "" && dev.address === root.pendingAddr && root.pendingAuto)
-            s = "Pairing... confirm on device if asked";
-        else if (dev.address !== "" && dev.address === root.pendingAddr && !root.pendingAuto && !isConnected)
-            s = "Connecting...";
-        else if (dev.blocked)
+        if (dev.blocked)
             s = "Blocked";
-        else if (isConnected)
+        else if (dev.connected || dev.state === BluetoothDeviceState.Connected)
             s = "Connected";
         else if (dev.state === BluetoothDeviceState.Connecting)
             s = "Connecting...";
         else if (dev.state === BluetoothDeviceState.Disconnecting)
             s = "Disconnecting...";
-        else if (dev.pairing)
-            s = "Pairing...";
+        else if (dev.pairing || (dev.address !== "" && dev.address === root.pairingAddr))
+            s = "Pairing... confirm on device if asked";
+        else if (dev.paired || dev.bonded)
+            s = "Paired";
         const tags = [];
-        if (dev.trusted)
-            tags.push("Trusted");
         if (dev.batteryAvailable)
             tags.push(Math.round(dev.battery * 100) + "%");
         if (dev.address !== "")
@@ -285,6 +178,8 @@ DeviceListBase {
         return s;
     }
     function headerStatus(): string {
+        if (root.pairError !== "")
+            return root.pairError;
         const adapter = Bluetooth.defaultAdapter;
         if (!adapter)
             return "No Bluetooth adapter found";
@@ -313,12 +208,10 @@ DeviceListBase {
     }
     PopupCard {
         DeviceHeader {
-            statusText: root.opMessage !== "" ? root.opMessage : root.headerStatus()
-            statusColor: root.opMessage !== "" ? (root.opError ? Services.Theme.danger : Services.Theme.fg) : Services.Theme.dim
+            statusText: root.headerStatus()
+            statusColor: Services.Theme.dim
             enableLabel: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled ? "󰂲  Disable" : "󰂯  Enable"
             scanLabel: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.discovering ? "󰑓  Scanning..." : "󰑐  Scan"
-            headIndex: root.headIndex
-            onHeadHovered: index => root.headIndex = index
             onEnableClicked: root.toggleEnabled()
             onScanClicked: root.toggleScan()
         }
@@ -339,7 +232,6 @@ DeviceListBase {
                     selected: btList.currentIndex === index
                     highlighted: row.connected
                     rowHeight: Services.Theme.listRowHeight
-                    selectedColor: Services.Theme.activeBg
                     readonly property bool connected: modelData.connected || modelData.state === BluetoothDeviceState.Connected
                     onHovered: root.selectRow(index)
                     onClicked: root.activateDevice(modelData)
@@ -353,8 +245,8 @@ DeviceListBase {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             width: 18
-                            text: row.connected ? "󰂯" : "󰂲"
-                            color: row.selected ? Services.Theme.fg : row.connected ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                            text: root.deviceGlyph(modelData)
+                            color: row.selected ? Services.Theme.accentFg : row.connected ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                             font.family: Services.Theme.font
                             font.pixelSize: Services.Theme.px13
                         }
@@ -364,8 +256,8 @@ DeviceListBase {
                             spacing: 2
                             Text {
                                 width: parent.width
-                                text: modelData.name || modelData.deviceName || "Unknown device"
-                                color: row.selected ? Services.Theme.fg : (row.connected || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
+                                text: modelData.name || modelData.deviceName || modelData.address || "Unknown device"
+                                color: row.selected ? Services.Theme.accentFg : (row.connected || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
                                 font.family: Services.Theme.font
                                 font.pixelSize: Services.Theme.px12
                                 elide: Text.ElideRight
@@ -373,7 +265,7 @@ DeviceListBase {
                             Text {
                                 width: parent.width
                                 text: root.statusText(modelData)
-                                color: row.selected ? Services.Theme.fg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                                color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                                 font.family: Services.Theme.font
                                 font.pixelSize: Services.Theme.px10
                             }
@@ -413,7 +305,7 @@ DeviceListBase {
         }
         HintText {
             id: hint
-            text: "jk move · Tab header · ↵ connect · d forget · t trust · s scan · e on/off"
+            text: "jk navigate · d forget · s scan · e on/off"
         }
     }
 }

@@ -11,7 +11,7 @@ Text {
     width: 24
     horizontalAlignment: Text.AlignHCenter
     text: "󰅖"
-    color: root.selected ? Services.Theme.fg : forgetArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+    color: root.selected ? Services.Theme.accentFg : forgetArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
     font.family: Services.Theme.font
     font.pixelSize: Services.Theme.px13
     MouseArea {

@@ -9,13 +9,8 @@ DeviceListBase {
     implicitHeight: (root.authTarget === null ? wifiList.height : authCol.height) + 36 + 36 + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
     targetList: wifiList
     listBlocked: root.authTarget !== null
-    Shortcut { sequence: "h"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = 0 }
-    Shortcut { sequence: "l"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = 1 }
-    Shortcut { sequence: "Left"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = 0 }
-    Shortcut { sequence: "Right"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = 1 }
-    Shortcut { sequence: "Tab"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
-    Shortcut { sequence: "Shift+Tab"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
-    Shortcut { sequence: "Space"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
+    Shortcut { sequence: "j"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
+    Shortcut { sequence: "k"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
     Shortcut { sequence: "Return"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
     Shortcut { sequence: "Enter"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
     property var authTarget: null
@@ -156,8 +151,6 @@ DeviceListBase {
             statusColor: Services.Wifi.connected ? Services.Theme.fg : Services.Theme.dim
             enableLabel: Networking.wifiEnabled ? "󰖪  Disable" : "󰖩  Enable"
             scanLabel: Services.Wifi.device?.scannerEnabled ? "󰑓  Scanning..." : "󰑐  Scan"
-            headIndex: root.headIndex
-            onHeadHovered: index => root.headIndex = index
             onEnableClicked: root.toggleEnabled()
             onScanClicked: root.toggleScan()
         }
@@ -177,7 +170,6 @@ DeviceListBase {
                 selected: wifiList.currentIndex === index
                 highlighted: modelData.connected
                 rowHeight: Services.Theme.listRowHeight
-                selectedColor: Services.Theme.activeBg
                 onHovered: root.selectRow(index)
                 onClicked: root.activateNetwork(modelData)
                 Row {
@@ -191,7 +183,7 @@ DeviceListBase {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 18
                         text: Services.Wifi.signalGlyph(modelData.signalStrength)
-                        color: row.selected ? Services.Theme.fg : modelData.connected ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                        color: row.selected ? Services.Theme.accentFg : modelData.connected ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px13
                     }
@@ -199,7 +191,7 @@ DeviceListBase {
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 82
                         text: modelData.name || "Hidden network"
-                        color: row.selected ? Services.Theme.fg : (modelData.connected || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
+                        color: row.selected ? Services.Theme.accentFg : (modelData.connected || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                         elide: Text.ElideRight
@@ -208,7 +200,7 @@ DeviceListBase {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 16
                         text: "󰌾"
-                        color: row.selected ? Services.Theme.fg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
+                        color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                         visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
@@ -284,7 +276,7 @@ DeviceListBase {
         }
         HintText {
             id: hint
-            text: root.authTarget === null ? "jk move · Tab header · ↵ connect · d forget · s scan · e on/off" : "↵ connect · Esc back · Tab buttons"
+            text: root.authTarget === null ? "jk navigate · d forget · s scan · e on/off" : "jk buttons · Enter connect · Esc back"
         }
     }
 }
