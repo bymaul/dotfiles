@@ -6,7 +6,7 @@
 # zsh
 .zcompdump*
 
-# dependencies (opencode/ has its own scoped ignores for its local-only files)
+# dependencies
 node_modules/
 
 # tmux plugin clones (managed by tpm / install.sh)
