@@ -40,6 +40,9 @@ PKGS=(
     "dir lazygit .config/lazygit"
     "dir nvim .config/nvim"
     "dir opencode .config/opencode"
+    "tree agents .agents"
+    "file agents agents/AGENTS.md .config/opencode/AGENTS.md"
+    "file agents agents/AGENTS.md .pi/agent/AGENTS.md"
     "tree starship .config"
     "dir mise .config/mise"
     "dir yazi .config/yazi"
@@ -53,7 +56,7 @@ PKGS=(
 declare -A CATS=(
     [desktop]="hypr quickshell gtk vague-theme"
     [shell]="zsh starship tmux mise git"
-    [tools]="kitty bat btop fastfetch lazygit nvim opencode yazi bin"
+    [tools]="kitty bat btop fastfetch lazygit nvim opencode agents yazi bin"
 )
 
 MODE=install
