@@ -28,8 +28,9 @@ compinit
 # --- Plugins (zinit) ---
 source "$ZDOTDIR/plugins.zsh"
 
+
 # --- Integrations (guarded so a fresh checkout without packages still starts) ---
-command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+command -v zoxide >/dev/null 2>&1 && unalias zi 2>/dev/null && eval "$(zoxide init zsh)"
 command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
 
 # --- Config modules ---

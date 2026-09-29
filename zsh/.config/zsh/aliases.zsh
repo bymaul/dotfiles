@@ -10,5 +10,3 @@ alias tree="eza --tree --icons -I 'node_modules'"
 alias nah="git reset --hard;git clean -df"
 
 mkcd() { mkdir -p -- "$1" && cd -- "$1"; }
-
-zsh_stats() { fc -l 1 | awk '{cmd[$2]++; n++} END {for (c in cmd) print cmd[c], c}' | sort -rn | head -20; }
