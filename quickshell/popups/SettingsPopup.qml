@@ -554,7 +554,7 @@ BasePopup {
     }
     function contentHeight(): int {
         if (root.tab === 0)
-            return root.wallColH + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
+            return root.sectionH + Services.Theme.popupSpacing + root.wallColH + Services.Theme.popupSpacing + root.sectionH + Services.Theme.popupSpacing + root.inputColH;
         if (root.tab === 1) {
             let h = root.sysIdleH + root.sysBattH + root.sysProfH + 3 * root.sectionH + 30 + 6 * Services.Theme.popupSpacing;
             return h;
@@ -596,6 +596,15 @@ BasePopup {
             visible: root.tab === 0
             width: parent.width
             spacing: Services.Theme.popupSpacing
+            Text {
+                width: parent.width
+                height: root.sectionH
+                verticalAlignment: Text.AlignVCenter
+                text: "Wallpaper"
+                color: Services.Theme.dim
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px11
+            }
             Column {
                 width: parent.width
                 spacing: Services.Theme.listSpacing
