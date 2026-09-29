@@ -5,12 +5,14 @@ import "../services" as Services
 Item {
     id: root
     required property var bar
-    implicitWidth: row.width
+    property int hPadding: Services.Theme.barIconPadding
+    implicitWidth: row.width + hPadding * 2
     implicitHeight: row.height
-    width: row.width
+    width: implicitWidth
     height: row.height
     Row {
         id: row
+        anchors.centerIn: parent
         spacing: Services.Theme.groupSpacing
         Text {
             text: Services.Perf.memUsed > 0 ? " " + Services.Perf.memUsed.toFixed(1) + "G" : " --G"

@@ -6,17 +6,20 @@
 #   basic     plain summary + body toast (5s)
 #   markup    bold/italic body rendering
 #   image     themed icon AND file-path thumbnail toasts
-#   progress  OSD-style value bar (replaces stacking)
-#   actions   blocking action toast; prints the chosen key, toast dismisses
-#             on choice (default/dismiss)
+#   progress  OSD-style value bar (syncId: ONE toast updating, never history;
+#             plus an unsynced value toast: shows, never history)
+#   actions   blocking action toast; prints the chosen key
+#             (default=Open is body-click only, Dismiss is the visible pill)
 #   buttons   fire-and-forget action toast (no --wait, sender is gone on
-#             click): body click = default action (dead relay) + dismiss,
-#             button click = invoke + dismiss, x = dismiss, history kept
+#             click): any click always dismisses the toast (failed relay
+#             keeps history for retry); only the Dismiss pill is visible
 #   open      file-backed Open/Copy path actions (filepath hint, no
-#             --wait): body click opens the viewer too (default action)
+#             --wait): body click opens the viewer (hidden default action),
+#             Copy path is the visible pill
 #   urgent    critical urgency (danger border); bypasses DND (see dndcrit)
 #   sticky    15s timeout instead of the 5s default
-#   transient boolean-transient hint: shows, skipped from history
+#   transient boolean-transient hint: in history while the toast is
+#             visible, auto-removed on timeout, never persisted
 #   history   dump persisted history file (count + newest summaries)
 #   resident  boolean-resident hint: ignores timeout, dismiss with x
 #             (NOT in default: stays until dismissed)
@@ -29,7 +32,7 @@
 
 set -u
 
-IMG="$HOME/dotfiles/wallpapers/wallpaper-2.jpg"
+IMG="$HOME/dotfiles/screenshot.png"
 [ -f "$IMG" ] || IMG="/usr/share/icons/Adwaita/scalable/status/dialog-information-symbolic.svg"
 
 case_basic() {
@@ -53,7 +56,9 @@ case_progress() {
             "$pct%" "Volume"
         sleep 0.4
     done
-    echo "expected: ONE toast updating 10 -> 100, not four stacked"
+    echo "expected: ONE toast updating 10 -> 100, not four stacked; absent from history"
+    notify-send -t 3000 -h int:value:55 "Plain progress" "no syncId: still never history"
+    echo "expected: value toast shows; missing from history (check: notify-test history)"
 }
 
 case_actions() {
@@ -62,7 +67,7 @@ case_actions() {
         -t 10000 -i "$IMG" \
         -A "default=Open" -A "dismiss=Dismiss" \
         "Screenshot" "test-actions.png")
-    echo "chosen action: '${action:-<timed out / dismissed>}'"
+    echo "chosen action: '${action:-<timed out / dismissed>}' (default=Open is body-click only)"
 }
 
 case_urgent() {
@@ -75,7 +80,7 @@ case_buttons() {
         -t 10000 -i "$IMG" \
         -A "default=Open" -A "dismiss=Dismiss" \
         "Dead sender" "no --wait: gone before any click"
-    echo "expected: body click = default action (dead relay) + dismiss, button = invoke + dismiss, x = dismiss"
+    echo "expected: any click dismisses the toast (dead relay keeps history for retry); only Dismiss pill visible"
 }
 
 case_open() {
@@ -84,7 +89,7 @@ case_open() {
         -h string:filepath:"$IMG" -t 10000 -i "$IMG" \
         -A "default=Open" -A "path=Copy path" \
         "Open something" "$IMG"
-    echo "expected: body click opens viewer too (default action); Copy path copies path (native)"
+    echo "expected: body click opens viewer (hidden default action); Copy path pill copies path"
 }
 
 case_sticky() {
@@ -92,8 +97,8 @@ case_sticky() {
 }
 
 case_transient() {
-    notify-send -h boolean:transient:true "Transient" "shows, but skipped from history"
-    echo "expected: toast appears; missing from history (check: notify-test history)"
+    notify-send -h boolean:transient:true "Transient" "shows, listed in history while visible"
+    echo "expected: toast appears + history entry while visible; auto-removed on timeout, never persisted"
 }
 
 case_history() {

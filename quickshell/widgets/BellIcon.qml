@@ -12,8 +12,7 @@ BarIcon {
     tipText: root.dnd ? "Do not disturb (on)" : "Notifications"
     tipAnchor: bar
     onClicked: bar.togglePopup("control")
-    implicitWidth: Math.max(bellRef.implicitWidth, slashRef.implicitWidth)
-    width: implicitWidth
+    implicitWidth: Math.max(bellRef.implicitWidth, slashRef.implicitWidth) + root.hPadding * 2
     Text {
         id: bellRef
         visible: false
@@ -38,7 +37,7 @@ BarIcon {
         width: 8
         height: 8
         radius: 4
-        visible: root.hasUnread
+        visible: !root.dnd && root.hasUnread
         color: root.dnd ? Services.Theme.danger : Services.Theme.accent
         border.color: Services.Theme.barBg
         border.width: 1

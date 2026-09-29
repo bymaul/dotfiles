@@ -65,7 +65,7 @@ BasePopup {
         if (root.selectedKind() !== "history")
             return [];
         const item = Services.Notifs.history[root.selectedHistItem()] ?? null;
-        return item?.live?.actions ?? [];
+        return Services.Notifs.secondaryActionsOf(item?.live?.actions ?? []);
     }
     function actionCount(): int {
         return root.selectedActions().length;
@@ -251,10 +251,14 @@ BasePopup {
         const histItem = root.selectedHistItem();
         const item = Services.Notifs.history[histItem] ?? null;
         const live = item?.live ?? null;
-        const actions = live?.actions ?? [];
-        if (!live || actIdx < 0 || actIdx >= actions.length)
+        const actions = Services.Notifs.secondaryActionsOf(live?.actions ?? []);
+        if (!live || actIdx < 0 || actIdx >= actions.length) {
+            actionIndex = -1;
             return;
-        Services.Notifs.activateAction(live, actions[actIdx]);
+        }
+        try {
+            Services.Notifs.activateAction(live, actions[actIdx]);
+        } catch (_) {}
         Services.Notifs.dismissHistoryAt(histItem);
         actionIndex = -1;
         root.clampSelection();
@@ -268,15 +272,20 @@ BasePopup {
         root.clampSelection();
     }
     function activateDefaultAction(): void {
-        const actions = root.selectedActions();
-        if (actions.length === 0) {
+        const histItem = root.selectedHistItem();
+        const item = Services.Notifs.history[histItem] ?? null;
+        const live = item?.live ?? null;
+        if (!live || (live?.actions ?? []).length === 0) {
             root.dismissSelected();
             return;
         }
-        let idx = actions.findIndex(a => a.identifier === "default");
-        if (idx < 0)
-            idx = 0;
-        root.activateActionAt(idx);
+        try {
+            Services.Notifs.activateDefault(live);
+        } catch (_) {}
+        Services.Notifs.dismissHistoryAt(histItem);
+        actionIndex = -1;
+        root.clampSelection();
+        bar.closePopups();
     }
     function activateSelected(): void {
         const kind = root.selectedKind();
@@ -691,7 +700,7 @@ BasePopup {
             text: {
                 if (Services.Notifs.history.length === 0)
                     return "jk move · hl adjust · ↵ select · m mute";
-                return "jk move · hl adjust · Tab actions · ↵ open · m mute";
+                return "jk move · hl adjust · ↵ select · m mute\nTab actions · d dismiss";
             }
         }
     }

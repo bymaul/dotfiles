@@ -87,7 +87,11 @@ BasePopup {
                             if (containsMouse && Services.Notifs.history.length > 0)
                                 root.panel.selectIndex(root.panel.clearIdx());
                         }
-                        onClicked: Services.Notifs.clearHistory()
+                        onClicked: {
+                            root.panel.actionIndex = -1;
+                            Services.Notifs.clearHistory();
+                            root.panel.clampSelection();
+                        }
                     }
                 }
             }
@@ -123,14 +127,23 @@ BasePopup {
                             if (containsMouse)
                                 root.panel.selectIndex(root.panel.firstHistIdx() + historyCard.index);
                         }
-                        onClicked: {
+                        onClicked: mouse => {
+                            mouse.accepted = true;
+                            const idx = historyCard.index;
                             const live = historyCard.modelData.live;
                             if (live == null) {
-                                Services.Notifs.dismissHistoryAt(historyCard.index);
-                            } else if (Services.Notifs.activateDefault(live)) {
-                                bar.closePopups();
-                                Services.Notifs.dismissHistoryAt(historyCard.index);
+                                root.panel.actionIndex = -1;
+                                Services.Notifs.dismissHistoryAt(idx);
+                                root.panel.clampSelection();
+                                return;
                             }
+                            try {
+                                Services.Notifs.activateDefault(live);
+                            } catch (_) {}
+                            root.panel.actionIndex = -1;
+                            Services.Notifs.dismissHistoryAt(idx);
+                            root.panel.clampSelection();
+                            bar.closePopups();
                         }
                     }
                     Column {
@@ -175,7 +188,11 @@ BasePopup {
                                     }
                                     CardCloseButton {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        onClicked: Services.Notifs.dismissHistoryAt(historyCard.index)
+                                        onClicked: {
+                                            root.panel.actionIndex = -1;
+                                            Services.Notifs.dismissHistoryAt(historyCard.index);
+                                            root.panel.clampSelection();
+                                        }
                                     }
                                 }
                                 Text {
@@ -190,14 +207,18 @@ BasePopup {
                                 }
                                 ActionPills {
                                     width: parent.width
-                                    actions: modelData.live?.actions ?? []
+                                    actions: Services.Notifs.secondaryActionsOf(modelData.live?.actions ?? [])
                                     focusedIndex: historyCard.selected ? root.panel.actionIndex : -1
                                     onHovered: index => root.panel.selectAction(historyCard.index, index)
                                     onPicked: action => {
-                                        if (Services.Notifs.activateAction(modelData.live, action)) {
-                                            Services.Notifs.dismissHistoryAt(historyCard.index);
-                                            bar.closePopups();
-                                        }
+                                        const idx = historyCard.index;
+                                        try {
+                                            Services.Notifs.activateAction(modelData.live, action);
+                                        } catch (_) {}
+                                        root.panel.actionIndex = -1;
+                                        Services.Notifs.dismissHistoryAt(idx);
+                                        root.panel.clampSelection();
+                                        bar.closePopups();
                                     }
                                 }
                             }

@@ -10,10 +10,11 @@ Item {
     property var tipAnchor: null
     property bool showPointer: true
     property bool tipHover: false
+    property int hPadding: Services.Theme.barIconPadding
     signal clicked
-    implicitWidth: label.width
+    implicitWidth: label.width + hPadding * 2
     implicitHeight: label.height
-    width: label.width
+    width: implicitWidth
     height: label.height
     function showTip(): void {
         if (root.tipText === "" || !root.tipAnchor || !root.tipHover)

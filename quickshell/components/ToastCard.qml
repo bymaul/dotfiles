@@ -34,6 +34,7 @@ Rectangle {
         return hit ?? "";
     }
     readonly property var actionList: card.notification && card.notification.actions ? card.notification.actions : []
+    readonly property var visibleActions: Services.Notifs.secondaryActionsOf(card.actionList)
     readonly property bool sticky: card.notification.resident === true || (card.notification.expireTimeout ?? -1) === 0
     MouseArea {
         id: cardArea
@@ -45,8 +46,15 @@ Rectangle {
             else
                 expiryTimer.restart();
         }
-        onClicked: {
-            if (Services.Notifs.activateDefault(card.notification))
+        onClicked: mouse => {
+            mouse.accepted = true;
+            let ok = false;
+            try {
+                ok = Services.Notifs.activateDefault(card.notification);
+            } catch (_) {
+                ok = false;
+            }
+            if (ok)
                 Services.Notifs.consumeToast(card.notification);
             else
                 Services.Notifs.hideToast(card.notification);
@@ -116,9 +124,15 @@ Rectangle {
         }
         ActionPills {
             width: parent.width
-            actions: card.actionList
+            actions: card.visibleActions
             onPicked: action => {
-                if (Services.Notifs.activateAction(card.notification, action))
+                let ok = false;
+                try {
+                    ok = Services.Notifs.activateAction(card.notification, action);
+                } catch (_) {
+                    ok = false;
+                }
+                if (ok)
                     Services.Notifs.consumeToast(card.notification);
                 else
                     Services.Notifs.hideToast(card.notification);

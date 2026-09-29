@@ -21,6 +21,9 @@ Singleton {
     function syncIdOf(n): var {
         return n?.hints ? n.hints["x-canonical-private-synchronous"] : undefined;
     }
+    function valueOf(n): var {
+        return n?.hints ? n.hints["value"] : undefined;
+    }
     function isOwnFeedback(app: string): bool {
         if (app === "dnd" || app === "caffeine" || app === "bluelight" || app === "screenshot")
             return true;
@@ -42,13 +45,36 @@ Singleton {
     function toastKey(t): var {
         return t && t.qsToastId !== undefined ? t.qsToastId : t;
     }
+    function sameToast(a, b): bool {
+        if (a === b)
+            return true;
+        if (!a || !b)
+            return false;
+        return notifs.toastKey(a) === notifs.toastKey(b);
+    }
+    function unlistToast(n): void {
+        if (!n)
+            return;
+        notifs.toasts = notifs.toasts.filter(t => !notifs.sameToast(t, n));
+        notifs.pending = notifs.pending.filter(t => !notifs.sameToast(t, n));
+    }
     function hideToast(n): void {
         if (!n) {
             console.warn("quickshell: hideToast called without notification");
             return;
         }
-        const k = notifs.toastKey(n);
-        notifs.toasts = notifs.toasts.filter(t => t !== n && notifs.toastKey(t) !== k);
+        notifs.unlistToast(n);
+        notifs.purgeTransientLive(n);
+    }
+    function purgeTransientLive(n): void {
+        if (!n)
+            return;
+        const before = notifs.history.length;
+        notifs.history = notifs.history.filter(h => !(h && h.transient === true && h.live === n));
+        if (notifs.history.length !== before) {
+            notifs.readCount = Math.min(notifs.readCount, notifs.history.length);
+            notifs.schedulePersist();
+        }
     }
     function dismissToast(n): void {
         if (!n)
@@ -72,10 +98,17 @@ Singleton {
     }
     function flushPending(): void {
         const room = Math.max(0, Theme.toastMax - notifs.toasts.length);
-        const restored = notifs.pending.slice(0, room);
-        for (const t of restored)
+        const now = Date.now();
+        const fresh = notifs.pending.slice(0, room).filter(t => {
+                if (notifs.isExpired(t, now)) {
+                    notifs.purgeTransientLive(t);
+                    return false;
+                }
+                return true;
+            });
+        for (const t of fresh)
             notifs.stampToast(t);
-        notifs.toasts = [...restored, ...notifs.toasts];
+        notifs.toasts = [...fresh, ...notifs.toasts];
         notifs.pending = notifs.pending.slice(room);
         notifs.readCount = notifs.history.length;
     }
@@ -86,14 +119,16 @@ Singleton {
             n.addedAt = Date.now();
         } catch (_) {}
     }
+    function isExpired(t, now): bool {
+        const exp = t ? t.expireTimeout : undefined;
+        if (!(exp > 0))
+            return false;
+        return (now - (t.addedAt ?? now)) > exp + 2000;
+    }
     function sweepExpired(): void {
         const now = Date.now();
-        for (const t of notifs.toasts) {
-            const exp = t ? t.expireTimeout : undefined;
-            if (!(exp > 0))
-                continue;
-            const age = now - (t.addedAt ?? now);
-            if (age > exp + 2000)
+        for (const t of [...notifs.toasts, ...notifs.pending]) {
+            if (notifs.isExpired(t, now))
                 notifs.hideToast(t);
         }
     }
@@ -133,8 +168,7 @@ Singleton {
             return;
         try {
             n._qsOnClosed = function () {
-                notifs.toasts = notifs.toasts.filter(t => t !== n);
-                notifs.pending = notifs.pending.filter(t => t !== n);
+                notifs.hideToast(n);
                 notifs.releaseHistoryLive(n);
                 notifs.detachClosed(n);
             };
@@ -148,12 +182,13 @@ Singleton {
             return;
         const n = item.live;
         item.live = null;
+        notifs.hideToast(n);
         notifs.safeDismiss(n);
     }
     function forgetLive(n): void {
         notifs.detachClosed(n);
         notifs.history = notifs.history.filter(h => h.live !== n);
-        notifs.pending = notifs.pending.filter(t => t !== n);
+        notifs.unlistToast(n);
         notifs.readCount = Math.min(notifs.readCount, notifs.history.length);
         notifs.schedulePersist();
     }
@@ -209,6 +244,10 @@ Singleton {
             return null;
         return list.find(a => a.identifier === "default") ?? list[0] ?? null;
     }
+    function secondaryActionsOf(actions): var {
+        const list = actions ?? [];
+        return list.filter(a => (a?.identifier ?? "") !== "default");
+    }
     function activateDefault(live): bool {
         if (!live)
             return false;
@@ -243,6 +282,7 @@ Singleton {
             critical: n.urgency === NotificationUrgency.Critical,
             time: new Date(),
             syncId: notifs.syncIdOf(n),
+            transient: n.transient === true,
             live: n
         };
     }
@@ -264,7 +304,7 @@ Singleton {
                 }
             }
         }
-        if ((syncId === undefined || (notification.actions ?? []).length > 0) && notification.transient !== true) {
+        if ((syncId === undefined || (notification.actions ?? []).length > 0) && notifs.valueOf(notification) === undefined) {
             let next = [notifs.snapshot(notification), ...notifs.history];
             if (syncId !== undefined)
                 next = [next[0], ...next.slice(1).filter(h => h.syncId !== syncId)];
@@ -357,7 +397,7 @@ Singleton {
             persistTimer.restart();
             return;
         }
-        const data = notifs.history.slice(0, Theme.historyMax).map(h => ({
+        const data = notifs.history.filter(h => h?.transient !== true).slice(0, Theme.historyMax).map(h => ({
                     app: h?.app ?? "",
                     summary: h?.summary ?? "",
                     body: h?.body ?? "",
@@ -379,7 +419,7 @@ Singleton {
         id: expirySweep
         interval: 10000
         repeat: true
-        running: notifs.toasts.length > 0
+        running: notifs.toasts.length + notifs.pending.length > 0
         onTriggered: notifs.sweepExpired()
     }
     Process {
@@ -406,6 +446,7 @@ Singleton {
                                 critical: !!e?.critical,
                                 time: new Date(typeof e?.time === "number" ? e.time : Date.now()),
                                 syncId: e?.syncId ?? undefined,
+                                transient: false,
                                 live: null
                             }));
                     notifs.history = [...notifs.history, ...restored].slice(0, Theme.historyMax);

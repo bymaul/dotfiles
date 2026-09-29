@@ -230,16 +230,12 @@ PanelWindow {
         BatteryIcon {
             bar: bar
         }
-        Row {
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Services.Theme.groupSpacing
-            BellIcon {
-                bar: bar
-            }
-            Clock {
-                bar: bar
-                clockSource: systemClock
-            }
+        BellIcon {
+            bar: bar
+        }
+        Clock {
+            bar: bar
+            clockSource: systemClock
         }
     }
 
