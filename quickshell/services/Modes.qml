@@ -6,6 +6,23 @@ Singleton {
     id: modes
     property bool caffeineActive: false
     property bool dndActive: false
+    property bool loaded: false
+    readonly property string modesFile: {
+        const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
+        const home = Quickshell.env("HOME") ?? "";
+        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
+        return base + "/quickshell/modes.json";
+    }
+    function snapshot(): string {
+        return JSON.stringify({caffeine: modes.caffeineActive, dnd: modes.dndActive});
+    }
+    function persist(): void {
+        if (!modes.loaded)
+            return;
+        writer.write(modes.modesFile, modes.snapshot(), true);
+    }
+    onCaffeineActiveChanged: modes.persist()
+    onDndActiveChanged: modes.persist()
     function setCaffeine(on: bool): void {
         modes.caffeineActive = on;
         Notifs.notify({app: "caffeine", summary: on ? "Caffeine on" : "Caffeine off", syncId: "caffeine", timeout: Theme.osdTimeout});
@@ -55,5 +72,39 @@ Singleton {
         id: staleLockCleanup
         command: ["sh", "-c", "pkill -f -- '[s]ystemd-inhibit.*--who=Quickshell.*sleep infinity'"]
         Component.onCompleted: staleLockCleanup.running = true
+    }
+    AtomicWriter {
+        id: writer
+    }
+    Process {
+        id: loader
+        property bool loadDone: false
+        command: ["cat", modes.modesFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (loader.loadDone)
+                    return;
+                loader.loadDone = true;
+                try {
+                    const obj = JSON.parse(text);
+                    if (obj && typeof obj === "object") {
+                        if (typeof obj.caffeine === "boolean")
+                            modes.caffeineActive = obj.caffeine;
+                        if (typeof obj.dnd === "boolean")
+                            modes.dndActive = obj.dnd;
+                    }
+                } catch (_) {
+                    console.warn("quickshell: modes.json corrupt, keeping defaults");
+                }
+                modes.loaded = true;
+            }
+        }
+        onExited: exitCode => {
+            if (loader.loadDone)
+                return;
+            loader.loadDone = true;
+            modes.loaded = true;
+        }
+        Component.onCompleted: loader.running = true
     }
 }
