@@ -17,14 +17,5 @@ Item {
         MemCpu {
             bar: root.bar
         }
-        WifiIcon {
-            bar: root.bar
-        }
-        BluetoothIcon {
-            bar: root.bar
-        }
-        VolumeIcon {
-            bar: root.bar
-        }
     }
 }
