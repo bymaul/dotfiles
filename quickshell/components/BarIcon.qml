@@ -37,6 +37,7 @@ Item {
     }
     Text {
         id: label
+        anchors.centerIn: parent
         text: root.glyph
         color: root.glyphColor
         font.family: Services.Theme.font

@@ -14,9 +14,6 @@ Item {
         CaffeineIcon {
             bar: root.bar
         }
-        DndIcon {
-            bar: root.bar
-        }
         MemCpu {
             bar: root.bar
         }

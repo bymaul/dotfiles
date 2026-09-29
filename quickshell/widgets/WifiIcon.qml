@@ -12,7 +12,7 @@ BarIcon {
     readonly property bool swOff: !Services.Wifi.enabled
     readonly property real level: connected ? Services.Wifi.signalLevel(Services.Wifi.connected?.signalStrength) : 0
     glyph: {
-        if (root.wired && !root.connected)
+        if (root.wired)
             return "󰈀";
         if (root.hwBlocked)
             return "󰤭";
