@@ -41,6 +41,7 @@ PKGS=(
     "dir nvim .config/nvim"
     "tree agents .agents"
     "file agents agents/AGENTS.md .config/opencode/AGENTS.md"
+    "file agents agents/skills .config/opencode/skills"
     "file agents agents/AGENTS.md .pi/agent/AGENTS.md"
     "tree starship .config"
     "dir mise .config/mise"
