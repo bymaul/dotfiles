@@ -8,7 +8,6 @@ Singleton {
     id: power
 
     readonly property var lidOptions: ["suspend", "lock", "ignore"]
-    readonly property var criticalOptions: ["suspend", "hibernate", "poweroff", "lock", "notify"]
     readonly property var profileOptions: ["keep", "powersaver", "balanced", "performance"]
 
     property var battery: (UPower.devices?.values ?? []).find(device => device && device.isLaptopBattery) ?? null
@@ -42,14 +41,14 @@ Singleton {
     }
 
     property bool chargerReady: false
-    property bool lastCharging: false
+    property bool lastOnBattery: false
     Timer {
         id: chargerGrace
-        interval: 5000
+        interval: 2000
         repeat: false
         onTriggered: {
             power.chargerReady = true;
-            power.lastCharging = power.charging;
+            power.lastOnBattery = UPower.onBattery;
         }
     }
     function maybeArmCharger(): void {
@@ -63,13 +62,14 @@ Singleton {
             return;
         if (!power.chargerReady)
             return;
-        const charging = power.charging;
-        if (charging === power.lastCharging)
+        const onBatt = UPower.onBattery;
+        if (onBatt === power.lastOnBattery)
             return;
-        power.lastCharging = charging;
+        power.lastOnBattery = onBatt;
+        const charging = !onBatt;
         const p = power.pct;
         if (charging)
-            Notifs.notify({app: "power", summary: "Charger connected", body: power.chargerBody(true, p), icon: "battery-good-charging-symbolic", value: p, syncId: "charger", timeout: Theme.osdTimeout});
+            Notifs.notify({app: "power", summary: "Charging", body: power.chargerBody(true, p), icon: "battery-good-charging-symbolic", value: p, syncId: "charger", timeout: Theme.osdTimeout});
         else
             Notifs.notify({app: "power", summary: "On battery", body: power.chargerBody(false, p), icon: "battery-good-symbolic", value: p, syncId: "charger", timeout: Theme.osdTimeout});
     }
@@ -143,16 +143,35 @@ Singleton {
         const crit = Math.min(Settings.criticalBatteryPct, low);
         if (!power.lowFired && p <= low) {
             power.lowFired = true;
-            Notifs.notify({app: "power", summary: "Low battery " + p + "%", body: "Plug in the charger", icon: "battery-low-symbolic", value: p, syncId: "battery", timeout: 8000});
+            Notifs.notify({app: "power", summary: "Low battery", body: power.lowBody(p), icon: "battery-low-symbolic", value: p, syncId: "battery", timeout: 8000});
         }
         if (!power.criticalFired && p <= crit) {
             power.criticalFired = true;
-            Notifs.notify({app: "power", summary: "Critical battery " + p + "%", body: power.actionLabel(Settings.criticalBatteryAction), icon: "battery-caution-symbolic", urgency: NotificationUrgency.Critical, syncId: "battery", timeout: 15000});
+            Notifs.notify({app: "power", summary: "Battery critical", body: power.criticalBody(p), icon: "battery-caution-symbolic", urgency: NotificationUrgency.Critical, syncId: "battery", timeout: 15000});
         }
         if (!power.actionFired && p <= crit) {
             power.actionFired = true;
             power.runCriticalAction();
         }
+    }
+
+    function levelWithTime(p: int): string {
+        let s = p + "%";
+        const t = power.battery?.timeToEmpty ?? 0;
+        if (t > 60)
+            s += " · ~" + power.fmtDur(t) + " left";
+        return s;
+    }
+
+    function lowBody(p: int): string {
+        return power.levelWithTime(p) + " · Plug in the charger";
+    }
+
+    function criticalBody(p: int): string {
+        const s = power.levelWithTime(p);
+        if (Settings.criticalBatteryAction === "notify")
+            return s + " · Plug in immediately";
+        return s + " — " + power.actionLabel(Settings.criticalBatteryAction) + " · Plug in immediately";
     }
 
     function actionLabel(action: string): string {
@@ -195,17 +214,15 @@ Singleton {
     readonly property string statusLine: {
         if (!power.hasBattery)
             return "No battery";
-        let s = power.pct + "% · " + (power.charging ? "Charging" : "Discharging");
-        const t = power.charging ? power.battery?.timeToFull ?? 0 : power.battery?.timeToEmpty ?? 0;
-        if (t > 60)
-            s += " · " + power.fmtDur(t) + (power.charging ? " to full" : " left");
-        return s;
+        return power.chargerBody(power.charging, power.pct);
     }
 
     function levelColor(pct100: real): color {
-        if (pct100 < 10)
+        if (power.charging)
+            return Theme.fg;
+        if (pct100 <= Settings.criticalBatteryPct)
             return Theme.danger;
-        if (pct100 < 20)
+        if (pct100 <= Settings.lowBatteryPct)
             return Theme.warn;
         return Theme.fg;
     }
@@ -340,6 +357,7 @@ Singleton {
         target: UPower
         function onOnBatteryChanged(): void {
             power.applyAutoProfile();
+            power.chargerToast();
         }
     }
     Process {

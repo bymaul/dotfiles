@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell.Services.UPower
 import "../components"
 import "../services" as Services
 BarIcon {
@@ -9,7 +8,7 @@ BarIcon {
     anchors.verticalCenter: parent.verticalCenter
     showPointer: false
     readonly property real level: Services.Power.level
-    readonly property bool charging: Services.Power.battery?.state === UPowerDeviceState.Charging
+    readonly property bool charging: Services.Power.charging
     glyph: {
         const p = root.level * 100;
         let icon = "󰂎";

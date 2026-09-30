@@ -81,6 +81,7 @@ Rectangle {
             NotificationIcon {
                 id: cardIcon
                 rawIcon: card.rawIcon
+                tint: card.notification.urgency === NotificationUrgency.Critical ? Services.Theme.danger : "transparent"
             }
             Column {
                 width: parent.width - (cardIcon.showIcon ? cardIcon.width + 8 : 0) - (closeBox.width + 8)

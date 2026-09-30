@@ -116,7 +116,7 @@ BasePopup {
         if (root.tab === 0)
             return root.wpRows + root.inputRows;
         if (root.tab === 1)
-            return 10 + root.asusRows;
+            return 9 + root.asusRows;
         return root.monFirst + root.monCount * root.monRows + 1;
     }
     function monLastIndex(): int {
@@ -218,10 +218,9 @@ BasePopup {
             case 3: Services.Settings.setSuspendTimeout(Services.Settings.suspendTimeout + dir * 300); break;
             case 4: Services.Settings.setLowBatteryPct(Services.Settings.lowBatteryPct + dir * 5); break;
             case 5: Services.Settings.setCriticalBatteryPct(Services.Settings.criticalBatteryPct + dir * 2); break;
-            case 6: Services.Settings.setCriticalBatteryAction(SettingsUtil.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, dir)); break;
-            case 7: Services.Settings.setLidCloseAction(SettingsUtil.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, dir)); break;
-            case 8: root.cycleActiveProfile(dir); break;
-            case 9: Services.Settings.setPowerProfileOnBattery(SettingsUtil.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
+            case 6: Services.Settings.setLidCloseAction(SettingsUtil.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, dir)); break;
+            case 7: root.cycleActiveProfile(dir); break;
+            case 8: Services.Settings.setPowerProfileOnBattery(SettingsUtil.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
             }
             return;
         }
@@ -338,49 +337,43 @@ BasePopup {
         return Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
     }
     function isDropdownIndex(i: int): bool {
-        return root.tab === 1 && i >= root.sysIdx(6) && i <= root.sysIdx(9);
+        return root.tab === 1 && i >= root.sysIdx(6) && i <= root.sysIdx(8);
     }
     function dropEnabled(i: int): bool {
-        if (i === root.sysIdx(8))
+        if (i === root.sysIdx(7))
             return Services.Asus.available || Services.Power.profilesAvailable;
         return true;
     }
     function dropdownOptions(i: int): var {
         if (i === root.sysIdx(6))
-            return Services.Power.criticalOptions;
-        if (i === root.sysIdx(7))
             return Services.Power.lidOptions;
-        if (i === root.sysIdx(8))
+        if (i === root.sysIdx(7))
             return root.activeProfileOptions();
-        if (i === root.sysIdx(9))
+        if (i === root.sysIdx(8))
             return Services.Power.profileOptions;
         return [];
     }
     function dropdownCurrent(i: int): string {
         if (i === root.sysIdx(6))
-            return Services.Settings.criticalBatteryAction;
-        if (i === root.sysIdx(7))
             return Services.Settings.lidCloseAction;
-        if (i === root.sysIdx(8)) {
+        if (i === root.sysIdx(7)) {
             if (Services.Asus.available)
                 return Services.Asus.profile !== "" ? Services.Asus.profile : "…";
             return Services.Power.profilesAvailable ? Services.Power.profileName : "no ppd";
         }
-        if (i === root.sysIdx(9))
+        if (i === root.sysIdx(8))
             return Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd";
         return "";
     }
     function applyDropValue(i: int, value: string): void {
         if (i === root.sysIdx(6))
-            Services.Settings.setCriticalBatteryAction(value);
-        else if (i === root.sysIdx(7))
             Services.Settings.setLidCloseAction(value);
-        else if (i === root.sysIdx(8)) {
+        else if (i === root.sysIdx(7)) {
             if (Services.Asus.available)
                 Services.Asus.setProfile(value, false);
             else if (Services.Power.profilesAvailable)
                 Services.Power.setProfileByName(value, false);
-        } else if (i === root.sysIdx(9))
+        } else if (i === root.sysIdx(8))
             Services.Settings.setPowerProfileOnBattery(value);
     }
     function openDrop(i: int): void {
@@ -523,7 +516,7 @@ BasePopup {
     property int wallColH: Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH
     property int inputColH: 3 * Services.Theme.rowHeight + 2 * Services.Theme.listSpacing
     property int sysIdleH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
-    property int sysBattH: (4 + root.asusRows) * Services.Theme.rowHeight + (3 + root.asusRows) * Services.Theme.listSpacing
+    property int sysBattH: (3 + root.asusRows) * Services.Theme.rowHeight + (2 + root.asusRows) * Services.Theme.listSpacing
     property int sysProfH: 2 * Services.Theme.rowHeight + Services.Theme.listSpacing
     // Extra System-tab rows inserted above the Battery section when asusd is
     // present. Battery/Profile row indices below shift by this offset.

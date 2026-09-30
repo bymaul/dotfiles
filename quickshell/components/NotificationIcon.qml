@@ -5,6 +5,7 @@ Item {
     id: root
     required property var rawIcon
     property int iconSize: 24
+    property color tint: "transparent"
     anchors.verticalCenter: parent.verticalCenter
     readonly property string iconStr: String(root.rawIcon ?? "")
     readonly property bool hasIcon: root.iconStr !== ""
@@ -33,5 +34,7 @@ Item {
         visible: root.recolorable && root.resolvedSource !== ""
         source: img
         brightness: 0.6
+        colorization: root.tint.a > 0 ? 1.0 : 0.0
+        colorizationColor: root.tint
     }
 }

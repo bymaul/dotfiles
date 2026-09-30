@@ -21,7 +21,7 @@ Singleton {
 
     property int lowBatteryPct: 20
     property int criticalBatteryPct: 10
-    property string criticalBatteryAction: "suspend"
+    property string criticalBatteryAction: "notify"
     property string lidCloseAction: "suspend"
     property string powerProfileOnBattery: "keep"
 
@@ -73,7 +73,7 @@ Singleton {
         settings.suspendTimeout = Math.round(U.num(obj.suspendTimeout, 1800, 0, 7200));
         settings.lowBatteryPct = Math.round(U.num(obj.lowBatteryPct, 20, 5, 50));
         settings.criticalBatteryPct = Math.min(Math.round(U.num(obj.criticalBatteryPct, 10, 3, 30)), settings.lowBatteryPct);
-        settings.criticalBatteryAction = U.pickOpt(obj.criticalBatteryAction, "suspend", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
+        settings.criticalBatteryAction = U.pickOpt(obj.criticalBatteryAction, "notify", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
         settings.lidCloseAction = U.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
         settings.powerProfileOnBattery = U.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
         settings.mainMonitor = U.pickStr(obj.mainMonitor, "auto");
@@ -431,12 +431,6 @@ Singleton {
     }
     function setCriticalBatteryPct(v: real): void {
         settings.criticalBatteryPct = Math.min(Math.round(Math.max(3, Math.min(30, v))), settings.lowBatteryPct);
-        settings.scheduleSave();
-    }
-    function setCriticalBatteryAction(v: string): void {
-        if (!["suspend", "hibernate", "poweroff", "lock", "notify"].includes(v))
-            return;
-        settings.criticalBatteryAction = v;
         settings.scheduleSave();
     }
     function setLidCloseAction(v: string): void {
