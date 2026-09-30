@@ -1,6 +1,8 @@
 import QtQuick
 import "../components"
 import "../services" as Services
+import "../services/SettingsUtil.js" as SettingsUtil
+import "settings"
 BasePopup {
     id: root
     implicitWidth: Services.Theme.settingsWidth
@@ -145,9 +147,9 @@ BasePopup {
     function syncWallCursor(): void {
         root.clampSelection();
         if (root.tab === 0 && selectedIndex >= 1 && selectedIndex <= root.wpCount)
-            wallList.currentIndex = selectedIndex - 1;
+            generalTab.wallList.currentIndex = selectedIndex - 1;
         else
-            wallList.currentIndex = -1;
+            generalTab.wallList.currentIndex = -1;
     }
     function stepSelection(dir: int): void {
         if (root.tab === 1 && root.openDropdown >= 0) {
@@ -163,7 +165,7 @@ BasePopup {
             return;
         }
         if (root.tab === 2 && root.openMonPos !== "") {
-            root.moveCursor(Services.Settings.monitorPosOptions(), dir);
+            root.moveCursor(SettingsUtil.monitorPosOptions(), dir);
             return;
         }
         selectedIndex += dir;
@@ -217,10 +219,10 @@ BasePopup {
             case 4: Services.Settings.setLowBatteryPct(Services.Settings.lowBatteryPct + dir * 5); break;
             case 5: Services.Settings.setCriticalBatteryPct(Services.Settings.criticalBatteryPct + dir * 2); break;
             case 6: Services.Settings.setCriticalBatteryMins(Services.Settings.criticalBatteryMins + dir * 5); break;
-            case 7: Services.Settings.setCriticalBatteryAction(root.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, dir)); break;
-            case 8: Services.Settings.setLidCloseAction(root.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, dir)); break;
+            case 7: Services.Settings.setCriticalBatteryAction(SettingsUtil.cycleOpt(Services.Power.criticalOptions, Services.Settings.criticalBatteryAction, dir)); break;
+            case 8: Services.Settings.setLidCloseAction(SettingsUtil.cycleOpt(Services.Power.lidOptions, Services.Settings.lidCloseAction, dir)); break;
             case 9: root.cycleActiveProfile(dir); break;
-            case 10: Services.Settings.setPowerProfileOnBattery(root.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
+            case 10: Services.Settings.setPowerProfileOnBattery(SettingsUtil.cycleOpt(Services.Power.profileOptions, Services.Settings.powerProfileOnBattery, dir)); break;
             }
             return;
         }
@@ -320,13 +322,6 @@ BasePopup {
         }
     }
 
-    function cycleOpt(list: var, cur: string, dir: int): string {
-        let i = list.indexOf(cur);
-        if (i < 0)
-            i = 0;
-        return list[(i + dir + list.length) % list.length];
-    }
-
     function cycleActiveProfile(dir: int): void {
         if (Services.Asus.available) {
             Services.Asus.cycleProfile(dir);
@@ -335,7 +330,7 @@ BasePopup {
         if (!Services.Power.profilesAvailable)
             return;
         const order = Services.Power.hasPerformanceProfile ? ["balanced", "powersaver", "performance"] : ["balanced", "powersaver"];
-        Services.Power.setProfileByName(root.cycleOpt(order, Services.Power.profileName, dir), false);
+        Services.Power.setProfileByName(SettingsUtil.cycleOpt(order, Services.Power.profileName, dir), false);
     }
 
     function activeProfileOptions(): var {
@@ -443,7 +438,7 @@ BasePopup {
             root.closeDrop();
             return;
         }
-        const opts = Services.Settings.monitorPosOptions();
+        const opts = SettingsUtil.monitorPosOptions();
         let at = opts.indexOf(Services.Settings.monitorPos(name));
         if (at < 0)
             at = 0;
@@ -457,7 +452,7 @@ BasePopup {
     }
     function commitMonPosCursor(): void {
         const name = root.openMonPos;
-        const opts = Services.Settings.monitorPosOptions();
+        const opts = SettingsUtil.monitorPosOptions();
         if (name === "" || opts.length === 0) {
             root.closeDrop();
             return;
@@ -484,7 +479,7 @@ BasePopup {
         const opts = root.mainOptions();
         if (opts.length === 0)
             return;
-        Services.Settings.setMainMonitor(root.cycleOpt(opts, Services.Settings.mainMonitor, dir));
+        Services.Settings.setMainMonitor(SettingsUtil.cycleOpt(opts, Services.Settings.mainMonitor, dir));
     }
     function commitMainCursor(): void {
         const opts = root.mainOptions();
@@ -508,21 +503,6 @@ BasePopup {
             return;
         }
         root.commitMonRes(name, modes[Services.Theme.clamp(root.dropCursor, 0, modes.length - 1)]);
-    }
-
-    function fmtTimeout(s: int): string {
-        if (s <= 0)
-            return "Off";
-        if (s < 60)
-            return s + "s";
-        if (s < 3600) {
-            const m = Math.floor(s / 60);
-            const rest = s % 60;
-            return rest === 0 ? m + "m" : m + "m " + rest + "s";
-        }
-        const h = Math.floor(s / 3600);
-        const rest = Math.floor((s % 3600) / 60);
-        return rest === 0 ? h + "h" : h + "h " + rest + "m";
     }
 
     property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
@@ -592,639 +572,17 @@ BasePopup {
             }
         }
 
-        Column {
-            visible: root.tab === 0
-            width: parent.width
-            spacing: Services.Theme.popupSpacing
-            Text {
-                width: parent.width
-                height: root.sectionH
-                verticalAlignment: Text.AlignVCenter
-                text: "Wallpaper"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px11
-            }
-            Column {
-                width: parent.width
-                spacing: Services.Theme.listSpacing
-                Rectangle {
-                    width: parent.width
-                    height: Services.Theme.listRowHeight
-                    readonly property bool current: Services.Settings.wallpaperOverride === ""
-                    readonly property bool selected: root.tab === 0 && root.selectedIndex === 0
-                    color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : autoHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
-                    border.width: (!selected && current) ? 1 : 0
-                    border.color: Services.Theme.accent
-                    Text {
-                        anchors {
-                            fill: parent
-                            leftMargin: 10
-                            rightMargin: 10
-                        }
-                        verticalAlignment: Text.AlignVCenter
-                        text: (parent.current ? "✓  " : "") + "Auto (default)"
-                        color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : autoHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                        font.family: Services.Theme.font
-                        font.pixelSize: Services.Theme.px12
-                        elide: Text.ElideRight
-                    }
-                    MouseArea {
-                        id: autoHover
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onContainsMouseChanged: {
-                            if (containsMouse)
-                                root.selectedIndex = 0;
-                        }
-                        onClicked: {
-                            root.selectedIndex = 0;
-                            Services.Settings.setWallpaper("");
-                        }
-                    }
-                }
-                ListView {
-                    id: wallList
-                    width: parent.width
-                    height: root.wpListH
-                    clip: true
-                    spacing: Services.Theme.listSpacing
-                    model: Services.Settings.wallpapers.slice(0, 4)
-                    onCountChanged: root.syncWallCursor()
-                    delegate: Rectangle {
-                        required property var modelData
-                        required property int index
-                        readonly property bool current: modelData === Services.Settings.wallpaperOverride
-                        readonly property bool selected: wallList.currentIndex === index
-                        width: ListView.view.width
-                        height: Services.Theme.listRowHeight
-                        color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : rowHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
-                        border.width: (!selected && current) ? 1 : 0
-                        border.color: Services.Theme.accent
-                        Text {
-                            anchors {
-                                fill: parent
-                                leftMargin: 10
-                                rightMargin: 10
-                            }
-                            verticalAlignment: Text.AlignVCenter
-                            text: (parent.current ? "✓  " : "") + String(modelData).split("/").pop()
-                            color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : rowHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                            font.family: Services.Theme.font
-                            font.pixelSize: Services.Theme.px12
-                            elide: Text.ElideRight
-                        }
-                        MouseArea {
-                            id: rowHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onContainsMouseChanged: {
-                                if (containsMouse) {
-                                    wallList.currentIndex = index;
-                                    root.selectedIndex = index + 1;
-                                }
-                            }
-                            onClicked: {
-                                wallList.currentIndex = index;
-                                root.selectedIndex = index + 1;
-                                Services.Settings.setWallpaper(modelData);
-                            }
-                        }
-                    }
-                }
-            }
-            Text {
-                width: parent.width
-                height: root.sectionH
-                verticalAlignment: Text.AlignVCenter
-                text: "Mouse & touchpad"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px11
-            }
-            Column {
-                width: parent.width
-                spacing: Services.Theme.listSpacing
-                SettingsRow {
-                    title: "Sensitivity"
-                    value: Services.Settings.sensitivity.toFixed(1)
-                    selected: root.tab === 0 && root.selectedIndex === root.wpRows + 0
-                    onHovered: root.selectedIndex = root.wpRows + 0
-                    SliderBar {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
-                        minimum: -1
-                        maximum: 1
-                        value: Services.Settings.sensitivity
-                        onSliderMoved: value => Services.Settings.setSensitivity(value)
-                    }
-                }
-                SettingsRow {
-                    title: "Touchpad scroll"
-                    value: Services.Settings.touchScroll.toFixed(1)
-                    selected: root.tab === 0 && root.selectedIndex === root.wpRows + 1
-                    onHovered: root.selectedIndex = root.wpRows + 1
-                    SliderBar {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
-                        minimum: 0.1
-                        maximum: 2
-                        value: Services.Settings.touchScroll
-                        onSliderMoved: value => Services.Settings.setTouchScroll(value)
-                    }
-                }
-                SettingsRow {
-                    title: "Natural scroll"
-                    value: Services.Settings.naturalScroll ? "On" : "Off"
-                    selected: root.tab === 0 && root.selectedIndex === root.wpRows + 2
-                    onHovered: root.selectedIndex = root.wpRows + 2
-                    SettingsSwitch {
-                        on: Services.Settings.naturalScroll
-                        onToggled: Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll)
-                    }
-                }
-            }
+        GeneralTab {
+            id: generalTab
+            popup: root
         }
 
-        Column {
-            visible: root.tab === 1
-            width: parent.width
-            spacing: Services.Theme.popupSpacing
-            Text {
-                width: parent.width
-                height: root.sectionH
-                verticalAlignment: Text.AlignVCenter
-                text: "Idle"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px11
-            }
-            Column {
-                width: parent.width
-                spacing: Services.Theme.listSpacing
-            SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === 0
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = 0;
-                }
-                title: "Dim display"
-                value: root.fmtTimeout(Services.Settings.dimTimeout)
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 0
-                    maximum: 10
-                    value: Services.Settings.dimTimeout / 60
-                    onSliderMoved: value => Services.Settings.setDimTimeout(Math.round(value * 2) * 30)
-                }
-            }
-            SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === 1
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = 1;
-                }
-                title: "Lock"
-                value: root.fmtTimeout(Services.Settings.lockTimeout)
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 0
-                    maximum: 60
-                    value: Services.Settings.lockTimeout / 60
-                    onSliderMoved: value => Services.Settings.setLockTimeout(Math.round(value) * 60)
-                }
-            }
-            SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === 2
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = 2;
-                }
-                title: "Screen off"
-                value: root.fmtTimeout(Services.Settings.screenOffTimeout)
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 0
-                    maximum: 60
-                    value: Services.Settings.screenOffTimeout / 60
-                    onSliderMoved: value => Services.Settings.setScreenOffTimeout(Math.round(value) * 60)
-                }
-            }
-            SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === 3
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = 3;
-                }
-                title: "Suspend"
-                value: root.fmtTimeout(Services.Settings.suspendTimeout)
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 0
-                    maximum: 120
-                    value: Services.Settings.suspendTimeout / 60
-                    onSliderMoved: value => Services.Settings.setSuspendTimeout(Math.round(value / 5) * 300)
-                }
-            }
-            }
-            Text {
-                width: parent.width
-                height: root.sectionH
-                verticalAlignment: Text.AlignVCenter
-                text: "Battery"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px11
-            }
-            Column {
-                width: parent.width
-                spacing: Services.Theme.listSpacing
-                z: root.openDropdown === root.sysIdx(7) || root.openDropdown === root.sysIdx(8) ? 50 : 0
-            SettingsRow {
-                visible: Services.Asus.available
-                selected: root.tab === 1 && root.selectedIndex === 4
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = 4;
-                }
-                title: "Charge limit"
-                value: Services.Asus.chargeLimit + "%"
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 20
-                    maximum: 100
-                    value: Services.Asus.chargeLimit
-                    onSliderMoved: value => Services.Asus.setChargeLimit(Math.round(value / 5) * 5)
-                }
-            }
-            SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(4)
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.sysIdx(4);
-                }
-                title: "Low battery"
-                value: Services.Settings.lowBatteryPct + "%"
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 5
-                    maximum: 50
-                    value: Services.Settings.lowBatteryPct
-                    onSliderMoved: value => Services.Settings.setLowBatteryPct(Math.round(value / 5) * 5)
-                }
-            }
-            SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(5)
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.sysIdx(5);
-                }
-                title: "Critical battery"
-                titleWidth: 124
-                value: Services.Settings.criticalBatteryPct + "%"
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 3
-                    maximum: 30
-                    value: Services.Settings.criticalBatteryPct
-                    onSliderMoved: value => Services.Settings.setCriticalBatteryPct(Math.round(value / 2) * 2)
-                }
-            }
-            SettingsRow {
-                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(6)
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.sysIdx(6);
-                }
-                title: "Critical time"
-                titleWidth: 124
-                value: Services.Settings.criticalBatteryMins + "m"
-                SliderBar {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width
-                    minimum: 5
-                    maximum: 60
-                    value: Services.Settings.criticalBatteryMins
-                    onSliderMoved: value => Services.Settings.setCriticalBatteryMins(Math.round(value / 5) * 5)
-                }
-            }
-            DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(7)
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.sysIdx(7);
-                }
-                title: "Critical action"
-                z: root.openDropdown === root.sysIdx(7) ? 100 : 0
-                options: Services.Power.criticalOptions
-                current: Services.Settings.criticalBatteryAction
-                dropOpen: root.openDropdown === root.sysIdx(7)
-                cursor: root.dropCursor
-                onHeaderClicked: {
-                    root.selectedIndex = root.sysIdx(7);
-                    root.toggleDrop(root.sysIdx(7));
-                }
-                onOptionHovered: index => root.dropCursor = index
-                onOptionClicked: value => {
-                    root.selectedIndex = root.sysIdx(7);
-                    root.applyDropValue(root.sysIdx(7), value);
-                    root.closeDrop();
-                }
-            }
-            DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(8)
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.sysIdx(8);
-                }
-                title: "Lid close"
-                z: root.openDropdown === root.sysIdx(8) ? 100 : 0
-                options: Services.Power.lidOptions
-                current: Services.Settings.lidCloseAction
-                dropOpen: root.openDropdown === root.sysIdx(8)
-                cursor: root.dropCursor
-                onHeaderClicked: {
-                    root.selectedIndex = root.sysIdx(8);
-                    root.toggleDrop(root.sysIdx(8));
-                }
-                onOptionHovered: index => root.dropCursor = index
-                onOptionClicked: value => {
-                    root.selectedIndex = root.sysIdx(8);
-                    root.applyDropValue(root.sysIdx(8), value);
-                    root.closeDrop();
-                }
-            }
-            }
-            Text {
-                width: parent.width
-                height: root.sectionH
-                verticalAlignment: Text.AlignVCenter
-                text: "Profiles"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px11
-            }
-            Column {
-                width: parent.width
-                spacing: Services.Theme.listSpacing
-                z: root.openDropdown === root.sysIdx(9) || root.openDropdown === root.sysIdx(10) ? 50 : 0
-            DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(9)
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.sysIdx(9);
-                }
-                title: "Active profile"
-                z: root.openDropdown === root.sysIdx(9) ? 100 : 0
-                options: root.dropdownOptions(root.sysIdx(9))
-                current: root.dropdownCurrent(root.sysIdx(9))
-                dropEnabled: root.dropEnabled(root.sysIdx(9))
-                dropOpen: root.openDropdown === root.sysIdx(9)
-                cursor: root.dropCursor
-                openUp: true
-                onHeaderClicked: {
-                    root.selectedIndex = root.sysIdx(9);
-                    root.toggleDrop(root.sysIdx(9));
-                }
-                onOptionHovered: index => root.dropCursor = index
-                onOptionClicked: value => {
-                    root.selectedIndex = root.sysIdx(9);
-                    root.applyDropValue(root.sysIdx(9), value);
-                    root.closeDrop();
-                }
-            }
-            DropdownRow {
-                selected: root.tab === 1 && root.selectedIndex === root.sysIdx(10)
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.sysIdx(10);
-                }
-                title: "On battery"
-                z: root.openDropdown === root.sysIdx(10) ? 100 : 0
-                options: Services.Power.profileOptions
-                current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
-                dropOpen: root.openDropdown === root.sysIdx(10)
-                cursor: root.dropCursor
-                openUp: true
-                onHeaderClicked: {
-                    root.selectedIndex = root.sysIdx(10);
-                    root.toggleDrop(root.sysIdx(10));
-                }
-                onOptionHovered: index => root.dropCursor = index
-                onOptionClicked: value => {
-                    root.selectedIndex = root.sysIdx(10);
-                    root.applyDropValue(root.sysIdx(10), value);
-                    root.closeDrop();
-                }
-            }
-            }
-            Text {
-                width: parent.width
-                height: 30
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                text: "Idle rows write hypridle.conf. Lid close needs logind: bin/qs-power-logind. Power key suspends."
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px10
-            }
+        SystemTab {
+            popup: root
         }
 
-        Column {
-            visible: root.tab === 2
-            width: parent.width
-            spacing: Services.Theme.popupSpacing
-            DropdownRow {
-                title: "Main display"
-                selected: root.tab === 2 && root.selectedIndex === 0
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = 0;
-                }
-                z: root.openMainDrop ? 100 : 0
-                options: root.mainOptions()
-                current: Services.Settings.mainMonitor
-                dropEnabled: root.enabledCount > 1
-                dropOpen: root.openMainDrop
-                cursor: root.dropCursor
-                onHeaderClicked: {
-                    root.selectedIndex = 0;
-                    root.toggleMainDrop();
-                }
-                onOptionHovered: index => root.dropCursor = index
-                onOptionClicked: value => {
-                    root.selectedIndex = 0;
-                    Services.Settings.setMainMonitor(value);
-                    root.closeDrop();
-                }
-            }
-            Text {
-                visible: root.monCount === 0
-                width: parent.width
-                height: 30
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                text: "No monitors found. Is hyprctl reachable?"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px10
-            }
-            Column {
-                id: monColumn
-                visible: root.monCount > 0
-                width: parent.width
-                spacing: Services.Theme.popupSpacing
-                z: root.openMonRes !== "" || root.openMonPos !== "" ? 50 : 0
-                Repeater {
-                    model: Services.Settings.monitors
-                    delegate: Rectangle {
-                        required property var modelData
-                        required property int index
-                        readonly property string monName: String(modelData.name ?? "")
-                        readonly property bool monOn: Services.Settings.monitorEnabled(monName)
-                        width: parent.width
-                        height: root.monBlockH
-                        color: Services.Theme.transparent
-                        border.width: 1
-                        border.color: Services.Theme.border
-                        z: root.openMonRes === monName || root.openMonPos === monName ? 100 : 0
-                        Column {
-                            anchors.fill: parent
-                            anchors.margins: root.monCardPad
-                            spacing: Services.Theme.listSpacing
-                    Text {
-                        width: parent.width
-                        height: root.monHeaderH
-                        verticalAlignment: Text.AlignVCenter
-                        text: Services.Settings.monitorSummary(monName)
-                        color: monOn ? Services.Theme.fg : Services.Theme.dim
-                        font.family: Services.Theme.font
-                        font.pixelSize: Services.Theme.px12
-                        elide: Text.ElideRight
-                    }
-                    SettingsRow {
-                    selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 0
-                    onHovered: {
-                        if (!root.anyDropOpen())
-                            root.selectedIndex = root.monFirst + index * root.monRows + 0;
-                    }
-                        title: "Enabled"
-                        value: monOn ? "On" : "Off"
-                        SettingsSwitch {
-                            on: monOn
-                            disabled: !Services.Settings.canDisableMonitor(monName)
-                            onToggled: {
-                                root.beginMonitorChange();
-                                Services.Settings.setMonitorEnabled(monName, !Services.Settings.monitorEnabled(monName))
-                            }
-                        }
-                    }
-                    SettingsRow {
-                    opacity: monOn ? 1 : 0.45
-                    selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 1
-                    onHovered: {
-                        if (!root.anyDropOpen())
-                            root.selectedIndex = root.monFirst + index * root.monRows + 1;
-                    }
-                        title: "Scale"
-                        value: "x" + Services.Settings.monitorScale(monName).toFixed(2).replace(/0$/, "")
-                        SliderBar {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            minimum: 0.5
-                            maximum: 3
-                            value: Services.Settings.monitorScale(monName)
-                            onSliderMoved: value => {
-                                root.beginMonitorChange();
-                                Services.Settings.setMonitorScale(monName, Math.round(value * 20) / 20)
-                            }
-                        }
-                    }
-                    DropdownRow {
-                        opacity: monOn ? 1 : 0.45
-                        title: "Resolution"
-                        selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 2
-                        onHovered: {
-                            if (!root.anyDropOpen())
-                                root.selectedIndex = root.monFirst + index * root.monRows + 2;
-                        }
-                        z: root.openMonRes === monName ? 100 : 0
-                        options: Services.Settings.monitorModes(monName)
-                        current: Services.Settings.monitorRes(monName)
-                        dropOpen: root.openMonRes === monName
-                        cursor: root.dropCursor
-                        openUp: index === root.monCount - 1
-                        onHeaderClicked: {
-                            root.selectedIndex = root.monFirst + index * root.monRows + 2;
-                            root.toggleMonDrop(monName);
-                        }
-                        onOptionHovered: optIdx => root.dropCursor = optIdx
-                        onOptionClicked: value => {
-                            root.selectedIndex = root.monFirst + index * root.monRows + 2;
-                            root.commitMonRes(monName, value);
-                        }
-                    }
-                    DropdownRow {
-                        opacity: monOn ? 1 : 0.45
-                        title: "Position"
-                        selected: root.tab === 2 && root.selectedIndex === root.monFirst + index * root.monRows + 3
-                        onHovered: {
-                            if (!root.anyDropOpen())
-                                root.selectedIndex = root.monFirst + index * root.monRows + 3;
-                        }
-                        z: root.openMonPos === monName ? 100 : 0
-                        options: Services.Settings.monitorPosOptions()
-                        current: Services.Settings.monitorPos(monName)
-                        dropOpen: root.openMonPos === monName
-                        cursor: root.dropCursor
-                        openUp: index === root.monCount - 1
-                        onHeaderClicked: {
-                            root.selectedIndex = root.monFirst + index * root.monRows + 3;
-                            root.toggleMonPosDrop(monName);
-                        }
-                        onOptionHovered: optIdx => root.dropCursor = optIdx
-                        onOptionClicked: value => {
-                            root.selectedIndex = root.monFirst + index * root.monRows + 3;
-                            root.commitMonPos(monName, value);
-                        }
-                    }
-                        }
-                    }
-                }
-            }
-            PopupButton {
-                label: "Re-detect displays"
-                columns: 1
-                selected: root.tab === 2 && root.selectedIndex === root.monLastIndex()
-                onHovered: {
-                    if (!root.anyDropOpen())
-                        root.selectedIndex = root.monLastIndex();
-                }
-                onClicked: {
-                    root.selectedIndex = root.monLastIndex();
-                    Services.Settings.refreshMonitors(true);
-                }
-            }
-            Text {
-                width: parent.width
-                height: 14
-                verticalAlignment: Text.AlignVCenter
-                horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
-                text: Services.Settings.lastApplyMsg
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px10
-            }
+        DisplaysTab {
+            popup: root
         }
 
         HintText {

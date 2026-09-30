@@ -21,15 +21,13 @@ BasePopup {
         if (targetList)
             targetList.currentIndex = 0;
     }
-    Shortcut { sequence: "j"; enabled: list.visible && !list.listBlocked; onActivated: list.stepSelection(1) }
-    Shortcut { sequence: "k"; enabled: list.visible && !list.listBlocked; onActivated: list.stepSelection(-1) }
-    Shortcut { sequence: "Down"; enabled: list.visible && !list.listBlocked; onActivated: list.stepSelection(1) }
-    Shortcut { sequence: "Up"; enabled: list.visible && !list.listBlocked; onActivated: list.stepSelection(-1) }
-    Shortcut { sequence: "Return"; enabled: list.visible && !list.listBlocked; onActivated: list.activateRow() }
-    Shortcut { sequence: "Enter"; enabled: list.visible && !list.listBlocked; onActivated: list.activateRow() }
-    Shortcut { sequence: "Space"; enabled: list.visible && !list.listBlocked; onActivated: list.activateRow() }
-    Shortcut { sequence: "d"; enabled: list.visible && !list.listBlocked; onActivated: list.forgetRow() }
-    Shortcut { sequence: "Delete"; enabled: list.visible && !list.listBlocked; onActivated: list.forgetRow() }
+    ListNavKeys {
+        host: list
+        navActive: !list.listBlocked
+        step: dir => list.stepSelection(dir)
+        confirm: () => list.activateRow()
+        remove: () => list.forgetRow()
+    }
     Shortcut { sequence: "s"; enabled: list.visible && !list.listBlocked; onActivated: list.toggleScan() }
     Shortcut { sequence: "e"; enabled: list.visible && !list.listBlocked; onActivated: list.toggleEnabled() }
 }

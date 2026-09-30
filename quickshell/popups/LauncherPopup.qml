@@ -12,10 +12,12 @@ BasePopup {
     function quitArmed(): bool {
         return !search.hasFocus;
     }
-    Shortcut { sequence: "Down"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible && !search.hasFocus; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Return"; enabled: root.visible && !search.hasFocus; onActivated: root.launch() }
-    Shortcut { sequence: "Enter"; enabled: root.visible && !search.hasFocus; onActivated: root.launch() }
+    ListNavKeys {
+        host: root
+        navActive: !search.hasFocus
+        step: dir => root.stepSelection(dir)
+        confirm: () => root.launch()
+    }
     Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.stepSelection(1) }
     Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.stepSelection(-1) }
     property var appsCache: null

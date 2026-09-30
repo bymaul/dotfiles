@@ -2,6 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "SettingsUtil.js" as U
 
 Singleton {
     id: settings
@@ -40,21 +41,6 @@ Singleton {
         return (home !== "" ? home : "/tmp") + "/.config/hypr/hypridle.conf";
     }
 
-    function num(v, d, lo, hi): real {
-        if (typeof v !== "number" || isNaN(v))
-            return d;
-        return Math.max(lo, Math.min(hi, v));
-    }
-    function pickBool(v, d): bool {
-        return typeof v === "boolean" ? v : d;
-    }
-    function pickStr(v, d): string {
-        return typeof v === "string" ? v : d;
-    }
-    function pickOpt(v, d, opts): string {
-        return typeof v === "string" && opts.includes(v) ? v : d;
-    }
-
     function snapshot(): var {
         return {
             wallpaperOverride: settings.wallpaperOverride,
@@ -79,21 +65,21 @@ Singleton {
     function applyLoaded(obj): void {
         if (!obj || typeof obj !== "object")
             return;
-        settings.wallpaperOverride = settings.pickStr(obj.wallpaperOverride, "");
-        settings.sensitivity = settings.num(obj.sensitivity, 0, -1, 1);
-        settings.touchScroll = settings.num(obj.touchScroll, 0.8, 0.1, 2);
-        settings.naturalScroll = settings.pickBool(obj.naturalScroll, true);
-        settings.dimTimeout = Math.round(settings.num(obj.dimTimeout, 150, 0, 600));
-        settings.lockTimeout = Math.round(settings.num(obj.lockTimeout, 300, 0, 3600));
-        settings.screenOffTimeout = Math.round(settings.num(obj.screenOffTimeout, 330, 0, 3600));
-        settings.suspendTimeout = Math.round(settings.num(obj.suspendTimeout, 1800, 0, 7200));
-        settings.lowBatteryPct = Math.round(settings.num(obj.lowBatteryPct, 20, 5, 50));
-        settings.criticalBatteryPct = Math.min(Math.round(settings.num(obj.criticalBatteryPct, 10, 3, 30)), settings.lowBatteryPct);
-        settings.criticalBatteryMins = Math.round(settings.num(obj.criticalBatteryMins, 15, 5, 60));
-        settings.criticalBatteryAction = settings.pickOpt(obj.criticalBatteryAction, "suspend", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
-        settings.lidCloseAction = settings.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
-        settings.powerProfileOnBattery = settings.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
-        settings.mainMonitor = settings.pickStr(obj.mainMonitor, "auto");
+        settings.wallpaperOverride = U.pickStr(obj.wallpaperOverride, "");
+        settings.sensitivity = U.num(obj.sensitivity, 0, -1, 1);
+        settings.touchScroll = U.num(obj.touchScroll, 0.8, 0.1, 2);
+        settings.naturalScroll = U.pickBool(obj.naturalScroll, true);
+        settings.dimTimeout = Math.round(U.num(obj.dimTimeout, 150, 0, 600));
+        settings.lockTimeout = Math.round(U.num(obj.lockTimeout, 300, 0, 3600));
+        settings.screenOffTimeout = Math.round(U.num(obj.screenOffTimeout, 330, 0, 3600));
+        settings.suspendTimeout = Math.round(U.num(obj.suspendTimeout, 1800, 0, 7200));
+        settings.lowBatteryPct = Math.round(U.num(obj.lowBatteryPct, 20, 5, 50));
+        settings.criticalBatteryPct = Math.min(Math.round(U.num(obj.criticalBatteryPct, 10, 3, 30)), settings.lowBatteryPct);
+        settings.criticalBatteryMins = Math.round(U.num(obj.criticalBatteryMins, 15, 5, 60));
+        settings.criticalBatteryAction = U.pickOpt(obj.criticalBatteryAction, "suspend", ["suspend", "hibernate", "poweroff", "lock", "notify"]);
+        settings.lidCloseAction = U.pickOpt(obj.lidCloseAction, "suspend", ["suspend", "lock", "ignore"]);
+        settings.powerProfileOnBattery = U.pickOpt(obj.powerProfileOnBattery, "keep", ["keep", "powersaver", "balanced", "performance"]);
+        settings.mainMonitor = U.pickStr(obj.mainMonitor, "auto");
         settings.enforceIdleOrder();
         if (obj.monitorConfigs && typeof obj.monitorConfigs === "object") {
             const clean = {};
@@ -273,16 +259,6 @@ Singleton {
         const desc = name + " -> " + res + " x" + scale + (pos !== "auto" ? " " + pos : "");
         settings.applyTracked(desc, 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = false, mode = ' + HyprBridge.luaStr(res) + ', position = ' + HyprBridge.luaStr(pos) + ', scale = ' + HyprBridge.luaStr(scale) + '})', q, name);
     }
-    function monitorPosOptions(): var {
-        return ["auto", "auto-right", "auto-left", "auto-up", "auto-down"];
-    }
-    function liveModeStr(live: var): string {
-        if (!live || typeof live.width !== "number" || typeof live.height !== "number")
-            return "";
-        if (typeof live.refreshRate === "number")
-            return live.width + "x" + live.height + "@" + live.refreshRate.toFixed(2) + "Hz";
-        return live.width + "x" + live.height;
-    }
     // Pushing an identical hl.monitor() still reconfigures the output, churning
     // Quickshell.screens. During reload incubation that churn segfaults in
     // QWindow::setScreen, so skip applies that would change nothing.
@@ -297,7 +273,7 @@ Singleton {
             return false;
         const cfg = settings.monitorCfg(name);
         if (typeof cfg.res === "string" && cfg.res !== "" && cfg.res !== "preferred") {
-            if (cfg.res !== settings.liveModeStr(live))
+            if (cfg.res !== U.liveModeStr(live))
                 return false;
         }
         if (settings.monitorPos(name) !== "auto")
@@ -306,7 +282,7 @@ Singleton {
     }
     function monitorPos(name: string): string {
         const cfg = settings.monitorCfg(name);
-        if (typeof cfg.pos === "string" && settings.monitorPosOptions().includes(cfg.pos))
+        if (typeof cfg.pos === "string" && U.monitorPosOptions().includes(cfg.pos))
             return cfg.pos;
         return "auto";
     }
@@ -363,14 +339,14 @@ Singleton {
         settings.setMonitorRes(name, modes[idx]);
     }
     function setMonitorPos(name: string, pos: string): void {
-        if (!settings.monitorPosOptions().includes(pos))
+        if (!U.monitorPosOptions().includes(pos))
             return;
         settings.putMonitorCfg(name, {pos: pos});
         settings.applyMonitor(name);
         settings.scheduleSave();
     }
     function cycleMonitorPos(name: string, dir: int): void {
-        const opts = settings.monitorPosOptions();
+        const opts = U.monitorPosOptions();
         let idx = opts.indexOf(settings.monitorPos(name));
         if (idx < 0)
             idx = 0;
@@ -394,42 +370,6 @@ Singleton {
         }
         settings.mainMonitor = next;
         settings.scheduleSave();
-    }
-    property var barByScreen: ({})
-    function registerBar(name: string, win: var): void {
-        if (typeof name !== "string" || name === "" || !win)
-            return;
-        const next = Object.assign({}, settings.barByScreen);
-        for (const k of Object.keys(next)) {
-            if (next[k] === win && k !== name)
-                delete next[k];
-        }
-        next[name] = win;
-        settings.barByScreen = next;
-    }
-    function syncBar(win: var, name: string): void {
-        settings.unregisterBar(win);
-        if (typeof name === "string" && name !== "" && win)
-            settings.registerBar(name, win);
-    }
-    function unregisterBar(win: var): void {
-        if (!win)
-            return;
-        const next = Object.assign({}, settings.barByScreen);
-        let changed = false;
-        for (const k of Object.keys(next)) {
-            if (next[k] === win) {
-                delete next[k];
-                changed = true;
-            }
-        }
-        if (changed)
-            settings.barByScreen = next;
-    }
-    function barForScreen(name: string): var {
-        if (typeof name !== "string" || name === "")
-            return null;
-        return settings.barByScreen[name] ?? null;
     }
     function mainScreen(screens, focusedName): var {
         const list = screens ?? [];

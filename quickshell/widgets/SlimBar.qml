@@ -28,9 +28,9 @@ PanelWindow {
     }
     WlrLayershell.namespace: "qs-bar"
     readonly property string slimName: slim.targetScreen?.name ?? ""
-    Component.onCompleted: Services.Settings.syncBar(slim, slim.slimName)
-    Component.onDestruction: Services.Settings.unregisterBar(slim)
-    onSlimNameChanged: Services.Settings.syncBar(slim, slim.slimName)
+    Component.onCompleted: Services.Bars.syncBar(slim, slim.slimName)
+    Component.onDestruction: Services.Bars.unregisterBar(slim)
+    onSlimNameChanged: Services.Bars.syncBar(slim, slim.slimName)
     MonitorHeader {
         screenName: slim.slimName
     }

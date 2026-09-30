@@ -128,6 +128,8 @@ Singleton {
             power.validSamples = 0;
             return;
         }
+        if (power.battery?.state === UPowerDeviceState.Unknown)
+            return;
         if (!power.discharging)
             return;
         if (power.pct > 0 || power.battery?.timeToEmpty > 60) {
@@ -175,6 +177,8 @@ Singleton {
     }
 
     function runCriticalAction(): void {
+        if (power.charging || !UPower.onBattery)
+            return;
         const action = Settings.criticalBatteryAction;
         if (action === "notify" || action === "lock") {
             if (action === "lock")

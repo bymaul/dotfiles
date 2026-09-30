@@ -19,15 +19,12 @@ BasePopup {
         pasteTimer.stop();
         root.close();
     }
-    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepSelection(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepSelection(-1) }
-    Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.confirm() }
-    Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.confirm() }
-    Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.confirm() }
-    Shortcut { sequence: "d"; enabled: root.visible; onActivated: root.deleteSelected() }
-    Shortcut { sequence: "Delete"; enabled: root.visible; onActivated: root.deleteSelected() }
+    ListNavKeys {
+        host: root
+        step: dir => root.stepSelection(dir)
+        confirm: () => root.confirm()
+        remove: () => root.deleteSelected()
+    }
     Shortcut { sequence: "Shift+D"; enabled: root.visible; onActivated: root.requestWipe() }
     Shortcut { sequence: "h"; enabled: root.visible && root.wipeConfirm; onActivated: root.wipeChoice = 0 }
     Shortcut { sequence: "l"; enabled: root.visible && root.wipeConfirm; onActivated: root.wipeChoice = 1 }

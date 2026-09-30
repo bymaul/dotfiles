@@ -11,6 +11,7 @@ import "popups"
 import "lock"
 import "screenshot"
 import "services" as Services
+
 ShellRoot {
     Bar {
         id: bar
@@ -32,68 +33,16 @@ ShellRoot {
 
     IpcHandler {
         target: "bar"
-        function closePopups(): void {
-            bar.closePopups();
-        }
-        function toggleControl(): void {
-            bar.togglePopup("control");
-        }
-        function togglePower(): void {
-            bar.togglePopup("power");
-        }
-        function toggleEmoji(): void {
-            bar.togglePopup("emoji");
-        }
-        function settings(): void {
-            bar.togglePopup("settings");
-        }
-            function settingsState(): string {
-                return JSON.stringify({monitors: Services.Settings.monitors, configs: Services.Settings.monitorConfigs, lastApply: Services.Settings.lastApplyMsg, monitorsReady: Services.Settings.monitorsReady, canDisableEdp: Services.Settings.monitors.length > 0 ? Services.Settings.canDisableMonitor(Services.Settings.monitors[0].name) : null});
-            }
-        function panelStep(dir: int): void {
-            bar.panelStep(dir);
-        }
-        function panelActivate(): void {
-            bar.panelActivate();
-        }
-        function lock(): void {
-            bar.lockScreen();
-        }
-        function powerKey(): void {
-            bar.handlePowerKey();
-        }
-        function screenshot(mode: string): void {
-            bar.screenshot(mode);
-        }
+        function closePopups(): void { bar.closePopups(); }
+        function toggle(name: string): void { bar.togglePopup(name); }
+        function lock(): void { bar.lockScreen(); }
+        function powerKey(): void { bar.handlePowerKey(); }
+        function screenshot(mode: string): void { bar.screenshot(mode); }
     }
 
     Variants {
         model: Quickshell.screens
-        PanelWindow {
-            required property var modelData
-            screen: modelData
-            anchors {
-                top: true
-                bottom: true
-                left: true
-                right: true
-            }
-            exclusiveZone: -1
-            color: Services.Theme.bg
-            WlrLayershell.namespace: "wallpaper"
-            WlrLayershell.layer: WlrLayer.Background
-            Image {
-                anchors.fill: parent
-                source: Services.Wallpaper.source
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                cache: true
-                smooth: true
-                mipmap: true
-                sourceSize.width: modelData?.width ?? 0
-                sourceSize.height: modelData?.height ?? 0
-            }
-        }
+        WallpaperWindow {}
     }
     LockContext {
         id: lockContext
