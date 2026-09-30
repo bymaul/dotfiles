@@ -119,6 +119,7 @@ local mainMod = "SUPER"
 local secondMod = "SUPER + SHIFT"
 
 hl.bind(mainMod .. " + A", hl.dsp.global("qs-bar:control"))
+hl.bind(mainMod .. " + C", hl.dsp.global("qs-bar:calendar"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + Space", hl.dsp.global("qs:launcher"))

@@ -15,6 +15,10 @@ Item {
         onPressed: { if (root.unlocked()) root.bar.togglePopup("control"); }
     }
     BarShortcut {
+        name: "calendar"; description: "Open the calendar"
+        onPressed: { if (root.unlocked()) root.bar.togglePopup("calendar"); }
+    }
+    BarShortcut {
         name: "power"; description: "Open the power menu"
         onPressed: { if (root.unlocked()) root.bar.togglePopup("power"); }
     }

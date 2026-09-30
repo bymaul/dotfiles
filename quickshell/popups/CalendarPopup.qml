@@ -9,24 +9,50 @@ BasePopup {
     implicitWidth: Services.Theme.popupWidth
     implicitHeight: 256
     property date viewDate: new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
-    Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.stepMonth(-1) }
-    Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.stepMonth(1) }
-    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.stepMonth(-1) }
-    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.stepMonth(1) }
-    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.stepMonth(-12) }
-    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.stepMonth(12) }
-    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.stepMonth(-12) }
-    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.stepMonth(12) }
+    property int selectedDay: clock.date.getDate()
+    Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.moveSelection(-1) }
+    Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.moveSelection(1) }
+    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.moveSelection(-7) }
+    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.moveSelection(7) }
+    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.moveSelection(-1) }
+    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.moveSelection(1) }
+    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.moveSelection(-7) }
+    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.moveSelection(7) }
+    Shortcut { sequence: "Shift+H"; enabled: root.visible; onActivated: root.stepMonth(-1) }
+    Shortcut { sequence: "Shift+L"; enabled: root.visible; onActivated: root.stepMonth(1) }
+    Shortcut { sequence: "Shift+K"; enabled: root.visible; onActivated: root.stepMonth(-12) }
+    Shortcut { sequence: "Shift+J"; enabled: root.visible; onActivated: root.stepMonth(12) }
+    Shortcut { sequence: "Shift+Left"; enabled: root.visible; onActivated: root.stepMonth(-1) }
+    Shortcut { sequence: "Shift+Right"; enabled: root.visible; onActivated: root.stepMonth(1) }
+    Shortcut { sequence: "Shift+Up"; enabled: root.visible; onActivated: root.stepMonth(-12) }
+    Shortcut { sequence: "Shift+Down"; enabled: root.visible; onActivated: root.stepMonth(12) }
     Shortcut { sequence: "t"; enabled: root.visible; onActivated: root.resetToToday() }
+    Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.openSelected() }
+    Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.openSelected() }
+    Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.openSelected() }
     onVisibleChanged: {
         if (visible)
             root.resetToToday();
     }
     function resetToToday(): void {
         root.viewDate = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
+        root.selectedDay = clock.date.getDate();
     }
     function stepMonth(offset: int): void {
         root.viewDate = new Date(root.viewDate.getFullYear(), root.viewDate.getMonth() + offset, 1);
+        root.clampSelection();
+    }
+    function clampSelection(): void {
+        const max = root.daysInMonth(root.viewDate.getFullYear(), root.viewDate.getMonth());
+        root.selectedDay = Math.max(1, Math.min(root.selectedDay, max));
+    }
+    function moveSelection(delta: int): void {
+        const d = new Date(root.viewDate.getFullYear(), root.viewDate.getMonth(), root.selectedDay + delta);
+        root.viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+        root.selectedDay = d.getDate();
+    }
+    function openSelected(): void {
+        root.openCalendar(root.selectedDay);
     }
     function daysInMonth(year: int, month: int): int {
         return new Date(year, month + 1, 0).getDate();
@@ -53,6 +79,12 @@ BasePopup {
         while (cells.length < 42)
             cells.push(0);
         return cells;
+    }
+    function openCalendar(day: int): void {
+        if (day <= 0) return;
+        const year = root.viewDate.getFullYear();
+        const month = root.viewDate.getMonth() + 1;
+        Qt.openUrlExternally(`https://calendar.google.com/calendar/u/0/r/day/${year}/${month}/${day}`);
     }
     PopupCard {
         Row {
@@ -132,15 +164,25 @@ BasePopup {
                 model: root.dayCells()
                 Rectangle {
                     required property var modelData
+                    readonly property bool isTodayCell: modelData > 0 && root.isToday(modelData)
+                    readonly property bool isSelectedCell: modelData > 0 && modelData === root.selectedDay
                     width: parent.width / 7
                     height: 26
-                    color: modelData > 0 && root.isToday(modelData) ? Services.Theme.accent : Services.Theme.transparent
+                    color: isSelectedCell ? Services.Theme.accent : isTodayCell ? Services.Theme.activeBg : Services.Theme.transparent
                     Text {
                         anchors.centerIn: parent
                         text: modelData === 0 ? "" : modelData
-                        color: modelData > 0 && root.isToday(modelData) ? Services.Theme.accentFg : Services.Theme.dim
+                        color: parent.isSelectedCell ? Services.Theme.accentFg : parent.isTodayCell ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: parent.modelData > 0
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: root.selectedDay = parent.modelData
+                        onClicked: root.openCalendar(parent.modelData)
                     }
                 }
             }
