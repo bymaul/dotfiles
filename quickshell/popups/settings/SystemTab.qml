@@ -103,7 +103,7 @@ Column {
     Column {
         width: parent.width
         spacing: Services.Theme.listSpacing
-        z: popup.openDropdown === popup.sysIdx(7) || popup.openDropdown === popup.sysIdx(8) ? 50 : 0
+        z: popup.openDropdown === popup.sysIdx(6) || popup.openDropdown === popup.sysIdx(7) ? 50 : 0
         SettingsRow {
             visible: Services.Asus.available
             selected: popup.tab === 1 && popup.selectedIndex === 4
@@ -157,22 +157,27 @@ Column {
                 onSliderMoved: value => Services.Settings.setCriticalBatteryPct(Math.round(value / 2) * 2)
             }
         }
-        SettingsRow {
+        DropdownRow {
             selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(6)
             onHovered: {
                 if (!popup.anyDropOpen())
                     popup.selectedIndex = popup.sysIdx(6);
             }
-            title: "Critical time"
-            titleWidth: 124
-            value: Services.Settings.criticalBatteryMins + "m"
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 5
-                maximum: 60
-                value: Services.Settings.criticalBatteryMins
-                onSliderMoved: value => Services.Settings.setCriticalBatteryMins(Math.round(value / 5) * 5)
+            title: "Critical action"
+            z: popup.openDropdown === popup.sysIdx(6) ? 100 : 0
+            options: Services.Power.criticalOptions
+            current: Services.Settings.criticalBatteryAction
+            dropOpen: popup.openDropdown === popup.sysIdx(6)
+            cursor: popup.dropCursor
+            onHeaderClicked: {
+                popup.selectedIndex = popup.sysIdx(6);
+                popup.toggleDrop(popup.sysIdx(6));
+            }
+            onOptionHovered: index => popup.dropCursor = index
+            onOptionClicked: value => {
+                popup.selectedIndex = popup.sysIdx(6);
+                popup.applyDropValue(popup.sysIdx(6), value);
+                popup.closeDrop();
             }
         }
         DropdownRow {
@@ -181,10 +186,10 @@ Column {
                 if (!popup.anyDropOpen())
                     popup.selectedIndex = popup.sysIdx(7);
             }
-            title: "Critical action"
+            title: "Lid close"
             z: popup.openDropdown === popup.sysIdx(7) ? 100 : 0
-            options: Services.Power.criticalOptions
-            current: Services.Settings.criticalBatteryAction
+            options: Services.Power.lidOptions
+            current: Services.Settings.lidCloseAction
             dropOpen: popup.openDropdown === popup.sysIdx(7)
             cursor: popup.dropCursor
             onHeaderClicked: {
@@ -195,29 +200,6 @@ Column {
             onOptionClicked: value => {
                 popup.selectedIndex = popup.sysIdx(7);
                 popup.applyDropValue(popup.sysIdx(7), value);
-                popup.closeDrop();
-            }
-        }
-        DropdownRow {
-            selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(8)
-            onHovered: {
-                if (!popup.anyDropOpen())
-                    popup.selectedIndex = popup.sysIdx(8);
-            }
-            title: "Lid close"
-            z: popup.openDropdown === popup.sysIdx(8) ? 100 : 0
-            options: Services.Power.lidOptions
-            current: Services.Settings.lidCloseAction
-            dropOpen: popup.openDropdown === popup.sysIdx(8)
-            cursor: popup.dropCursor
-            onHeaderClicked: {
-                popup.selectedIndex = popup.sysIdx(8);
-                popup.toggleDrop(popup.sysIdx(8));
-            }
-            onOptionHovered: index => popup.dropCursor = index
-            onOptionClicked: value => {
-                popup.selectedIndex = popup.sysIdx(8);
-                popup.applyDropValue(popup.sysIdx(8), value);
                 popup.closeDrop();
             }
         }
@@ -234,18 +216,42 @@ Column {
     Column {
         width: parent.width
         spacing: Services.Theme.listSpacing
-        z: popup.openDropdown === popup.sysIdx(9) || popup.openDropdown === popup.sysIdx(10) ? 50 : 0
+        z: popup.openDropdown === popup.sysIdx(8) || popup.openDropdown === popup.sysIdx(9) ? 50 : 0
+        DropdownRow {
+            selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(8)
+            onHovered: {
+                if (!popup.anyDropOpen())
+                    popup.selectedIndex = popup.sysIdx(8);
+            }
+            title: "Active profile"
+            z: popup.openDropdown === popup.sysIdx(8) ? 100 : 0
+            options: popup.dropdownOptions(popup.sysIdx(8))
+            current: popup.dropdownCurrent(popup.sysIdx(8))
+            dropEnabled: popup.dropEnabled(popup.sysIdx(8))
+            dropOpen: popup.openDropdown === popup.sysIdx(8)
+            cursor: popup.dropCursor
+            openUp: true
+            onHeaderClicked: {
+                popup.selectedIndex = popup.sysIdx(8);
+                popup.toggleDrop(popup.sysIdx(8));
+            }
+            onOptionHovered: index => popup.dropCursor = index
+            onOptionClicked: value => {
+                popup.selectedIndex = popup.sysIdx(8);
+                popup.applyDropValue(popup.sysIdx(8), value);
+                popup.closeDrop();
+            }
+        }
         DropdownRow {
             selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(9)
             onHovered: {
                 if (!popup.anyDropOpen())
                     popup.selectedIndex = popup.sysIdx(9);
             }
-            title: "Active profile"
+            title: "On battery"
             z: popup.openDropdown === popup.sysIdx(9) ? 100 : 0
-            options: popup.dropdownOptions(popup.sysIdx(9))
-            current: popup.dropdownCurrent(popup.sysIdx(9))
-            dropEnabled: popup.dropEnabled(popup.sysIdx(9))
+            options: Services.Power.profileOptions
+            current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
             dropOpen: popup.openDropdown === popup.sysIdx(9)
             cursor: popup.dropCursor
             openUp: true
@@ -257,30 +263,6 @@ Column {
             onOptionClicked: value => {
                 popup.selectedIndex = popup.sysIdx(9);
                 popup.applyDropValue(popup.sysIdx(9), value);
-                popup.closeDrop();
-            }
-        }
-        DropdownRow {
-            selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(10)
-            onHovered: {
-                if (!popup.anyDropOpen())
-                    popup.selectedIndex = popup.sysIdx(10);
-            }
-            title: "On battery"
-            z: popup.openDropdown === popup.sysIdx(10) ? 100 : 0
-            options: Services.Power.profileOptions
-            current: Services.Power.profilesAvailable ? Services.Settings.powerProfileOnBattery : "no ppd"
-            dropOpen: popup.openDropdown === popup.sysIdx(10)
-            cursor: popup.dropCursor
-            openUp: true
-            onHeaderClicked: {
-                popup.selectedIndex = popup.sysIdx(10);
-                popup.toggleDrop(popup.sysIdx(10));
-            }
-            onOptionHovered: index => popup.dropCursor = index
-            onOptionClicked: value => {
-                popup.selectedIndex = popup.sysIdx(10);
-                popup.applyDropValue(popup.sysIdx(10), value);
                 popup.closeDrop();
             }
         }

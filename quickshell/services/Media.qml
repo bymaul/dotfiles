@@ -134,42 +134,16 @@ Singleton {
         if (next)
             media.preferredPlayer = next.dbusName ?? next.identity ?? "";
     }
-    function mediaToast(target): void {
-        const player = target ?? media.activePlayer;
-        if (!player) {
-            media.osd({app: "media", summary: "No media player", body: "Nothing playing", icon: "audio-x-generic-symbolic", syncId: "media"});
-            return;
-        }
-        media.osd({app: "media", summary: player.trackTitle || player.identity || "Unknown title", body: player.trackArtist || "", icon: "audio-x-generic-symbolic", syncId: "media", hints: {playing: player.isPlaying ?? false}});
-    }
-    property var pendingToastPlayer: null
-    Timer {
-        id: mediaToastTimer
-        interval: 400
-        repeat: false
-        onTriggered: {
-            media.mediaToast(media.pendingToastPlayer);
-            media.pendingToastPlayer = null;
-        }
-    }
     function transport(fn: string, target): bool {
         const player = target ?? media.activePlayer;
-        if (!player) {
-            media.osd({app: "media", summary: "No media player", body: "Nothing to control", icon: "audio-x-generic-symbolic", syncId: "media"});
+        if (!player)
             return false;
-        }
-        if (fn === "togglePlaying" && player.canTogglePlaying === false) {
-            media.osd({app: "media", summary: player.trackTitle || player.identity || "Media", body: "Play/pause not supported", icon: "audio-x-generic-symbolic", syncId: "media"});
+        if (fn === "togglePlaying" && player.canTogglePlaying === false)
             return false;
-        }
-        if (fn === "next" && player.canGoNext === false) {
-            media.osd({app: "media", summary: player.trackTitle || player.identity || "Media", body: "No next track", icon: "audio-x-generic-symbolic", syncId: "media"});
+        if (fn === "next" && player.canGoNext === false)
             return false;
-        }
-        if (fn === "previous" && player.canGoPrevious === false) {
-            media.osd({app: "media", summary: player.trackTitle || player.identity || "Media", body: "No previous track", icon: "audio-x-generic-symbolic", syncId: "media"});
+        if (fn === "previous" && player.canGoPrevious === false)
             return false;
-        }
         if (typeof player[fn] !== "function")
             return false;
         try {
@@ -177,8 +151,6 @@ Singleton {
         } catch (_) {
             return false;
         }
-        media.pendingToastPlayer = player;
-        mediaToastTimer.restart();
         return true;
     }
     function mediaToggle(target): void {
