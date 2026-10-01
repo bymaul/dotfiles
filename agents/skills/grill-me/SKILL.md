@@ -1,5 +1,5 @@
 ---
-name: grill
+name: grill-me
 description: Rigorously stress-test the user's plan, decision, or idea through structured questioning. Use when the user explicitly asks to be grilled, challenged, or stress-tested.
 disable-model-invocation: true
 ---
