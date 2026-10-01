@@ -4,7 +4,7 @@ import Quickshell.Services.SystemTray
 import "../services" as Services
 Row {
     anchors.verticalCenter: parent.verticalCenter
-    spacing: Services.Theme.groupSpacing
+    spacing: Services.Theme.tightSpacing
     visible: trayRepeater.count > 0
     Repeater {
         id: trayRepeater

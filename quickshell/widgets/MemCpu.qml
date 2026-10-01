@@ -13,7 +13,7 @@ Item {
     Row {
         id: row
         anchors.centerIn: parent
-        spacing: Services.Theme.groupSpacing
+        spacing: Services.Theme.tightSpacing
         Text {
             text: Services.Perf.memUsed > 0 ? " " + Services.Perf.memUsed.toFixed(1) + "G" : " --G"
             color: Services.Theme.fg

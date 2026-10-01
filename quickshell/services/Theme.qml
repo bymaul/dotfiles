@@ -41,7 +41,8 @@ Singleton {
     property int osdWidth: 150
     property int osdBottomMargin: 32
     property int barHeight: 34
-    property int groupSpacing: 8
+    property int groupSpacing: 16
+    property int tightSpacing: 8
     property int barIconPadding: 0
     property int listSpacing: 4
     property int traySize: 14
