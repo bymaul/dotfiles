@@ -121,9 +121,20 @@ Singleton {
     }
 
     function setWallpaper(path: string): void {
+        if (typeof path !== "string" || path === "")
+            return;
         settings.wallpaperOverride = path;
         Wallpaper.applyOverride(path);
         settings.scheduleSave();
+    }
+    // No Auto option: an empty override (fresh install or legacy
+    // settings.json) resolves to the first scanned wallpaper.
+    function ensureWallpaper(): void {
+        if (settings.wallpaperOverride === "" && settings.wallpapers.length > 0) {
+            settings.wallpaperOverride = settings.wallpapers[0];
+            Wallpaper.applyOverride(settings.wallpaperOverride);
+            settings.scheduleSave();
+        }
     }
     property double lastWallScan: 0
     property double lastMonScan: 0
@@ -530,6 +541,7 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 settings.wallpapers = text.trim().split("\n").filter(s => s !== "");
+                settings.ensureWallpaper();
             }
         }
         onExited: exitCode => {

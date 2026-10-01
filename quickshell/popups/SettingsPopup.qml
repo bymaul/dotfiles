@@ -146,8 +146,8 @@ BasePopup {
     }
     function syncWallCursor(): void {
         root.clampSelection();
-        if (root.tab === 0 && selectedIndex >= 1 && selectedIndex <= root.wpCount)
-            generalTab.wallList.currentIndex = selectedIndex - 1;
+        if (root.tab === 0 && selectedIndex >= 0 && selectedIndex < root.wpCount)
+            generalTab.wallList.currentIndex = selectedIndex;
         else
             generalTab.wallList.currentIndex = -1;
     }
@@ -271,11 +271,11 @@ BasePopup {
     }
     function activateSelected(): void {
         if (root.tab === 0) {
-            if (selectedIndex === 0)
-                Services.Settings.setWallpaper("");
-            else if (selectedIndex <= root.wpCount)
-                Services.Settings.setWallpaper(Services.Settings.wallpapers[selectedIndex - 1] ?? "");
-            else if (selectedIndex === root.wpRows + 2)
+            if (selectedIndex >= 0 && selectedIndex < root.wpCount) {
+                const p = Services.Settings.wallpapers[selectedIndex] ?? "";
+                if (p !== "")
+                    Services.Settings.setWallpaper(p);
+            } else if (selectedIndex === root.wpRows + 2)
                 Services.Settings.setNaturalScroll(!Services.Settings.naturalScroll);
             return;
         }
@@ -499,7 +499,7 @@ BasePopup {
 
     property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
     property int wpListH: root.wpCount * Services.Theme.listRowHeight + Math.max(0, root.wpCount - 1) * Services.Theme.listSpacing
-    property int wpRows: root.wpCount + 1
+    property int wpRows: root.wpCount
     property int inputRows: 3
     property int sectionH: 18
     property int enabledCount: Services.Settings.enabledMonitors().length
@@ -513,7 +513,7 @@ BasePopup {
     property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Services.Theme.popupSpacing
 
     property int mainSelH: Services.Theme.rowHeight
-    property int wallColH: Services.Theme.listRowHeight + Services.Theme.listSpacing + root.wpListH
+    property int wallColH: root.wpListH
     property int inputColH: 3 * Services.Theme.rowHeight + 2 * Services.Theme.listSpacing
     property int sysIdleH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
     property int sysBattH: (3 + root.asusRows) * Services.Theme.rowHeight + (2 + root.asusRows) * Services.Theme.listSpacing

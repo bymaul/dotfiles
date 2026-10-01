@@ -22,42 +22,6 @@ Column {
     Column {
         width: parent.width
         spacing: Services.Theme.listSpacing
-        Rectangle {
-            width: parent.width
-            height: Services.Theme.listRowHeight
-            readonly property bool current: Services.Settings.wallpaperOverride === ""
-            readonly property bool selected: popup.tab === 0 && popup.selectedIndex === 0
-            color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : autoHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
-            border.width: (!selected && current) ? 1 : 0
-            border.color: Services.Theme.accent
-            Text {
-                anchors {
-                    fill: parent
-                    leftMargin: 10
-                    rightMargin: 10
-                }
-                verticalAlignment: Text.AlignVCenter
-                text: (parent.current ? "✓  " : "") + "Auto (default)"
-                color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : autoHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
-                elide: Text.ElideRight
-            }
-            MouseArea {
-                id: autoHover
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onContainsMouseChanged: {
-                    if (containsMouse)
-                        popup.selectedIndex = 0;
-                }
-                onClicked: {
-                    popup.selectedIndex = 0;
-                    Services.Settings.setWallpaper("");
-                }
-            }
-        }
         ListView {
             id: wallList
             width: parent.width
@@ -97,12 +61,12 @@ Column {
                     onContainsMouseChanged: {
                         if (containsMouse) {
                             wallList.currentIndex = index;
-                            popup.selectedIndex = index + 1;
+                            popup.selectedIndex = index;
                         }
                     }
                     onClicked: {
                         wallList.currentIndex = index;
-                        popup.selectedIndex = index + 1;
+                        popup.selectedIndex = index;
                         Services.Settings.setWallpaper(modelData);
                     }
                 }
