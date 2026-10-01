@@ -19,7 +19,7 @@ Grid {
             actions[i]();
     }
     Tile {
-        glyph: Networking.wifiEnabled ? (Services.Wifi.connected ? "󰤨" : "󰤭") : "󰤯"
+        glyph: Networking.wifiEnabled ? "󰤨" : "󰤭"
         label: "Wi-Fi"
         active: Networking.wifiEnabled
         selected: popup.selectedIndex === popup.firstTileIdx() + 0
