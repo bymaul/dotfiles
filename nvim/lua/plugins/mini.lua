@@ -30,6 +30,6 @@ clue.setup {
     clue.gen_clues.windows(),
     clue.gen_clues.z(),
     { mode = "n", keys = "<Leader>h", desc = "+Git Hunk" },
-    { mode = { "n", "x" }, keys = "<Leader>s", desc = "+Search" },
+    { mode = { "n" }, keys = "<Leader>s", desc = "+Search" },
   },
 }
