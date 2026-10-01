@@ -447,8 +447,22 @@ Singleton {
     function setLidCloseAction(v: string): void {
         if (!["suspend", "lock", "ignore"].includes(v))
             return;
+        if (settings.lidCloseAction === v)
+            return;
         settings.lidCloseAction = v;
         settings.scheduleSave();
+        settings.promptLidApply(v);
+    }
+    // The popup pick only lands in settings.json; logind needs its conf
+    // rewritten as root, so offer one-click install (polkit prompts).
+    function promptLidApply(v: string): void {
+        Notifs.notify({app: "settings", summary: "Lid close → " + v, body: "Click to install into logind (needs root). Reboot to take effect.", syncId: "lid-apply", timeout: 15000, actions: [{identifier: "default", text: "Apply", invoke: () => settings.applyLidSwitch(v)}]});
+    }
+    function applyLidSwitch(v: string): void {
+        if (!["suspend", "lock", "ignore"].includes(v))
+            return;
+        lidApply.command = ["sh", "-c", 'for c in "$HOME/.local/bin/qs-power-logind" "$HOME/dotfiles/bin/qs-power-logind"; do [ -x "$c" ] && exec pkexec "$c" --install "$1"; done; exit 99', "qs", v];
+        lidApply.running = true;
     }
     function setPowerProfileOnBattery(v: string): void {
         if (!["keep", "powersaver", "balanced", "performance"].includes(v))
@@ -490,6 +504,15 @@ Singleton {
             } else if (settings.saveQueued) {
                 saveTimer.restart();
             }
+        }
+    }
+    Process {
+        id: lidApply
+        onExited: exitCode => {
+            if (exitCode === 0)
+                Notifs.notify({app: "settings", summary: "Lid action installed", body: "Reboot for logind to pick it up.", syncId: "lid-apply", timeout: 8000});
+            else
+                Notifs.notify({app: "settings", summary: "Lid install cancelled/failed", body: "Run qs-power-logind --apply in a terminal.", syncId: "lid-apply", timeout: 8000});
         }
     }
     Process {

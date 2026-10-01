@@ -249,7 +249,7 @@ Column {
         height: 30
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WordWrap
-        text: "Idle rows write hypridle.conf. Lid close needs logind: bin/qs-power-logind. Power key suspends."
+        text: "Idle rows write hypridle.conf. Lid close prompts to update logind (root + reboot). Power key suspends."
         color: Services.Theme.dim
         font.family: Services.Theme.font
         font.pixelSize: Services.Theme.px10
