@@ -178,8 +178,7 @@ Singleton {
         media.brightnessFailures = 0;
         media.pendingBrightness = clamped;
         brightnessApply.restart();
-        if (!brightnessProbe.running)
-            brightnessProbe.running = true;
+        brightnessConfirm.stop();
         if (!quiet)
             media.brightnessToast();
     }
@@ -193,6 +192,16 @@ Singleton {
             const v = media.pendingBrightness;
             media.pendingBrightness = -1;
             Quickshell.execDetached(["brightnessctl", "set", v + "%"]);
+            brightnessConfirm.restart();
+        }
+    }
+    Timer {
+        id: brightnessConfirm
+        interval: 350
+        repeat: false
+        onTriggered: {
+            if (!brightnessProbe.running)
+                brightnessProbe.running = true;
         }
     }
     function brightnessUp(): void {
@@ -236,6 +245,8 @@ Singleton {
         command: ["brightnessctl", "-m"]
         stdout: StdioCollector {
             onStreamFinished: {
+                if (media.pendingBrightness >= 0)
+                    return;
                 const lines = String(text ?? "").split("\n").map(l => l.trim()).filter(l => l !== "");
                 const line = lines.find(l => l.includes(",backlight,")) ?? lines[0] ?? "";
                 const fields = line.split(",");
