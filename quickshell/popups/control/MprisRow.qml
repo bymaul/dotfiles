@@ -41,6 +41,8 @@ Rectangle {
             asynchronous: true
             cache: false
             smooth: true
+            sourceSize.width: 56
+            sourceSize.height: 56
             fillMode: Image.PreserveAspectCrop
         }
     }

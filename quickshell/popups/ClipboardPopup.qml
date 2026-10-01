@@ -52,6 +52,8 @@ BasePopup {
             root.reset();
         } else {
             root.cancelPendingCopy();
+            root.entries = [];
+            root.thumbs = {};
         }
     }
     function cancelPendingCopy(): void {
@@ -73,6 +75,8 @@ BasePopup {
         listProbe.running = true;
     }
     function parseHistory(text: string): void {
+        if (!root.visible)
+            return;
         const out = [];
         for (const line of text.split("\n")) {
             if (line.trim() === "")

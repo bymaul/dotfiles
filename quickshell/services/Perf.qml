@@ -8,6 +8,7 @@ Singleton {
     property real memUsed: 0
     property real cpuTotal: 0
     property real cpuIdle: 0
+    property bool suspended: false
     function parseStat(text: string): void {
         const line = String(text ?? "").split("\n").find(l => l.startsWith("cpu "));
         if (!line)
@@ -51,7 +52,7 @@ Singleton {
     Timer {
         id: poller
         interval: 4000
-        running: true
+        running: !perf.suspended
         repeat: true
         triggeredOnStart: true
         onTriggered: {

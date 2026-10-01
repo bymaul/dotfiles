@@ -27,27 +27,24 @@ Row {
         }
         return -99999;
     }
-    readonly property var slotIds: {
+    readonly property var _slots: {
+        const m = {};
         const ids = new Set();
         for (const ws of root.pool ?? []) {
-            if (ws && typeof ws.id === "number")
+            if (ws && typeof ws.id === "number") {
                 ids.add(ws.id);
+                m[ws.id] = ws;
+            }
         }
         if (root.activeId !== -99999)
             ids.add(root.activeId);
-        return [...ids].sort((a, b) => a - b);
+        return {ids: [...ids].sort((a, b) => a - b), byId: m};
     }
+    readonly property var slotIds: root._slots.ids
     function workspaceById(id: int): var {
         return (root.wsById ?? {})[id] ?? null;
     }
-    readonly property var wsById: {
-        const m = {};
-        for (const ws of root.pool ?? []) {
-            if (ws && typeof ws.id === "number")
-                m[ws.id] = ws;
-        }
-        return m;
-    }
+    readonly property var wsById: root._slots.byId
     function activateSlot(id: int): void {
         const target = workspaceById(id);
         if (target && typeof target.activate === "function") {

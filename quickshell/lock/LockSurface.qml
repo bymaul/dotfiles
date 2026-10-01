@@ -7,14 +7,24 @@ Item {
     id: root
     required property var context
     property var ownScreen: null
+    property bool locked: true
     readonly property string ownName: ownScreen && ownScreen.name ? String(ownScreen.name) : ""
     readonly property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
     readonly property string mainName: mainScreen && mainScreen.name ? String(mainScreen.name) : ""
     readonly property bool isMain: ownName === "" || mainName === "" || ownName === mainName
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
     readonly property bool claimsFocus: ownName !== "" && (focusedName === "" ? root.isMain : ownName === focusedName)
+    onLockedChanged: root.context.surfaceShown(root.locked)
+    Component.onCompleted: {
+        if (root.locked)
+            root.context.surfaceShown(true);
+    }
+    Component.onDestruction: {
+        if (root.locked)
+            root.context.surfaceShown(false);
+    }
     onClaimsFocusChanged: {
-        if (!root.claimsFocus)
+        if (!root.claimsFocus || !root.locked)
             return;
         if (root.isMain)
             initialFocus.restart();
@@ -42,14 +52,14 @@ Item {
             echoMode: TextInput.Password
             onTextChanged: root.context.currentText = text
             onActiveFocusChanged: {
-                if (!activeFocus && root.claimsFocus && secField.enabled && secRoot.visible)
+                if (!activeFocus && root.locked && root.claimsFocus && secField.enabled && secRoot.visible)
                     secRefocus.restart();
             }
             Keys.onReturnPressed: root.context.tryUnlock()
             Keys.onEnterPressed: root.context.tryUnlock()
             Keys.onEscapePressed: root.context.currentText = ""
             Component.onCompleted: {
-                if (root.claimsFocus)
+                if (root.claimsFocus && root.locked)
                     secInitial.restart();
             }
             Connections {
@@ -83,7 +93,7 @@ Item {
             id: secGuard
             interval: 500
             repeat: true
-            running: secRoot.visible && secField.enabled
+            running: root.locked && secRoot.visible && secField.enabled
             onTriggered: {
                 if (!root.claimsFocus || !secRoot.visible)
                     return;
@@ -93,7 +103,7 @@ Item {
             }
         }
         onVisibleChanged: {
-            if (secRoot.visible && root.claimsFocus)
+            if (secRoot.visible && root.locked && root.claimsFocus)
                 secInitial.restart();
         }
     }
@@ -107,8 +117,8 @@ Item {
         }
         Image {
             anchors.fill: parent
-            source: Services.Wallpaper.source
-            visible: Services.Wallpaper.source !== ""
+            source: root.locked && root.isMain ? Services.Wallpaper.source : ""
+            visible: source !== ""
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             cache: true
@@ -211,14 +221,14 @@ Item {
                             enabled: root.isMain && !root.context.unlockInProgress
                             onTextChanged: root.context.currentText = text
                             onActiveFocusChanged: {
-                                if (!activeFocus && root.claimsFocus && field.enabled && mainRoot.visible)
+                                if (!activeFocus && root.locked && root.claimsFocus && field.enabled && mainRoot.visible)
                                     refocusDelay.restart();
                             }
                             Keys.onReturnPressed: root.context.tryUnlock()
                             Keys.onEnterPressed: root.context.tryUnlock()
                             Keys.onEscapePressed: root.context.currentText = ""
                             Component.onCompleted: {
-                                if (root.claimsFocus)
+                                if (root.claimsFocus && root.locked)
                                     initialFocus.restart();
                             }
                             Connections {
@@ -419,7 +429,7 @@ Item {
             id: focusGuard
             interval: 500
             repeat: true
-            running: root.isMain && mainRoot.visible
+            running: root.locked && root.isMain && mainRoot.visible
             onTriggered: {
                 if (!root.claimsFocus || !mainRoot.visible)
                     return;
@@ -430,7 +440,7 @@ Item {
         }
         onVisibleChanged: {
             if (mainRoot.visible) {
-                if (root.claimsFocus)
+                if (root.locked && root.claimsFocus)
                     initialFocus.restart();
             }
         }

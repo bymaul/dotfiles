@@ -526,7 +526,7 @@ Singleton {
     }
     Process {
         id: wallpaperScan
-        command: ["sh", "-c", "for d in \"$HOME/dotfiles/wallpapers\" \"$HOME/Pictures/Wallpapers\"; do [ -d \"$d\" ] && find \"$d\" -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) 2>/dev/null; done | awk '!s[$0]++' | head -n 40 | { while IFS= read -r f; do md5sum \"$f\" 2>/dev/null; done; } | awk '{h=substr($0,1,32); p=substr($0,35); if (!s[h]++) print p}' | sort | head -n 20"]
+        command: ["sh", "-c", "for d in \"$HOME/dotfiles/wallpapers\" \"$HOME/Pictures/Wallpapers\"; do [ -d \"$d\" ] && find \"$d\" -maxdepth 1 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) 2>/dev/null; done | awk '!s[$0]++' | head -n 40 | { while IFS= read -r f; do k=$(stat -c '%d:%i:%s' \"$f\" 2>/dev/null) || k=\"0:0:0\"; echo \"$k $f\"; done; } | awk '!s[$1]++ {print substr($0,length($1)+2)}' | sort | head -n 20"]
         stdout: StdioCollector {
             onStreamFinished: {
                 settings.wallpapers = text.trim().split("\n").filter(s => s !== "");

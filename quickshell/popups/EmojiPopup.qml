@@ -76,6 +76,7 @@ BasePopup {
             focusProbe.running = true;
             root.refilter();
         } else {
+            root.entries = [];
             if (focusProbe.running)
                 focusProbe.running = false;
         }

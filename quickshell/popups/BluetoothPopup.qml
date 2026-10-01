@@ -10,7 +10,13 @@ DeviceListBase {
     implicitHeight: 36 + 36 + Services.Theme.listHeight(Services.Theme.listVisible) + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
     targetList: btList
     property var rawDevices: Bluetooth.devices?.values ?? []
+    property var _devicesCache: null
+    function snapshotDevices(): void {
+        root._devicesCache = root.sortedDevices;
+    }
     property var sortedDevices: {
+        if (!root.visible && root._devicesCache !== null)
+            return root._devicesCache;
         const devs = root.rawDevices.slice();
         function rank(d) {
             if (!d)
@@ -35,6 +41,8 @@ DeviceListBase {
         if (visible) {
             root.resetNav();
             root.autoScanOnOpen();
+        } else {
+            root.snapshotDevices();
         }
     }
     function autoScanOnOpen(): void {

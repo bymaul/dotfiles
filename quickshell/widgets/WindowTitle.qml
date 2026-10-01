@@ -11,6 +11,13 @@ Text {
         verticalCenter: parent.verticalCenter
     }
     readonly property string activeTitle: {
+        const active = Hyprland.activeToplevel;
+        if (active) {
+            const m = active.monitor;
+            const name = m && m.name ? m.name : "";
+            if (String(name) === root.screenName)
+                return active.title ?? "";
+        }
         const all = Hyprland.toplevels && Hyprland.toplevels.values ? Hyprland.toplevels.values : [];
         for (const t of all) {
             if (t && t.activated) {
@@ -19,13 +26,6 @@ Text {
                 if (String(name) === root.screenName)
                     return t.title ?? "";
             }
-        }
-        const active = Hyprland.activeToplevel;
-        if (active) {
-            const m = active.monitor;
-            const name = m && m.name ? m.name : "";
-            if (String(name) === root.screenName)
-                return active.title ?? "";
         }
         return "";
     }

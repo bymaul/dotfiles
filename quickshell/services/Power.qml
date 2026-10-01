@@ -106,7 +106,7 @@ Singleton {
     Timer {
         id: battPoll
         interval: 60000
-        running: true
+        running: power.hasBattery
         repeat: true
         onTriggered: {
             if (power.discharging)
@@ -233,7 +233,7 @@ Singleton {
     Timer {
         id: lidTimer
         interval: 30000
-        running: true
+        running: power.lidStatePath !== ""
         repeat: true
         triggeredOnStart: true
         onTriggered: {
@@ -269,7 +269,6 @@ Singleton {
                 if (p === "" || p === "missing") {
                     power.lidPresent = false;
                     power.lidStatePath = "";
-                    lidTimer.running = false;
                     return;
                 }
                 power.lidStatePath = p;
@@ -277,10 +276,8 @@ Singleton {
             }
         }
         onExited: exitCode => {
-            if (exitCode !== 0) {
+            if (exitCode !== 0)
                 power.lidPresent = false;
-                lidTimer.running = false;
-            }
         }
         Component.onCompleted: lidDiscover.running = true
     }

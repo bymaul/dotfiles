@@ -16,7 +16,14 @@ Singleton {
     readonly property bool hardwareEnabled: Networking.wifiHardwareEnabled ?? true
     readonly property bool enabled: !!Networking.wifiEnabled
     readonly property bool scanning: wifi.device ? !!wifi.device.scannerEnabled : false
+    property bool listActive: false
+    property var _networksCache: null
+    function snapshotNetworks(): void {
+        wifi._networksCache = wifi.sortedNetworks;
+    }
     readonly property var sortedNetworks: {
+        if (!wifi.listActive && wifi._networksCache !== null)
+            return wifi._networksCache;
         const nets = wifi.rawNetworks.slice();
         function rank(n) {
             if (!n)

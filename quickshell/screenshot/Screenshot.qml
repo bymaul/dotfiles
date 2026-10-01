@@ -390,6 +390,7 @@ Scope {
             anchors.fill: parent
             fillMode: Image.Stretch
             cache: false
+            asynchronous: true
             visible: picker.stillReady
         }
         // Slurp-style dim: everything around the selection is dimmed while
@@ -486,6 +487,7 @@ Scope {
                 height: picker.height
                 fillMode: Image.Stretch
                 cache: false
+                asynchronous: true
                 source: picker.stillReady ? "file://" + root.tmpFile : ""
                 onStatusChanged: {
                     if (status === Image.Ready && picker.cropArmed)

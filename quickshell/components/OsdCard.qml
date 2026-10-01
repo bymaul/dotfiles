@@ -6,12 +6,22 @@ Rectangle {
     required property var notification
     property int seq: Services.Notifs.toastSeq
     property string contentSig: ""
+    property string cheapSig: ""
     function refreshSig(): void {
         const n = card.notification;
-        const sig = n ? [n.summary ?? "", n.appIcon ?? "", n.expireTimeout ?? "", n.hints ? JSON.stringify(n.hints) : ""].join("\u0001") : "";
-        if (card.contentSig !== "" && sig !== card.contentSig)
+        const cheap = n ? [n.summary ?? "", n.appIcon ?? "", n.expireTimeout ?? "", card.valueHint].join("\u0001") : "";
+        if (cheap !== card.cheapSig) {
+            card.cheapSig = cheap;
+            if (card.contentSig !== "")
+                expiryTimer.restart();
+            card.contentSig = cheap + (n && n.hints ? JSON.stringify(n.hints) : "");
+            return;
+        }
+        const full = cheap + (n && n.hints ? JSON.stringify(n.hints) : "");
+        if (full !== card.contentSig) {
             expiryTimer.restart();
-        card.contentSig = sig;
+            card.contentSig = full;
+        }
     }
     onSeqChanged: card.refreshSig()
     Component.onCompleted: card.refreshSig()
@@ -84,6 +94,7 @@ Rectangle {
         id: expiryTimer
         interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Services.Theme.toastTimeout
         running: !(card.notification.resident === true)
+        repeat: false
         onTriggered: Services.Notifs.dismissToast(card.notification)
     }
     Row {

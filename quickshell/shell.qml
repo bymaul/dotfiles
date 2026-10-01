@@ -56,6 +56,7 @@ ShellRoot {
                 anchors.fill: parent
                 context: lockContext
                 ownScreen: lockSurf.screen
+                locked: lockSurf.visible || sessionLock.locked
             }
         }
     }

@@ -9,6 +9,14 @@ Scope {
     property bool showFailure: false
     property string authMessage: ""
     property int failedAttempts: 0
+    property int shownSurfaces: 0
+    readonly property bool lockShown: root.shownSurfaces > 0
+    function surfaceShown(on: bool): void {
+        if (on)
+            root.shownSurfaces += 1;
+        else if (root.shownSurfaces > 0)
+            root.shownSurfaces -= 1;
+    }
     onCurrentTextChanged: {
         showFailure = false;
         authMessage = "";

@@ -39,6 +39,9 @@ BasePopup {
             search.text = "";
             filter.selMoved = false;
             root.refilter();
+        } else {
+            root.appsCache = null;
+            root.entries = [];
         }
     }
     Connections {

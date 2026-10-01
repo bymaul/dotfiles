@@ -35,7 +35,7 @@ BasePopup {
     property int selectedIndex: 0
     property int actionIndex: -1
     property int mprisCol: 1
-    property var micSource: Pipewire.defaultAudioSource
+    property var micSource: Services.Media.source
     readonly property var audioSink: Services.Media.sink
     function volumeIdx(): int {
         return Services.Media.brightnessAvailable ? 1 : 0;

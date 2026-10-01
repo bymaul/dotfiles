@@ -28,11 +28,13 @@ DeviceListBase {
             root.close();
     }
     onVisibleChanged: {
+        Services.Wifi.listActive = visible;
         if (visible) {
             root.resetNav();
             root.autoScanOnOpen();
         } else {
             root.cancelAuth();
+            Services.Wifi.snapshotNetworks();
         }
     }
     function autoScanOnOpen(): void {

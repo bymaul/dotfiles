@@ -28,9 +28,30 @@ PanelWindow {
     function syncBarReg(): void {
         Services.Bars.syncBar(bar, bar.mainName);
     }
-    Component.onCompleted: bar.syncBarReg()
+    function syncPerfSuspend(): void {
+        const req = bar.sessionLock ? bar.sessionLock.locked === true : false;
+        const shown = bar.lockContext ? bar.lockContext.lockShown === true : false;
+        Services.Perf.suspended = req || shown;
+    }
+    Component.onCompleted: {
+        bar.syncBarReg();
+        bar.syncPerfSuspend();
+    }
     Component.onDestruction: Services.Bars.unregisterBar(bar)
     onMainNameChanged: bar.syncBarReg()
+
+    Connections {
+        target: bar.sessionLock
+        function onLockedChanged(): void {
+            bar.syncPerfSuspend();
+        }
+    }
+    Connections {
+        target: bar.lockContext
+        function onLockShownChanged(): void {
+            bar.syncPerfSuspend();
+        }
+    }
 
     implicitHeight: Services.Theme.barHeight
     exclusiveZone: implicitHeight

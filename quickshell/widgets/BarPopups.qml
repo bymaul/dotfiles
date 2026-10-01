@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import "../popups"
 import "../services" as Services
 
@@ -10,9 +11,21 @@ Item {
     readonly property alias historyPanel: historyPanel
     readonly property alias controlPanel: controlPanelPopup
 
-    readonly property var allPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, launcherPopup, clipboardPopup, emojiPopup, historyPanel]
-    readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, launcherPopup, clipboardPopup, emojiPopup]
-    readonly property var rightPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, settingsPopup, historyPanel]
+    property bool settingsRequested: false
+    property bool launcherRequested: false
+    property bool clipboardRequested: false
+    property bool emojiRequested: false
+    property string pendingOpen: ""
+    property var pendingReturnTo: null
+
+    readonly property var settingsPopup: settingsLoader.item
+    readonly property var launcherPopup: launcherLoader.item
+    readonly property var clipboardPopup: clipboardLoader.item
+    readonly property var emojiPopup: emojiLoader.item
+
+    readonly property var allPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup, historyPanel]
+    readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup]
+    readonly property var rightPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, historyPanel]
 
     property int rightPopupBottom: {
         const top = Services.Theme.popupTopGap;
@@ -39,26 +52,62 @@ Item {
         case "wifi": return wifiPopup;
         case "bluetooth": return bluetoothPopup;
         case "power": return powerPopup;
-        case "settings": return settingsPopup;
-        case "launcher": return launcherPopup;
-        case "clipboard": return clipboardPopup;
-        case "emoji": return emojiPopup;
+        case "settings": return root.settingsPopup;
+        case "launcher": return root.launcherPopup;
+        case "clipboard": return root.clipboardPopup;
+        case "emoji": return root.emojiPopup;
         default: return null;
         }
     }
+    function ensurePopup(name: string): var {
+        if (name === "settings")
+            root.settingsRequested = true;
+        else if (name === "launcher")
+            root.launcherRequested = true;
+        else if (name === "clipboard")
+            root.clipboardRequested = true;
+        else if (name === "emoji")
+            root.emojiRequested = true;
+        return root.popupByName(name);
+    }
+    function flushPending(): void {
+        if (root.pendingOpen === "")
+            return;
+        const target = root.popupByName(root.pendingOpen);
+        if (!target)
+            return;
+        const back = root.pendingReturnTo;
+        root.pendingOpen = "";
+        root.pendingReturnTo = null;
+        root.openExclusive(target, back);
+    }
     function closePopups(): void {
-        for (const p of root.exclusivePopups)
-            p.visible = false;
+        for (const p of root.exclusivePopups) {
+            if (p)
+                p.visible = false;
+        }
     }
     function togglePopup(name: string): void {
-        const target = root.popupByName(name);
-        if (target)
+        const target = root.ensurePopup(name);
+        if (target) {
+            root.pendingOpen = "";
+            root.pendingReturnTo = null;
             root.openExclusive(target);
+        } else {
+            root.pendingOpen = name;
+            root.pendingReturnTo = null;
+        }
     }
     function openFromPanel(name: string): void {
-        const target = root.popupByName(name);
-        if (target)
+        const target = root.ensurePopup(name);
+        if (target) {
+            root.pendingOpen = "";
+            root.pendingReturnTo = null;
             root.openExclusive(target, controlPanelPopup);
+        } else {
+            root.pendingOpen = name;
+            root.pendingReturnTo = controlPanelPopup;
+        }
     }
     function openExclusive(target, returnTo = null): void {
         if (!target)
@@ -132,20 +181,44 @@ Item {
         id: powerPopup
         bar: root.bar
     }
-    SettingsPopup {
-        id: settingsPopup
-        bar: root.bar
+    LazyLoader {
+        id: settingsLoader
+        active: root.settingsRequested
+        component: Component {
+            SettingsPopup {
+                bar: root.bar
+            }
+        }
+        onItemChanged: root.flushPending()
     }
-    LauncherPopup {
-        id: launcherPopup
-        bar: root.bar
+    LazyLoader {
+        id: launcherLoader
+        active: root.launcherRequested
+        component: Component {
+            LauncherPopup {
+                bar: root.bar
+            }
+        }
+        onItemChanged: root.flushPending()
     }
-    ClipboardPopup {
-        id: clipboardPopup
-        bar: root.bar
+    LazyLoader {
+        id: clipboardLoader
+        active: root.clipboardRequested
+        component: Component {
+            ClipboardPopup {
+                bar: root.bar
+            }
+        }
+        onItemChanged: root.flushPending()
     }
-    EmojiPopup {
-        id: emojiPopup
-        bar: root.bar
+    LazyLoader {
+        id: emojiLoader
+        active: root.emojiRequested
+        component: Component {
+            EmojiPopup {
+                bar: root.bar
+            }
+        }
+        onItemChanged: root.flushPending()
     }
 }
