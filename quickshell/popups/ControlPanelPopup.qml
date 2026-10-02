@@ -11,12 +11,14 @@ BasePopup {
     property var historyWindow: null
     extraGrabWindows: root.historyWindow != null ? [root.historyWindow] : []
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: (Services.Media.brightnessAvailable ? 258 : 214) + (root.mprisPlayer !== null ? Services.Theme.rowHeight + Services.Theme.popupSpacing : 0) + connectionRow.height + Services.Theme.popupSpacing
+    implicitHeight: 2 * Services.Theme.popupPadding + connectionRow.height + brightnessRow.height + volumeRow.height + mprisRow.height + tileGrid.height + hint.implicitHeight + 5 * Services.Theme.popupSpacing
     PanelNavKeys {
         host: root
         panel: root
         navActive: !(bar.historyPanel?.visible ?? false)
     }
+    Shortcut { sequence: "["; enabled: root.visible && !(bar.historyPanel?.visible ?? false); onActivated: root.stepSection(-1) }
+    Shortcut { sequence: "]"; enabled: root.visible && !(bar.historyPanel?.visible ?? false); onActivated: root.stepSection(1) }
     onVisibleChanged: {
         if (visible) {
             selectedIndex = 0;
@@ -122,6 +124,37 @@ BasePopup {
     function stepSelection(dir: int): void {
         actionIndex = -1;
         selectedIndex += dir;
+        root.clampSelection();
+        root.revealSelection();
+    }
+    function sectionBounds(): var {
+        const bounds = [0, root.firstTileIdx()];
+        if (root.clearIdx() >= 0)
+            bounds.push(root.clearIdx());
+        else if (Services.Notifs.history.length > 0)
+            bounds.push(root.firstHistIdx());
+        return bounds;
+    }
+    function stepSection(dir: int): void {
+        actionIndex = -1;
+        const bounds = root.sectionBounds();
+        let target = selectedIndex;
+        if (dir > 0) {
+            for (const b of bounds) {
+                if (b > selectedIndex) {
+                    target = b;
+                    break;
+                }
+            }
+        } else {
+            for (let i = bounds.length - 1; i >= 0; i--) {
+                if (bounds[i] < selectedIndex) {
+                    target = bounds[i];
+                    break;
+                }
+            }
+        }
+        selectedIndex = target;
         root.clampSelection();
         root.revealSelection();
     }
@@ -324,12 +357,15 @@ BasePopup {
             id: connectionRow
         }
         BrightnessRow {
+            id: brightnessRow
             popup: root
         }
         VolumeRow {
+            id: volumeRow
             popup: root
         }
         MprisRow {
+            id: mprisRow
             popup: root
         }
         TileGrid {
@@ -337,10 +373,11 @@ BasePopup {
             popup: root
         }
         HintText {
+            id: hint
             text: {
                 if (Services.Notifs.history.length === 0)
-                    return "jk move · hl adjust · ↵ select · m mute";
-                return "jk move · hl adjust · ↵ select · m mute\nTab actions · d dismiss";
+                    return "jk move · hl adjust · [] section · ↵ select · m mute";
+                return "jk move · hl adjust · [] section · ↵ select · m mute\nTab actions · d dismiss";
             }
         }
     }

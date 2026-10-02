@@ -27,6 +27,8 @@ BasePopup {
     Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.adjustSelected(1) }
     Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.tabStep(1) }
     Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.tabStep(-1) }
+    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.stepSection(-1) }
+    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.stepSection(1) }
     Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
@@ -175,6 +177,43 @@ BasePopup {
             return;
         }
         selectedIndex += dir;
+        root.clampSelection();
+        root.syncWallCursor();
+    }
+    function sectionBounds(): var {
+        if (root.tab === 0)
+            return root.wpRows > 0 ? [0, root.wpRows] : [0];
+        if (root.tab === 1)
+            return [0, 4, root.sysIdx(7)];
+        const bounds = [0];
+        for (let i = 0; i < root.monCount; i++)
+            bounds.push(root.monFirst + i * root.monRows);
+        bounds.push(root.monLastIndex());
+        return bounds;
+    }
+    function stepSection(dir: int): void {
+        if (root.anyDropOpen()) {
+            root.closeDrop();
+            return;
+        }
+        const bounds = root.sectionBounds();
+        let target = selectedIndex;
+        if (dir > 0) {
+            for (const b of bounds) {
+                if (b > selectedIndex) {
+                    target = b;
+                    break;
+                }
+            }
+        } else {
+            for (let i = bounds.length - 1; i >= 0; i--) {
+                if (bounds[i] < selectedIndex) {
+                    target = bounds[i];
+                    break;
+                }
+            }
+        }
+        selectedIndex = target;
         root.clampSelection();
         root.syncWallCursor();
     }
@@ -588,7 +627,7 @@ BasePopup {
 
         HintText {
             id: hint
-            text: "1-3 tabs · jk move · hl adjust · ↵ open/pick"
+            text: "1-3 tabs · jk move · hl adjust · [] section · ↵ open/pick"
         }
     }
 }

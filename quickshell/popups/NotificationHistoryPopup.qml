@@ -33,6 +33,8 @@ BasePopup {
         host: root
         panel: root.panel
     }
+    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.panel.stepSection(-1) }
+    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.panel.stepSection(1) }
     Timer {
         id: polishTimer
         interval: Services.Theme.focusDelay
