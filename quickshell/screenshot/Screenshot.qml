@@ -393,9 +393,6 @@ Scope {
             asynchronous: true
             visible: picker.stillReady
         }
-        // Slurp-style dim: everything around the selection is dimmed while
-        // the selected region shows the undimmed frozen frame. With no
-        // selection yet the strips cover the whole screen.
         readonly property real dimOpacity: 0.75
         Rectangle {
             x: 0

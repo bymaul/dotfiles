@@ -1,9 +1,6 @@
 import QtQuick
 import "../services" as Services
 
-// Shared notification action pills, used by toasts and history cards.
-// focusedIndex highlights one pill (-1 for none); hovered/picked carry
-// the action index and object to the owner for activation.
 Flow {
     id: root
     property var actions: []

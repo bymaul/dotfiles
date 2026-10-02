@@ -3,8 +3,6 @@ import Quickshell
 import Quickshell.Wayland
 import "../services" as Services
 
-// Slim bar for non-main monitors: per-monitor workspaces + title.
-// Full controls stay on main Bar; popups/toasts follow the focused monitor.
 PanelWindow {
     id: slim
     required property var targetScreen

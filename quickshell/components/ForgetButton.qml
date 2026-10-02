@@ -1,8 +1,6 @@
 import QtQuick
 import "../services" as Services
 
-// Shared forget/delete affordance for device rows (Wifi, Bluetooth).
-// Visibility is controlled by the caller via the built-in visible prop.
 Text {
     id: root
     required property bool selected

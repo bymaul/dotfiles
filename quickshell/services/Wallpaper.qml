@@ -9,16 +9,11 @@ Singleton {
     property bool scanDone: false
     property bool notifiedEmpty: false
 
-    // Called by Settings: explicit pick wins. Empty is legacy (pre-Auto-removal
-    // settings.json) and falls back to the first scanned wallpaper until
-    // Settings.ensureWallpaper() persists an explicit pick.
     function applyOverride(path: string): void {
         root.override = typeof path === "string" ? path : "";
         root.resolve();
     }
 
-    // Single source of truth for discovery is Settings.wallpapers, which
-    // scans ~/dotfiles/wallpapers and ~/Pictures/Wallpapers.
     function resolve(): void {
         if (root.override !== "") {
             root.notifiedEmpty = false;

@@ -326,8 +326,6 @@ Singleton {
         let next = [notification, ...notifs.toasts].slice(0, Theme.toastMax);
         if (notifs.isOsd(notification))
             next = [next[0], ...next.slice(1).filter(t => !notifs.isOsd(t))];
-        // Evicted toasts stay tracked so their history entries keep working
-        // actions; the closed handler cleans up when the sender withdraws.
         notification.qsToastId = ++notifs.toastSeq;
         notifs.toasts = next;
     }

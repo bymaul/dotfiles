@@ -2,8 +2,6 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Debounced writer for `hyprctl eval hl.config(...)` calls.
-// Pure: no dependency on Settings or any other singleton.
 Singleton {
     id: bridge
 

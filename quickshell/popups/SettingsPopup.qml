@@ -48,10 +48,6 @@ BasePopup {
     }
 
     property int selectedIndex: 0
-    // Single source of truth for open menus. null when closed, otherwise
-    // {kind: "sys", index} | {kind: "main"} | {kind: "res"|"pos", name}.
-    // The open* properties below are read-only views; write via
-    // openDrop/toggleMonDrop/toggleMonPosDrop/toggleMainDrop/closeDrop only.
     property var openMenu: null
     readonly property int openDropdown: root.openMenu && root.openMenu.kind === "sys" ? root.openMenu.index : -1
     readonly property string openMonRes: root.openMenu && root.openMenu.kind === "res" ? root.openMenu.name : ""
@@ -129,9 +125,6 @@ BasePopup {
         selectedIndex = Services.Theme.clamp(selectedIndex, 0, Math.max(0, root.itemCount() - 1));
     }
     property int lastAsusRows: 0
-    // The Asus charge-limit row appears at index 4 once asusctl is detected,
-    // pushing every row below it down one slot. Keep the highlight on the same
-    // logical row instead of the same absolute index.
     function keepSysRow(): void {
         const delta = root.asusRows - root.lastAsusRows;
         root.lastAsusRows = root.asusRows;
@@ -223,8 +216,6 @@ BasePopup {
                 Services.Asus.setChargeLimit(Services.Asus.chargeLimit + dir * 5);
                 return;
             }
-            // Idle rows 0-3 sit before the Asus charge-limit row and take no
-            // offset; rows below it shift by asusRows.
             const rel = selectedIndex >= 4 + root.asusRows ? selectedIndex - root.asusRows : selectedIndex;
             switch (rel) {
             case 0: Services.Settings.setDimTimeout(Services.Settings.dimTimeout + dir * 30); break;
@@ -538,8 +529,6 @@ BasePopup {
     property int sysIdleH: 4 * Services.Theme.rowHeight + 3 * Services.Theme.listSpacing
     property int sysBattH: (3 + root.asusRows) * Services.Theme.rowHeight + (2 + root.asusRows) * Services.Theme.listSpacing
     property int sysProfH: 2 * Services.Theme.rowHeight + Services.Theme.listSpacing
-    // Extra System-tab rows inserted above the Battery section when asusd is
-    // present. Battery/Profile row indices below shift by this offset.
     property int asusRows: Services.Asus.available ? 1 : 0
     function sysIdx(n: int): int {
         return n + root.asusRows;

@@ -1,8 +1,5 @@
 import QtQuick
 
-// A SettingsRow whose control is a Dropdown, with the header/option
-// wiring forwarded as signals. Replaces the copy-pasted
-// SettingsRow + Dropdown blocks in settings-style popups.
 SettingsRow {
     id: root
     property var options: []

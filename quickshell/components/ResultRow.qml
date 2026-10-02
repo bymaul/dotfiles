@@ -1,10 +1,6 @@
 import QtQuick
 import "../services" as Services
 
-// Shared single-line list row: selection/hover colors, hover-to-select,
-// click handling. Selected fills with accent, so callers must tint their
-// content with accentFg while selected. Inner content supplied by the
-// caller; hover state exposed as isHovered for text tinting.
 Rectangle {
     id: root
     required property bool selected

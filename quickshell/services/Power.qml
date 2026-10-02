@@ -101,8 +101,6 @@ Singleton {
 
     Component.onCompleted: power.maybeArmCharger()
 
-    // Safety net for a stuck/drifting gauge: percentage alone may never hit
-    // the critical mark while time-to-empty keeps falling.
     Timer {
         id: battPoll
         interval: 60000

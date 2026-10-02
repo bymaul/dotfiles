@@ -3,8 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Networking
 
-// Single source for wifi device state + signal-tier mapping.
-// Replaces bar.wifiDevice / bar.connectedWifi prop-drilling.
 Singleton {
     id: wifi
 

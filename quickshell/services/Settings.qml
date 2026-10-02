@@ -127,8 +127,6 @@ Singleton {
         Wallpaper.applyOverride(path);
         settings.scheduleSave();
     }
-    // No Auto option: an empty override (fresh install or legacy
-    // settings.json) resolves to the first scanned wallpaper.
     function ensureWallpaper(): void {
         if (settings.wallpaperOverride === "" && settings.wallpapers.length > 0) {
             settings.wallpaperOverride = settings.wallpapers[0];
@@ -267,9 +265,6 @@ Singleton {
         const desc = name + " -> " + res + " x" + scale + (pos !== "auto" ? " " + pos : "");
         settings.applyTracked(desc, 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = false, mode = ' + HyprBridge.luaStr(res) + ', position = ' + HyprBridge.luaStr(pos) + ', scale = ' + HyprBridge.luaStr(scale) + '})', q, name);
     }
-    // Pushing an identical hl.monitor() still reconfigures the output, churning
-    // Quickshell.screens. During reload incubation that churn segfaults in
-    // QWindow::setScreen, so skip applies that would change nothing.
     function monitorInSync(name: string, live: var): bool {
         if (!live)
             return false;
@@ -453,8 +448,6 @@ Singleton {
         settings.scheduleSave();
         settings.promptLidApply(v);
     }
-    // The popup pick only lands in settings.json; logind needs its conf
-    // rewritten as root, so offer one-click install (polkit prompts).
     function promptLidApply(v: string): void {
         Notifs.notify({app: "settings", summary: "Lid close → " + v, body: "Click to install into logind (needs root). Reboot to take effect.", syncId: "lid-apply", timeout: 15000, actions: [{identifier: "default", text: "Apply", invoke: () => settings.applyLidSwitch(v)}]});
     }

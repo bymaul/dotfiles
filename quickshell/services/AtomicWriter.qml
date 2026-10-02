@@ -2,10 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Single-flight atomic file writer with latest-wins coalescing.
-// For simple overwrite payloads (history snapshots). Append-batch
-// writers (LaunchHistory) and recompute-on-busy writers
-// (Notifs, Settings) intentionally keep their own orchestration.
 Item {
     id: root
     property bool busy: false

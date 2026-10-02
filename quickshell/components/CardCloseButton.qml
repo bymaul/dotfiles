@@ -1,7 +1,6 @@
 import QtQuick
 import "../services" as Services
 
-// Shared 20x20 dismiss ("x") button for notification cards.
 Item {
     id: root
     signal clicked()

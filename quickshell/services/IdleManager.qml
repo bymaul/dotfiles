@@ -3,8 +3,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Generates and atomically writes hypridle.conf, then restarts hypridle.
-// Pure: all inputs passed as arguments, no dependency on Settings.
 Singleton {
     id: idle
 

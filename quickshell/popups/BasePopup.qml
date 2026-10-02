@@ -9,10 +9,6 @@ PopupWindow {
     property int extraTop: 0
     property bool useGrab: true
     property bool preventClose: false
-    // Busy protocol for popups that apply async changes (e.g. monitors):
-    // call kickBusy() when a change starts and on each progress signal.
-    // While preventClose is set the grab is kept and outside clicks re-grab
-    // instead of closing; it auto-clears busyMs after the last kick.
     property int busyMs: 1500
     function kickBusy(): void {
         base.preventClose = true;
