@@ -497,8 +497,9 @@ BasePopup {
         root.commitMonRes(name, modes[Services.Theme.clamp(root.dropCursor, 0, modes.length - 1)]);
     }
 
-    property int wpCount: Math.min(Services.Settings.wallpapers.length, 4)
-    property int wpListH: root.wpCount * Services.Theme.listRowHeight + Math.max(0, root.wpCount - 1) * Services.Theme.listSpacing
+    property int wpCount: Services.Settings.wallpapers.length
+    property int wpVisible: Math.min(root.wpCount, 8)
+    property int wpListH: root.wpVisible * Services.Theme.listRowHeight + Math.max(0, root.wpVisible - 1) * Services.Theme.listSpacing
     property int wpRows: root.wpCount
     property int inputRows: 3
     property int sectionH: 18

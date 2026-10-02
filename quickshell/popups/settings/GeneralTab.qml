@@ -28,7 +28,7 @@ Column {
             height: popup.wpListH
             clip: true
             spacing: Services.Theme.listSpacing
-            model: Services.Settings.wallpapers.slice(0, 4)
+            model: Services.Settings.wallpapers
             onCountChanged: popup.syncWallCursor()
             delegate: Rectangle {
                 required property var modelData
