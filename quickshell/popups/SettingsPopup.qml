@@ -146,10 +146,12 @@ BasePopup {
     }
     function syncWallCursor(): void {
         root.clampSelection();
-        if (root.tab === 0 && selectedIndex >= 0 && selectedIndex < root.wpCount)
+        if (root.tab === 0 && selectedIndex >= 0 && selectedIndex < root.wpCount) {
             generalTab.wallList.currentIndex = selectedIndex;
-        else
+            generalTab.wallList.positionViewAtIndex(selectedIndex, GridView.Visible);
+        } else {
             generalTab.wallList.currentIndex = -1;
+        }
     }
     function stepSelection(dir: int): void {
         if (root.tab === 1 && root.openDropdown >= 0) {
@@ -166,6 +168,17 @@ BasePopup {
         }
         if (root.tab === 2 && root.openMonPos !== "") {
             root.moveCursor(SettingsUtil.monitorPosOptions(), dir);
+            return;
+        }
+        if (root.tab === 0 && selectedIndex < root.wpRows) {
+            let nxt = selectedIndex + dir * root.wpCols;
+            if (nxt < 0)
+                nxt = 0;
+            else if (nxt >= root.wpRows)
+                nxt = root.wpRows;
+            selectedIndex = nxt;
+            root.clampSelection();
+            root.syncWallCursor();
             return;
         }
         selectedIndex += dir;
@@ -186,7 +199,9 @@ BasePopup {
     function adjustSelected(dir: int): void {
         if (root.tab === 0) {
             if (selectedIndex < root.wpRows) {
-                root.stepSelection(dir);
+                selectedIndex += dir;
+                root.clampSelection();
+                root.syncWallCursor();
                 return;
             }
             switch (selectedIndex - root.wpRows) {
@@ -497,9 +512,13 @@ BasePopup {
         root.commitMonRes(name, modes[Services.Theme.clamp(root.dropCursor, 0, modes.length - 1)]);
     }
 
+    property int wpCols: 3
+    property int wpCellH: 102
+    property int wpGap: 4
     property int wpCount: Services.Settings.wallpapers.length
-    property int wpVisible: Math.min(root.wpCount, 8)
-    property int wpListH: root.wpVisible * Services.Theme.listRowHeight + Math.max(0, root.wpVisible - 1) * Services.Theme.listSpacing
+    property int wpVisible: Math.min(root.wpCount, 9)
+    property int wpRowsVisible: Math.ceil(root.wpVisible / root.wpCols)
+    property int wpListH: root.wpRowsVisible * root.wpCellH + Math.max(0, root.wpRowsVisible - 1) * root.wpGap
     property int wpRows: root.wpCount
     property int inputRows: 3
     property int sectionH: 18

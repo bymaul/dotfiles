@@ -14,7 +14,7 @@ Column {
         width: parent.width
         height: popup.sectionH
         verticalAlignment: Text.AlignVCenter
-        text: "Wallpaper"
+        text: Services.Settings.wallpapers.length > 0 ? "Wallpaper  ·  " + Services.Settings.wallpapers.length : "Wallpaper"
         color: Services.Theme.dim
         font.family: Services.Theme.font
         font.pixelSize: Services.Theme.px11
@@ -22,55 +22,99 @@ Column {
     Column {
         width: parent.width
         spacing: Services.Theme.listSpacing
-        ListView {
+        GridView {
             id: wallList
             width: parent.width
             height: popup.wpListH
+            visible: popup.wpCount > 0
             clip: true
-            spacing: Services.Theme.listSpacing
+            flow: GridView.FlowLeftToRight
+            cellWidth: Math.max(1, Math.floor(width / popup.wpCols))
+            cellHeight: popup.wpCellH
+            cacheBuffer: popup.wpCellH * 3
             model: Services.Settings.wallpapers
             onCountChanged: popup.syncWallCursor()
-            delegate: Rectangle {
+            delegate: Item {
+                id: cell
                 required property var modelData
                 required property int index
                 readonly property bool current: modelData === Services.Settings.wallpaperOverride
                 readonly property bool selected: wallList.currentIndex === index
-                width: ListView.view.width
-                height: Services.Theme.listRowHeight
-                color: selected ? Services.Theme.activeBg : current ? Services.Theme.activeBg : rowHover.containsMouse ? Services.Theme.hoverBg : Services.Theme.transparent
-                border.width: (!selected && current) ? 1 : 0
-                border.color: Services.Theme.accent
-                Text {
-                    anchors {
-                        fill: parent
-                        leftMargin: 10
-                        rightMargin: 10
-                    }
-                    verticalAlignment: Text.AlignVCenter
-                    text: (parent.current ? "✓  " : "") + String(modelData).split("/").pop()
-                    color: parent.selected ? Services.Theme.fg : parent.current ? Services.Theme.accent : rowHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px12
-                    elide: Text.ElideRight
-                }
-                MouseArea {
-                    id: rowHover
+                width: GridView.view.cellWidth
+                height: GridView.view.cellHeight
+                Rectangle {
                     anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onContainsMouseChanged: {
-                        if (containsMouse) {
-                            wallList.currentIndex = index;
-                            popup.selectedIndex = index;
+                    anchors.margins: 2
+                    color: Services.Theme.surface
+                    border.width: cell.selected ? 2 : cell.current || thumbHover.containsMouse ? 1 : 0
+                    border.color: cell.selected || cell.current ? Services.Theme.accent : Services.Theme.fg
+                    clip: true
+                    Image {
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
+                            bottom: nameLabel.top
+                            topMargin: 4
+                            leftMargin: 4
+                            rightMargin: 4
+                            bottomMargin: 4
                         }
+                        source: "file://" + cell.modelData
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        smooth: true
+                        mipmap: true
+                        sourceSize.width: 256
                     }
-                    onClicked: {
-                        wallList.currentIndex = index;
-                        popup.selectedIndex = index;
-                        Services.Settings.setWallpaper(modelData);
+                    Text {
+                        id: nameLabel
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            bottom: parent.bottom
+                            leftMargin: 6
+                            rightMargin: 6
+                            bottomMargin: 3
+                        }
+                        height: 17
+                        verticalAlignment: Text.AlignVCenter
+                        horizontalAlignment: Text.AlignHCenter
+                        text: (cell.current ? "✓ " : "") + String(cell.modelData).split("/").pop()
+                        color: cell.selected ? Services.Theme.fg : cell.current ? Services.Theme.accent : thumbHover.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px10
+                        elide: Text.ElideRight
+                    }
+                    MouseArea {
+                        id: thumbHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onContainsMouseChanged: {
+                            if (containsMouse) {
+                                wallList.currentIndex = cell.index;
+                                popup.selectedIndex = cell.index;
+                            }
+                        }
+                        onClicked: {
+                            wallList.currentIndex = cell.index;
+                            popup.selectedIndex = cell.index;
+                            Services.Settings.setWallpaper(cell.modelData);
+                        }
                     }
                 }
             }
+        }
+        Text {
+            width: parent.width
+            visible: popup.wpCount === 0
+            wrapMode: Text.WordWrap
+            text: "Add images to ~/dotfiles/wallpapers or ~/Pictures/Wallpapers"
+            color: Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
         }
     }
     Text {
