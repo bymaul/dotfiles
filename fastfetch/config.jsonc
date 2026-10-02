@@ -3,16 +3,17 @@
   "logo": {
     "type": "small",
     "padding": {
-      "right": 2
+      "right": 2,
+      "top": 1
     }
   },
   "display": {
-    "separator": " : ",
+    "separator": " ",
     "color": {
       "keys": "cyan"
     },
     "key": {
-      "type": "both"
+      "type": "icon"
     }
   },
   "modules": [
@@ -20,20 +21,15 @@
       "type": "title"
     },
     {
-      "type": "separator",
-      "string": "-"
-    },
-    {
-      "type": "os"
-    },
-    {
-      "type": "kernel"
+      "type": "os",
+      "format": "{pretty-name} {arch} ({kernel-release})"
     },
     {
       "type": "uptime"
     },
     {
-      "type": "packages"
+      "type": "packages",
+      "combined": true
     },
     {
       "type": "shell"
@@ -42,22 +38,16 @@
       "type": "terminal"
     },
     {
-      "type": "cpu"
-    },
-    {
-      "type": "gpu"
-    },
-    {
       "type": "memory"
     },
     {
-      "type": "disk"
+      "type": "disk",
+      "folders": "/"
     },
-    "break",
     {
       "type": "colors",
       "key": " ",
-      "symbol": "block"
+      "symbol": "circle"
     }
   ]
 }
