@@ -77,6 +77,10 @@ hl.config({
 		disable_hyprland_logo = true,
 	},
 
+	cursor = {
+		hide_on_key_press = true,
+	},
+
 	input = {
 		kb_layout = "us",
 		kb_variant = "",
