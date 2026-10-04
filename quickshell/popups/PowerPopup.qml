@@ -5,7 +5,7 @@ import "../services" as Services
 BasePopup {
     id: root
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: 16 + powerGrid.height + Services.Theme.popupSpacing + hint.implicitHeight
+    implicitHeight: 16 + powerGrid.height
     Shortcut { sequence: "s"; enabled: root.visible; onActivated: root.powerOff() }
     Shortcut { sequence: "r"; enabled: root.visible; onActivated: root.reboot() }
     Shortcut { sequence: "u"; enabled: root.visible; onActivated: root.suspend() }
@@ -47,16 +47,12 @@ BasePopup {
             columns: 2
             columnSpacing: Services.Theme.popupSpacing
             rowSpacing: Services.Theme.popupSpacing
-            Tile { glyph: "󰐥"; label: "Power off"; columns: 2; onClicked: root.powerOff() }
-            Tile { glyph: "󰜉"; label: "Reboot"; columns: 2; onClicked: root.reboot() }
-            Tile { glyph: "󰤄"; label: "Suspend"; columns: 2; onClicked: root.suspend() }
-            Tile { glyph: "󰋊"; label: "Hibernate"; columns: 2; onClicked: root.hibernate() }
-            Tile { glyph: "󰌾"; label: "Lock"; columns: 2; onClicked: root.lock() }
-            Tile { glyph: "󰍃"; label: "Logout"; columns: 2; onClicked: root.logout() }
-        }
-        HintText {
-            id: hint
-            text: "s power off · r reboot · u suspend\nh hibernate · l lock · e logout"
+            Tile { glyph: "󰐥"; label: "Power off [s]"; columns: 2; onClicked: root.powerOff() }
+            Tile { glyph: "󰜉"; label: "Reboot [r]"; columns: 2; onClicked: root.reboot() }
+            Tile { glyph: "󰤄"; label: "Suspend [u]"; columns: 2; onClicked: root.suspend() }
+            Tile { glyph: "󰋊"; label: "Hibernate [h]"; columns: 2; onClicked: root.hibernate() }
+            Tile { glyph: "󰌾"; label: "Lock [l]"; columns: 2; onClicked: root.lock() }
+            Tile { glyph: "󰍃"; label: "Logout [e]"; columns: 2; onClicked: root.logout() }
         }
     }
 }

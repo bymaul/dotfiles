@@ -420,7 +420,7 @@ DeviceListBase {
         }
         HintText {
             id: hint
-            text: root.authTarget === null ? "jk navigate · d forget · s scan · e on/off" : "jk buttons · Enter connect · Esc back"
+            text: root.authTarget === null ? "d forget · s scan · e on/off" : "Enter connect · Esc back"
         }
     }
 }

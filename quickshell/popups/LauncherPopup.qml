@@ -127,7 +127,7 @@ BasePopup {
             }
             if (best < 4) {
                 const appKey = "app:" + (app.id ?? name);
-                out.push({name: name, ln: String(name ?? "").toLowerCase(), key: appKey, entry: app, score: best, use: Services.LaunchHistory.countFor(appKey), last: Services.LaunchHistory.lastFor(appKey)});
+                out.push({name: name, ln: String(name ?? "").toLowerCase(), key: appKey, entry: app, icon: app.icon ?? "", score: best, use: Services.LaunchHistory.countFor(appKey), last: Services.LaunchHistory.lastFor(appKey)});
             }
         }
         root.sortScored(out);
@@ -140,13 +140,13 @@ BasePopup {
             const score = FilterUtils.matchScoreLn(b.ln ?? "", q);
             if (score < 4) {
                 seen.add(b.name);
-                out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, score: score, use: Services.LaunchHistory.countFor("bin:" + b.name), last: Services.LaunchHistory.lastFor("bin:" + b.name)});
+                out.push({name: b.name, ln: b.ln ?? "", key: "bin:" + b.name, icon: "", score: score, use: Services.LaunchHistory.countFor("bin:" + b.name), last: Services.LaunchHistory.lastFor("bin:" + b.name)});
             }
         }
         for (const c of Services.LaunchHistory.recentCmds(root.runQuery, 5)) {
             if (!seen.has(c.name)) {
                 seen.add(c.name);
-                out.push({name: c.name, ln: c.name.toLowerCase(), key: c.key, score: 1, use: c.use, last: c.last, isCmd: true});
+                out.push({name: c.name, ln: c.name.toLowerCase(), key: c.key, icon: "", score: 1, use: c.use, last: c.last, isCmd: true});
             }
         }
         root.sortScored(out);
@@ -317,13 +317,23 @@ BasePopup {
                     filter.selMoved = true;
                     root.launch();
                 }
-                Text {
+                NotificationIcon {
+                    id: rowIcon
+                    rawIcon: Services.Theme.launcherShowIcons ? (modelData.icon ?? modelData.entry?.icon ?? "") : ""
+                    iconSize: 22
                     anchors {
                         left: parent.left
-                        verticalCenter: parent.verticalCenter
                         leftMargin: 10
                     }
-                    width: parent.width - 20
+                }
+                Text {
+                    anchors {
+                        left: rowIcon.right
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        leftMargin: rowIcon.showIcon ? 10 : 0
+                        rightMargin: 10
+                    }
                     textFormat: Text.RichText
                     text: (modelData.isCmd ? "> " : "") + FilterUtils.hlName(modelData.name, root.hlQuery())
                     color: parent.selected ? Services.Theme.accentFg : parent.isHovered ? Services.Theme.fg : Services.Theme.dim
@@ -334,8 +344,8 @@ BasePopup {
             }
         }
         HintText {
-            id: hint
-            text: "Tab move · Enter launch · > command"
+          id: hint
+          text: "↹ move · ↵ launch · > command"
         }
     }
 }

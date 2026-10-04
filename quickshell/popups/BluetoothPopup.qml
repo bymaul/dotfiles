@@ -297,7 +297,7 @@ DeviceListBase {
             Text {
                 anchors.centerIn: parent
                 visible: Bluetooth.defaultAdapter && !Bluetooth.defaultAdapter.enabled
-                text: "󰂲  Bluetooth is off · press e to enable"
+                text: "󰂲 Bluetooth is off · press e to enable"
                 color: Services.Theme.dim
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px12
@@ -313,7 +313,7 @@ DeviceListBase {
         }
         HintText {
             id: hint
-            text: "jk navigate · d forget · s scan · e on/off"
+            text: "d forget · s scan · e on/off"
         }
     }
 }

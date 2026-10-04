@@ -11,7 +11,7 @@ BasePopup {
     property var historyWindow: null
     extraGrabWindows: root.historyWindow != null ? [root.historyWindow] : []
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: 2 * Services.Theme.popupPadding + connectionRow.height + brightnessRow.height + volumeRow.height + mprisRow.height + tileGrid.height + hint.implicitHeight + 5 * Services.Theme.popupSpacing
+    implicitHeight: 2 * Services.Theme.popupPadding + connectionRow.height + brightnessRow.height + volumeRow.height + mprisRow.height + tileGrid.height + 4 * Services.Theme.popupSpacing
     PanelNavKeys {
         host: root
         panel: root
@@ -371,14 +371,6 @@ BasePopup {
         TileGrid {
             id: tileGrid
             popup: root
-        }
-        HintText {
-            id: hint
-            text: {
-                if (Services.Notifs.history.length === 0)
-                    return "jk move · hl adjust · [] section · ↵ select · m mute";
-                return "jk move · hl adjust · [] section · ↵ select · m mute\nTab actions · d dismiss";
-            }
         }
     }
 }

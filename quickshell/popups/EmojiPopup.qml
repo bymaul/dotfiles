@@ -11,7 +11,7 @@ BasePopup {
     id: root
     anchorMode: "middle"
     implicitWidth: Services.Theme.settingsWidth
-    implicitHeight: 16 + Services.Theme.rowHeight + Services.Theme.popupSpacing * 2 + resultGrid.cellHeight * root.gridRows + hint.implicitHeight
+    implicitHeight: 16 + Services.Theme.rowHeight + Services.Theme.popupSpacing + resultGrid.cellHeight * root.gridRows
     readonly property int gridCols: 10
     readonly property int gridRows: 9
     function escArmed(): bool {
@@ -56,14 +56,6 @@ BasePopup {
         if (g <= 9)
             return g - 1;
         return 99;
-    }
-    function groupName(g: int): string {
-        return ["Smileys", "People", "", "Animals", "Food", "Travel", "Activities", "Objects", "Symbols", "Flags"][g] ?? "";
-    }
-    readonly property string selGroupName: {
-        const e = root.entries[resultGrid.currentIndex] ?? null;
-        const n = e ? root.groupName(e.g) : "";
-        return n !== "" ? n : "Emoji";
     }
     onVisibleChanged: {
         if (visible) {
@@ -220,6 +212,7 @@ BasePopup {
     PopupCard {
         SearchField {
             id: search
+            placeholder: "/ to search"
             catchEscape: true
             onTextChanged: filter.schedule()
             onUpPressed: root.stepSelection(-1, root.gridCols)
@@ -268,10 +261,6 @@ BasePopup {
                     font.pixelSize: 24
                 }
             }
-        }
-        HintText {
-            id: hint
-            text: root.selGroupName + " · / find · hjkl · ↵ paste · esc close"
         }
     }
 }

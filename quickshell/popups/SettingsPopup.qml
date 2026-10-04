@@ -6,7 +6,7 @@ import "settings"
 BasePopup {
     id: root
     implicitWidth: Services.Theme.settingsWidth
-    implicitHeight: Math.min(16 + tabRow.height + Services.Theme.popupSpacing + root.contentHeight() + Services.Theme.popupSpacing + hint.implicitHeight, (Screen.height ?? 800) - 60)
+    implicitHeight: Math.min(16 + tabRow.height + Services.Theme.popupSpacing + root.contentHeight(), (Screen.height ?? 800) - 60)
     property int tab: 0
     function cancelOrClose(): void {
         if (root.openMenu !== null)
@@ -623,11 +623,6 @@ BasePopup {
 
         DisplaysTab {
             popup: root
-        }
-
-        HintText {
-            id: hint
-            text: "1-3 tabs · jk move · hl adjust · [] section · ↵ open/pick"
         }
     }
 }

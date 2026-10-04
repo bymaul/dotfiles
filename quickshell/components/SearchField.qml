@@ -6,6 +6,7 @@ Rectangle {
     property alias input: field
     property bool accentBorder: false
     property bool catchEscape: false
+    property string placeholder: ""
     readonly property bool hasFocus: field.activeFocus
     signal upPressed()
     signal downPressed()
@@ -44,5 +45,19 @@ Rectangle {
             else
                 root.escapePressed();
         }
+    }
+    Text {
+        anchors {
+            fill: parent
+            leftMargin: 10
+            rightMargin: 10
+        }
+        verticalAlignment: Text.AlignVCenter
+        visible: field.text === "" && root.placeholder !== ""
+        text: root.placeholder
+        color: Services.Theme.dim
+        font.family: Services.Theme.font
+        font.pixelSize: Services.Theme.px13
+        elide: Text.ElideRight
     }
 }

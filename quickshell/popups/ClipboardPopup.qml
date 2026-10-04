@@ -323,7 +323,7 @@ BasePopup {
             id: title
             x: 10
             width: parent.width - 10
-            text: "󰅇 Paste from history"
+            text: "Clipboard"
             color: Services.Theme.fg
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px12
@@ -456,7 +456,7 @@ BasePopup {
         }
         HintText {
             id: hint
-            text: "jk move · ↵ paste · d delete · D wipe"
+            text: "d delete · D wipe"
         }
     }
 }
