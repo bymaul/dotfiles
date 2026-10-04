@@ -96,7 +96,7 @@ Rectangle {
                 tint: card.notification.urgency === NotificationUrgency.Critical ? Services.Theme.danger : "transparent"
             }
             Column {
-                width: parent.width - (cardIcon.showIcon ? cardIcon.width + 8 : 0) - (closeBox.width + 8)
+                width: parent.width - (cardIcon.showIcon ? cardIcon.width + 8 : 0)
                 spacing: 2
                 Text {
                     width: parent.width
@@ -122,11 +122,6 @@ Rectangle {
                     textFormat: Text.RichText
                     wrapMode: Text.WordWrap
                 }
-            }
-            CardCloseButton {
-                id: closeBox
-                anchors.verticalCenter: parent.verticalCenter
-                onClicked: Services.Notifs.hideToast(card.notification)
             }
         }
         ProgressBar {

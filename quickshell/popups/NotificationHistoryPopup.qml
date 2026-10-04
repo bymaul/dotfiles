@@ -118,8 +118,8 @@ BasePopup {
                     width: historyList.width
                     height: content.height + 16
                     color: selected ? Services.Theme.activeBg : cardArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.bg
-                    border.width: modelData.critical ? 1 : 0
-                    border.color: Services.Theme.danger
+                    border.width: 1
+                    border.color: modelData.critical ? Services.Theme.danger : Services.Theme.dim
                     MouseArea {
                         id: cardArea
                         anchors.fill: parent
@@ -163,16 +163,17 @@ BasePopup {
                             NotificationIcon {
                                 id: historyIcon
                                 rawIcon: historyCard.rawIcon
+                                tint: historyCard.modelData.critical ? Services.Theme.danger : "transparent"
                             }
                             Column {
-                                width: parent.width - (historyIcon.showIcon ? 32 : 0)
+                                width: parent.width - (historyIcon.showIcon ? historyIcon.width + 8 : 0)
                                 spacing: 2
                                 Row {
                                     width: parent.width
                                     spacing: 8
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: parent.width - 80
+                                        width: parent.width - 52
                                         text: modelData.summary || modelData.app || ""
                                         color: Services.Theme.fg
                                         font.family: Services.Theme.font
@@ -187,14 +188,6 @@ BasePopup {
                                         color: Services.Theme.dim
                                         font.family: Services.Theme.font
                                         font.pixelSize: Services.Theme.px10
-                                    }
-                                    CardCloseButton {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        onClicked: {
-                                            root.panel.actionIndex = -1;
-                                            Services.Notifs.dismissHistoryAt(historyCard.index);
-                                            root.panel.clampSelection();
-                                        }
                                     }
                                 }
                                 Text {
