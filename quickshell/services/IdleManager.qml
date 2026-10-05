@@ -32,14 +32,14 @@ Singleton {
         if (idle.dimTimeout > 0) {
             L.push("listener {");
             L.push("    timeout = " + idle.dimTimeout);
-            L.push("    on-timeout = [ \"$(brightnessctl g)\" -gt 2500 ] && brightnessctl -s set 3%; hyprctl hyprsunset gamma 50");
-            L.push("    on-resume = brightnessctl -r; hyprctl hyprsunset gamma 100");
+            L.push("    on-timeout = b=$(brightnessctl g 2>/dev/null) && [ \"${b:-0}\" -gt 2500 ] 2>/dev/null && brightnessctl -s set 3% >/dev/null 2>&1; hyprctl hyprsunset gamma 50");
+            L.push("    on-resume = brightnessctl -r >/dev/null 2>&1; hyprctl hyprsunset gamma 100");
             L.push("}");
             L.push("");
             L.push("listener {");
             L.push("    timeout = " + idle.dimTimeout);
-            L.push("    on-timeout = brightnessctl -sd '*:kbd_backlight' set 0");
-            L.push("    on-resume = brightnessctl -rd '*:kbd_backlight'");
+            L.push("    on-timeout = brightnessctl -sd '*:kbd_backlight' set 0 >/dev/null 2>&1 || true");
+            L.push("    on-resume = brightnessctl -rd '*:kbd_backlight' >/dev/null 2>&1 || true");
             L.push("}");
             L.push("");
         }

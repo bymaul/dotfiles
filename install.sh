@@ -24,7 +24,7 @@ usage() {
     printf '  -n, --dry-run    print actions without changing anything\n'
     printf '  --verify         check links only, exit non-zero on mismatch\n'
     printf '  --backup         move unmanaged files to $HOME/.local/share/dotfiles-backup/<date>/ instead of skipping\n'
-    printf '  --no-plugins     skip tpm clone, bat cache rebuild and hypr reload\n'
+    printf '  --no-plugins     skip mise install, tpm clone, bat cache rebuild and hypr reload\n'
     printf 'categories:\n'
     for c in desktop shell tools; do printf '  %s: %s\n' "$c" "${CATS[$c]}"; done
 }
@@ -401,6 +401,11 @@ fi
 log "linked ${count} package(s)"
 
 if [ "$NO_PLUGINS" -eq 0 ]; then
+    if wanted "mise" && command -v mise >/dev/null 2>&1; then
+        mise trust "$REPO/mise/config.toml" >/dev/null 2>&1 && log "trusted mise config" || warn "mise trust failed"
+        mise install || warn "mise install failed"
+    fi
+
     if command -v bat >/dev/null 2>&1; then
         bat cache --build >/dev/null 2>&1 && log "rebuilt bat cache"
     fi
