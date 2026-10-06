@@ -42,6 +42,9 @@ Singleton {
             return true;
         return n?.urgency === NotificationUrgency.Critical;
     }
+    function showInFullscreen(n): bool {
+        return n?.urgency === NotificationUrgency.Critical;
+    }
     function toastKey(t): var {
         return t && t.qsToastId !== undefined ? t.qsToastId : t;
     }
