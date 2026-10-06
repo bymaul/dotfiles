@@ -11,7 +11,7 @@ BasePopup {
     property var historyWindow: null
     extraGrabWindows: root.historyWindow != null ? [root.historyWindow] : []
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: 2 * Services.Theme.popupPadding + connectionRow.height + brightnessRow.height + volumeRow.height + mprisRow.height + tileGrid.height + 4 * Services.Theme.popupSpacing
+    implicitHeight: 2 * Services.Theme.popupPadding + statusRow.height + brightnessRow.height + volumeRow.height + mprisRow.height + tileGrid.height + 4 * Services.Theme.popupSpacing
     PanelNavKeys {
         host: root
         panel: root
@@ -353,8 +353,8 @@ BasePopup {
         objects: [root.micSource]
     }
     PopupCard {
-        ConnectionRow {
-            id: connectionRow
+        StatusRow {
+            id: statusRow
         }
         BrightnessRow {
             id: brightnessRow

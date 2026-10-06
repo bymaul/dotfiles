@@ -39,16 +39,64 @@ Item {
         return "No devices";
     }
 
+    readonly property bool hasBattery: Services.Power.hasBattery
+    readonly property real battLevel: Services.Power.level
+    readonly property bool battCharging: Services.Power.charging
+    readonly property int battPct: Services.Power.pct
+    readonly property string battGlyph: {
+        const p = root.battLevel * 100;
+        if (root.battCharging)
+            return "󰂄";
+        if (p >= 90)
+            return "󰁹";
+        if (p >= 70)
+            return "󰂂";
+        if (p >= 50)
+            return "󰁾";
+        if (p >= 30)
+            return "󰁼";
+        if (p >= 10)
+            return "󰁺";
+        return "󰂎";
+    }
+    readonly property string battText: root.battPct + "%"
+    readonly property int segCount: root.hasBattery ? 3 : 2
+
     readonly property real glyphW: 16
     readonly property real gap: 4
     readonly property real midGap: 12
     readonly property real sideMargins: 8
-    readonly property real sideCap: Math.max(40, (parent.width - root.sideMargins - root.glyphW * 2 - root.gap * 2 - root.midGap) / 2)
+    readonly property real sideCap: Math.max(40, (parent.width - root.sideMargins - root.glyphW * root.segCount - root.gap * root.segCount - root.midGap * (root.segCount - 1)) / root.segCount)
 
     Row {
         anchors.centerIn: parent
         width: Math.min(implicitWidth, parent.width - root.sideMargins)
         spacing: root.gap
+        Text {
+            visible: root.hasBattery
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.hasBattery ? root.glyphW : 0
+            horizontalAlignment: Text.AlignHCenter
+            text: root.battGlyph
+            color: Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px13
+        }
+        Text {
+            visible: root.hasBattery
+            anchors.verticalCenter: parent.verticalCenter
+            elide: Text.ElideRight
+            width: root.hasBattery ? Math.min(implicitWidth, root.sideCap) : 0
+            text: root.battText
+            color: Services.Theme.dim
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px11
+        }
+        Item {
+            visible: root.hasBattery
+            width: root.hasBattery ? root.midGap : 0
+            height: 1
+        }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             width: root.glyphW

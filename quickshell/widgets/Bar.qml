@@ -134,9 +134,6 @@ PanelWindow {
         SystemGroup {
             bar: bar
         }
-        BatteryIcon {
-            bar: bar
-        }
         BellIcon {
             bar: bar
         }
