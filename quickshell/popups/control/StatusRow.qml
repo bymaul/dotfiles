@@ -60,6 +60,15 @@ Item {
         return "󰂎";
     }
     readonly property string battText: root.battPct + "%"
+    readonly property color battColor: {
+        if (!root.battCharging) {
+            if (root.battPct <= Services.Settings.criticalBatteryPct)
+                return Services.Theme.danger;
+            if (root.battPct <= Services.Settings.lowBatteryPct)
+                return Services.Theme.warn;
+        }
+        return Services.Theme.dim;
+    }
     readonly property int segCount: root.hasBattery ? 3 : 2
 
     readonly property real glyphW: 16
@@ -78,7 +87,7 @@ Item {
             width: root.hasBattery ? root.glyphW : 0
             horizontalAlignment: Text.AlignHCenter
             text: root.battGlyph
-            color: Services.Theme.dim
+            color: root.battColor
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px13
         }
@@ -88,7 +97,7 @@ Item {
             elide: Text.ElideRight
             width: root.hasBattery ? Math.min(implicitWidth, root.sideCap) : 0
             text: root.battText
-            color: Services.Theme.dim
+            color: root.battColor
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px11
         }
