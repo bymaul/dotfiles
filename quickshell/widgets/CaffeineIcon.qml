@@ -6,7 +6,7 @@ BarIcon {
     visible: Services.Modes.caffeineActive
     glyph: "󰅶"
     glyphColor: Services.Theme.accent
-    tipText: "Caffeine (on)"
+    tipText: "Caffeine"
     tipAnchor: bar
     onClicked: Services.Modes.toggleCaffeine()
 }

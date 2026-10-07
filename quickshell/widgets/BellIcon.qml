@@ -9,7 +9,7 @@ BarIcon {
     readonly property bool dnd: Services.Modes.dndActive
     glyph: root.dnd ? "" : ""
     glyphColor: root.dnd ? Services.Theme.danger : root.hasUnread ? Services.Theme.accent : Services.Theme.dim
-    tipText: root.dnd ? "Do not disturb (on)" : "Notifications"
+    tipText: root.dnd ? "Do not disturb" : "Notifications"
     tipAnchor: bar
     onClicked: bar.togglePopup("control")
     implicitWidth: Math.max(bellRef.implicitWidth, slashRef.implicitWidth) + root.hPadding * 2
