@@ -9,6 +9,10 @@ BasePopup {
     implicitHeight: Math.min(16 + tabRow.height + Services.Theme.popupSpacing + root.contentHeight(), (Screen.height ?? 800) - 60)
     property int tab: 0
     function cancelOrClose(): void {
+        if (root.previewGrab) {
+            root.cancelPreviewGrab(true);
+            return;
+        }
         if (root.openMenu !== null)
             root.closeDrop();
         else
@@ -53,12 +57,44 @@ BasePopup {
     property var openMenu: null
     readonly property int openDropdown: root.openMenu && root.openMenu.kind === "sys" ? root.openMenu.index : -1
     readonly property string openMonRes: root.openMenu && root.openMenu.kind === "res" ? root.openMenu.name : ""
-    readonly property string openMonPos: root.openMenu && root.openMenu.kind === "pos" ? root.openMenu.name : ""
     readonly property bool openMainDrop: root.openMenu !== null && root.openMenu.kind === "main"
     property int dropCursor: 0
+    property bool previewGrab: false
+    property string previewGrabName: ""
+    property var previewBaseOrder: []
+    property string previewBaseAxis: "row"
+    function hoverSelect(i: int): void {
+        if (!root.anyDropOpen() && !root.previewGrab)
+            root.selectedIndex = i;
+    }
+    function cancelPreviewGrab(revert: bool): bool {
+        if (!root.previewGrab)
+            return false;
+        let kicked = false;
+        if (revert) {
+            const cur = displaysTab.previewOrder.slice();
+            const base = (root.previewBaseOrder ?? []).filter(n => cur.includes(n));
+            for (const n of cur) {
+                if (!base.includes(n))
+                    base.push(n);
+            }
+            const axis = root.previewBaseAxis || "row";
+            if (JSON.stringify(base) !== JSON.stringify(cur) || axis !== displaysTab.previewAxis) {
+                root.beginMonitorChange();
+                displaysTab.applyOrder(base, axis);
+                kicked = true;
+            }
+        }
+        root.previewGrab = false;
+        root.previewGrabName = "";
+        root.previewBaseOrder = [];
+        root.previewBaseAxis = "row";
+        return kicked;
+    }
     onTabChanged: {
         root.selectedIndex = 0;
         root.closeDrop();
+        root.cancelPreviewGrab(false);
         root.syncWallCursor();
         root.syncLastAsusRows();
         if (root.visible && root.tab === 2)
@@ -69,8 +105,6 @@ BasePopup {
     onWpCountChanged: root.syncWallCursor()
     onMonCountChanged: {
         if (root.openMonRes !== "" && Services.Settings.monitorLive(root.openMonRes) === null)
-            root.closeDrop();
-        if (root.openMonPos !== "" && Services.Settings.monitorLive(root.openMonPos) === null)
             root.closeDrop();
         root.clampSelection();
     }
@@ -86,6 +120,7 @@ BasePopup {
             root.closeDrop();
             root.syncWallCursor();
             root.syncLastAsusRows();
+            displaysTab.syncPreviewOrder();
             Services.Settings.refreshWallpapers(false);
             if (root.tab === 2)
                 Services.Settings.refreshMonitors(false);
@@ -93,6 +128,7 @@ BasePopup {
                 Services.Asus.refresh();
         } else {
             root.calmBusy();
+            root.cancelPreviewGrab(false);
             root.closeDrop();
         }
     }
@@ -149,6 +185,11 @@ BasePopup {
         }
     }
     function stepSelection(dir: int): void {
+        if (root.tab === 2 && root.previewGrab) {
+            if (displaysTab.shiftGrabbed(dir, "column"))
+                root.beginMonitorChange();
+            return;
+        }
         if (root.tab === 1 && root.openDropdown >= 0) {
             root.moveCursor(root.dropdownOptions(root.openDropdown), dir);
             return;
@@ -159,10 +200,6 @@ BasePopup {
         }
         if (root.tab === 2 && root.openMonRes !== "") {
             root.moveCursor(Services.Settings.monitorModes(root.openMonRes), dir);
-            return;
-        }
-        if (root.tab === 2 && root.openMonPos !== "") {
-            root.moveCursor(SettingsUtil.monitorPosOptions(), dir);
             return;
         }
         if (root.tab === 0 && selectedIndex < root.wpRows) {
@@ -185,13 +222,15 @@ BasePopup {
             return root.wpRows > 0 ? [0, root.wpRows] : [0];
         if (root.tab === 1)
             return [0, 4, root.sysIdx(7)];
-        const bounds = [0];
+        const bounds = [0, 1];
         for (let i = 0; i < root.monCount; i++)
             bounds.push(root.monFirst + i * root.monRows);
         bounds.push(root.monLastIndex());
         return bounds;
     }
     function stepSection(dir: int): void {
+        if (root.tab === 2 && root.previewGrab)
+            return;
         if (root.anyDropOpen()) {
             root.closeDrop();
             return;
@@ -218,6 +257,7 @@ BasePopup {
         root.syncWallCursor();
     }
     function tabStep(dir: int): void {
+        root.cancelPreviewGrab(false);
         root.closeDrop();
         const n = 3;
         root.tab = (root.tab + dir + n) % n;
@@ -280,6 +320,13 @@ BasePopup {
             root.cycleMainMonitor(dir);
             return;
         }
+        if (root.tab === 2 && root.selectedIndex === 1) {
+            if (root.previewGrab) {
+                if (displaysTab.shiftGrabbed(dir, "row"))
+                    root.beginMonitorChange();
+            }
+            return;
+        }
         if (root.tab === 2 && root.selectedIndex === root.monLastIndex())
             return;
         const name = root.monitorNameAt(selectedIndex);
@@ -290,26 +337,16 @@ BasePopup {
             root.toggleMonitorEnabled(name);
         } else if (kind === 1) {
             root.beginMonitorChange();
-            Services.Settings.setMonitorScale(name, Services.Settings.monitorScale(name) + dir * 0.05);
+            Services.Settings.cycleValidScale(name, dir);
         } else if (kind === 2) {
             if (root.openMonRes === name) {
                 if (dir < 0)
                     root.closeDrop();
                 else
-                    root.commitMonCursor();
+                    root.commitMonModeCursor();
             } else {
                 root.beginMonitorChange();
-                Services.Settings.cycleMonitorRes(name, dir);
-            }
-        } else if (kind === 3) {
-            if (root.openMonPos === name) {
-                if (dir < 0)
-                    root.closeDrop();
-                else
-                    root.commitMonPosCursor();
-            } else {
-                root.beginMonitorChange();
-                Services.Settings.cycleMonitorPos(name, dir);
+                Services.Settings.cycleMonitorResolution(name, dir);
             }
         }
         return;
@@ -343,6 +380,13 @@ BasePopup {
                 root.toggleMainDrop();
             return;
         }
+        if (root.tab === 2 && root.selectedIndex === 1) {
+            if (root.previewGrab)
+                root.cancelPreviewGrab(false);
+            else
+                displaysTab.startGrab();
+            return;
+        }
         if (root.tab === 2 && root.selectedIndex === root.monLastIndex()) {
             Services.Settings.refreshMonitors(true);
             return;
@@ -350,18 +394,14 @@ BasePopup {
         const name = root.monitorNameAt(selectedIndex);
         if (name === "")
             return;
-        if ((selectedIndex - root.monFirst) % root.monRows === 0)
+        const rowKind = (selectedIndex - root.monFirst) % root.monRows;
+        if (rowKind === 0)
             root.toggleMonitorEnabled(name);
-        else if ((selectedIndex - root.monFirst) % root.monRows === 2) {
+        else if (rowKind === 2) {
             if (root.openMonRes === name)
-                root.commitMonCursor();
+                root.commitMonModeCursor();
             else
-                root.toggleMonDrop(name);
-        } else if ((selectedIndex - root.monFirst) % root.monRows === 3) {
-            if (root.openMonPos === name)
-                root.commitMonPosCursor();
-            else
-                root.toggleMonPosDrop(name);
+                root.toggleMonModeDrop(name);
         }
     }
 
@@ -455,13 +495,13 @@ BasePopup {
         root.applyDropValue(i, opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
         root.closeDrop();
     }
-    function toggleMonDrop(name: string): void {
+    function toggleMonModeDrop(name: string): void {
         if (root.openMonRes === name) {
             root.closeDrop();
             return;
         }
-        const modes = Services.Settings.monitorModes(name);
-        let at = modes.indexOf(Services.Settings.monitorRes(name));
+        const opts = Services.Settings.monitorModes(name);
+        let at = opts.indexOf(Services.Settings.monitorRes(name));
         if (at < 0)
             at = 0;
         root.dropCursor = at;
@@ -469,32 +509,6 @@ BasePopup {
     }
     function mainOptions(): var {
         return Services.Settings.mainMonitorOptions();
-    }
-    function toggleMonPosDrop(name: string): void {
-        if (root.openMonPos === name) {
-            root.closeDrop();
-            return;
-        }
-        const opts = SettingsUtil.monitorPosOptions();
-        let at = opts.indexOf(Services.Settings.monitorPos(name));
-        if (at < 0)
-            at = 0;
-        root.dropCursor = at;
-        root.openMenu = {kind: "pos", name: name};
-    }
-    function commitMonPos(name: string, pos: string): void {
-        root.beginMonitorChange();
-        Services.Settings.setMonitorPos(name, pos);
-        root.closeDrop();
-    }
-    function commitMonPosCursor(): void {
-        const name = root.openMonPos;
-        const opts = SettingsUtil.monitorPosOptions();
-        if (name === "" || opts.length === 0) {
-            root.closeDrop();
-            return;
-        }
-        root.commitMonPos(name, opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
     }
     function toggleMainDrop(): void {
         if (root.enabledCount < 2)
@@ -527,19 +541,19 @@ BasePopup {
         Services.Settings.setMainMonitor(opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
         root.closeDrop();
     }
-    function commitMonRes(name: string, res: string): void {
+    function commitMonMode(name: string, mode: string): void {
         root.beginMonitorChange();
-        Services.Settings.setMonitorRes(name, res);
+        Services.Settings.setMonitorRes(name, mode);
         root.closeDrop();
     }
-    function commitMonCursor(): void {
+    function commitMonModeCursor(): void {
         const name = root.openMonRes;
-        const modes = Services.Settings.monitorModes(name);
-        if (name === "" || modes.length === 0) {
+        const opts = Services.Settings.monitorModes(name);
+        if (name === "" || opts.length === 0) {
             root.closeDrop();
             return;
         }
-        root.commitMonRes(name, modes[Services.Theme.clamp(root.dropCursor, 0, modes.length - 1)]);
+        root.commitMonMode(name, opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
     }
 
     property int wpCols: 3
@@ -553,14 +567,17 @@ BasePopup {
     property int inputRows: 3
     property int sectionH: 18
     property int enabledCount: Services.Settings.enabledMonitors().length
-    property int monFirst: 1
-    property int monRows: 4
+    property int monFirst: 2
+    property int monRows: 3
     property int monCardPad: 8
     property int monHeaderH: 22
-    property int monBlockH: root.monHeaderH + root.monRows * Services.Theme.rowHeight + root.monRows * Services.Theme.listSpacing + 2 * root.monCardPad
+    property int monSubH: 16
+    property int monBlockH: root.monHeaderH + root.monSubH + root.monRows * Services.Theme.rowHeight + (root.monRows + 1) * Services.Theme.listSpacing + 2 * root.monCardPad
     property int monCount: Services.Settings.monitors.length
     property int monFootH: Services.Theme.rowHeight + Services.Theme.popupSpacing + 14
     property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Services.Theme.popupSpacing
+    property int previewH: displaysTab.previewAreaH
+    property int previewHintH: 14
 
     property int mainSelH: Services.Theme.rowHeight
     property int wallColH: root.wpListH
@@ -581,7 +598,8 @@ BasePopup {
         }
         if (root.monCount === 0)
             return root.mainSelH + Services.Theme.popupSpacing + 30 + Services.Theme.popupSpacing + root.monFootH;
-        return root.mainSelH + Services.Theme.popupSpacing + root.monFullH + Services.Theme.popupSpacing + root.monFootH;
+        const preview = root.enabledCount > 1 ? root.previewH + Services.Theme.popupSpacing + root.previewHintH + Services.Theme.popupSpacing : 0;
+        return root.mainSelH + Services.Theme.popupSpacing + preview + root.monFullH + Services.Theme.popupSpacing + root.monFootH;
     }
     PopupCard {
         Row {
@@ -622,6 +640,7 @@ BasePopup {
         }
 
         DisplaysTab {
+            id: displaysTab
             popup: root
         }
     }

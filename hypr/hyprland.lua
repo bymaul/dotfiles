@@ -5,6 +5,12 @@ hl.monitor({
 	scale = "1.2",
 })
 
+pcall(function()
+	local xdg = os.getenv("XDG_DATA_HOME")
+	local base = (xdg ~= nil and xdg ~= "") and xdg or ((os.getenv("HOME") or "") .. "/.local/share")
+	dofile(base .. "/quickshell/qs-monitors.lua")
+end)
+
 local terminal = "kitty"
 local fileManager = "nemo"
 local browser = "helium-browser"
@@ -46,8 +52,8 @@ hl.config({
 		rounding = 0,
 		rounding_power = 1.0,
 
-		active_opacity = 0.96,
-		inactive_opacity = 0.94,
+		active_opacity = 0.92,
+		inactive_opacity = 0.9,
 
 		shadow = {
 			enabled = true,
@@ -75,10 +81,6 @@ hl.config({
 	misc = {
 		force_default_wallpaper = 0,
 		disable_hyprland_logo = true,
-	},
-
-	cursor = {
-		hide_on_key_press = true,
 	},
 
 	input = {
@@ -214,7 +216,6 @@ hl.layer_rule({
 hl.layer_rule({
 	name = "qs-notifications-glass",
 	match = { namespace = "qs-notifications" },
-	blur = true,
 	ignore_alpha = 0.1,
 	no_anim = true,
 })
