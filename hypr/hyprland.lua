@@ -11,7 +11,7 @@ pcall(function()
 	dofile(base .. "/quickshell/qs-monitors.lua")
 end)
 
-local terminal = "kitty"
+local terminal = "foot"
 local fileManager = "nemo"
 local browser = "helium-browser"
 
