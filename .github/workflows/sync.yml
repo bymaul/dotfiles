@@ -2,7 +2,7 @@ name: sync
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "nvim/**"
       - "starship/**"
@@ -126,9 +126,9 @@ jobs:
           git config user.name "sync[bot]"
           git config user.email "sync[bot]@users.noreply.github.com"
 
-          git fetch origin master
+          git fetch origin main
 
-          git checkout -B "$SYNC_BRANCH" origin/master
+          git checkout -B "$SYNC_BRANCH" origin/main
 
       - name: Commit and push changes
         id: commit
@@ -169,7 +169,7 @@ jobs:
           PR=$(gh pr list \
             --repo "$OTHER_REPO" \
             --head "$SYNC_BRANCH" \
-            --base master \
+            --base main \
             --state open \
             --json number \
             --jq '.[0].number')
@@ -181,7 +181,7 @@ jobs:
 
           PR=$(gh pr create \
             --repo "$OTHER_REPO" \
-            --base master \
+            --base main \
             --head "$SYNC_BRANCH" \
             --title "chore: sync shared configs from bymaul/dotfiles" \
             --body "Auto-synced shared configs from bymaul/dotfiles.")
@@ -198,7 +198,7 @@ jobs:
           PR=$(gh pr list \
             --repo "$OTHER_REPO" \
             --head "$SYNC_BRANCH" \
-            --base master \
+            --base main \
             --state open \
             --json number \
             --jq '.[0].number')
