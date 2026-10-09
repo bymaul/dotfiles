@@ -4,3 +4,6 @@
 : "${XDG_STATE_HOME:=$HOME/.local/state}"
 
 export PATH="$HOME/.opencode/bin:$HOME/.local/bin:$PATH"
+
+export EDITOR="nvim"
+export VISUAL="nvim"

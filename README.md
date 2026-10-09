@@ -14,7 +14,7 @@ sudo pacman -S --needed - < pkglist.txt
 ```
 
 - Desktop, shell, and terminal configs live here; `install.sh` symlinks them into `$HOME`.
-- Safe to re-run. Useful flags: `--dry-run`, `--verify`, `--backup`, `--remove`, `--category desktop|shell|tools`.
+- Safe to re-run. Useful flags: `--dry-run`, `--verify`, `--backup`, `--no-plugins`, `-y/--yes`, `--remove`, `--category desktop|shell|tools`.
 
 ## Notes
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh - link dotfiles into $HOME with plain symlinks. Idempotent: safe to re-run.
 #
-#   ./install.sh [--dry-run] [--verify] [--backup] [--no-plugins] [--category CAT]... [pkg...]
+#   ./install.sh [--dry-run] [--verify] [--backup] [--no-plugins] [--yes] [--category CAT]... [pkg...]
 #   ./install.sh --remove [--category CAT]... [pkg...]
 
 set -euo pipefail
@@ -12,6 +12,7 @@ DRY_RUN=0
 VERIFY=0
 BACKUP=0
 NO_PLUGINS=0
+ASSUME_YES=0
 BACKUP_DIR="${DOT_BACKUP_DIR:-$HOME/.local/share/dotfiles-backup/$(date +%Y%m%d-%H%M%S)}"
 
 log()  { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
@@ -25,6 +26,7 @@ usage() {
     printf '  --verify         check links only, exit non-zero on mismatch\n'
     printf '  --backup         move unmanaged files to $HOME/.local/share/dotfiles-backup/<date>/ instead of skipping\n'
     printf '  --no-plugins     skip mise install, tpm clone, bat cache rebuild and hypr reload\n'
+    printf '  -y, --yes        assume defaults, never prompt (e.g. .gitconfig edit)\n'
     printf 'categories:\n'
     for c in desktop shell tools; do printf '  %s: %s\n' "$c" "${CATS[$c]}"; done
 }
@@ -68,6 +70,7 @@ while (($#)); do
         --verify) VERIFY=1; DRY_RUN=1 ;;
         --backup) BACKUP=1 ;;
         --no-plugins) NO_PLUGINS=1 ;;
+        -y | --yes) ASSUME_YES=1 ;;
         -C | --category | --only)
             [ $# -ge 2 ] || { echo "error: $1 needs a category name" >&2; exit 1; }
             [[ -v CATS[$2] ]] || { echo "error: unknown category: $2" >&2; exit 1; }
@@ -364,6 +367,23 @@ link_file() {
     fi
 }
 
+prompt_gitconfig() {
+    local cfg="$REPO/.gitconfig" name email reply editor
+    [ -f "$cfg" ] || return 0
+    [ "$ASSUME_YES" -eq 0 ] || return 0
+    [ -t 0 ] || return 0
+    name=$(git config --file "$cfg" user.name 2>/dev/null || echo '(unset)')
+    email=$(git config --file "$cfg" user.email 2>/dev/null || echo '(unset)')
+    log "git identity: $name <$email> ($cfg)"
+    read -r -p "Edit .gitconfig now? [y/N] " reply || return 0
+    case "$reply" in
+        [Yy]*) ;;
+        *) return 0 ;;
+    esac
+    editor="${EDITOR:-vi}"
+    "$editor" "$cfg" || warn "editor exited non-zero, leaving .gitconfig as-is"
+}
+
 count=0
 for entry in "${PKGS[@]}"; do
     read -r mode pkg a b <<<"$entry"
@@ -399,6 +419,10 @@ if [ "$DRY_RUN" -eq 1 ]; then
 fi
 
 log "linked ${count} package(s)"
+
+if wanted "git"; then
+    prompt_gitconfig
+fi
 
 if [ "$NO_PLUGINS" -eq 0 ]; then
     if wanted "mise" && command -v mise >/dev/null 2>&1; then
