@@ -10,13 +10,12 @@ A lean Neovim 0.12+ config built on native `vim.pack` (no plugin manager).
 
 ## Installation
 
-This config lives inside [winfiles](https://github.com/bymaul/winfiles) and is
-linked into place by its installers:
+Installed via [winfiles](https://github.com/bymaul/winfiles):
 
 - Windows: `.\install.ps1` (junctions `%LOCALAPPDATA%\nvim`)
 - WSL / Linux / macOS: `winfiles/install-wsl.sh` (links `~/.config/nvim`)
 
-Want just the editor config? Link the `nvim/` directory manually:
+Standalone - link `nvim/` manually:
 
 ```sh
 # Linux / macOS
@@ -30,8 +29,7 @@ git clone https://github.com/bymaul/winfiles.git
 New-Item -ItemType Junction -Path "$env:LOCALAPPDATA\nvim" -Target "$PWD\winfiles\nvim"
 ```
 
-Plugins are installed on first launch. LSP servers and formatters are
-auto-installed via mason on startup.
+Plugins, LSP servers, and formatters auto-install on first launch.
 
 ## Structure
 
