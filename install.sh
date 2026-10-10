@@ -25,7 +25,7 @@ usage() {
     printf '  -n, --dry-run    print actions without changing anything\n'
     printf '  --verify         check links only, exit non-zero on mismatch\n'
     printf '  --backup         move unmanaged files to $HOME/.local/share/dotfiles-backup/<date>/ instead of skipping\n'
-    printf '  --no-plugins     skip mise install, tpm clone, bat cache rebuild and hypr reload\n'
+    printf '  --no-plugins     skip mise install, bat cache rebuild and hypr reload\n'
     printf '  -y, --yes        assume defaults, never prompt (e.g. .gitconfig edit)\n'
     printf 'categories:\n'
     for c in desktop shell tools; do printf '  %s: %s\n' "$c" "${CATS[$c]}"; done
@@ -433,19 +433,6 @@ if [ "$NO_PLUGINS" -eq 0 ]; then
     if command -v bat >/dev/null 2>&1; then
         bat cache --build >/dev/null 2>&1 && log "rebuilt bat cache"
     fi
-
-    # tpm bootstrap lives here; tmux.conf only sources it at runtime.
-    plugins_dir="$HOME/.config/tmux/plugins"
-    if [ ! -d "$plugins_dir/tpm" ]; then
-        git clone -q https://github.com/tmux-plugins/tpm "$plugins_dir/tpm" && log "installed tpm"
-    fi
-    conf="$HOME/.config/tmux/tmux.conf"
-    [ -f "$conf" ] && while IFS= read -r repo; do
-        name="${repo##*/}"
-        if [ ! -d "$plugins_dir/$name" ]; then
-            git clone -q "https://github.com/$repo" "$plugins_dir/$name" && log "installed $name"
-        fi
-    done < <(sed -n "s/^set -g @plugin '\([^']*\)'.*/\1/p" "$conf")
 
     if command -v hyprctl >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
         hyprctl reload >/dev/null 2>&1 && log "reloaded Hyprland"

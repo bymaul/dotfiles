@@ -9,8 +9,5 @@
 # dependencies
 node_modules/
 
-# tmux plugin clones (managed by tpm / install.sh)
-tmux/plugins/
-
 # hypr config
 hypr/qs-monitors.lua
