@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+active_session=""
+[[ -n ${TMUX:-} ]] && active_session=$(tmux display-message -p '#S' 2>/dev/null || true)
+existing_sessions=$(tmux list-sessions -F '#S' 2>/dev/null || true)
+
+selected_entry=$(
+    {
+        while read -r name; do
+            [[ -n "$name" && "$name" != "$active_session" ]] && printf '[session] %s\n' "$name"
+        done <<<"$existing_sessions"
+
+        if command -v zoxide >/dev/null; then
+            while read -r dir; do
+                [[ -z "$dir" ]] && continue
+                name="${dir##*/}"
+                name="${name//[ .:]/_}"
+                if ! grep -Fxq "$name" <<<"$existing_sessions"; then
+                    printf '%s\n' "$dir"
+                fi
+            done <<<"$(zoxide query -l 2>/dev/null || true)"
+        fi
+    } | fzf --no-sort --reverse --prompt='Session> ' --delimiter='^\[session\] ' --nth=-1
+) || exit 0
+
+[[ -z "$selected_entry" ]] && exit 0
+
+if [[ "$selected_entry" == '[session] '* ]]; then
+    session_name="${selected_entry#'[session] '}"
+else
+    [[ ! -d "$selected_entry" ]] && exit 1
+    session_name="${selected_entry##*/}"
+    session_name="${session_name//[ .:]/_}"
+    
+    if ! grep -Fxq "$session_name" <<<"$existing_sessions"; then
+        tmux new-session -d -s "$session_name" -c "$selected_entry"
+    fi
+fi
+
+if [[ -n ${TMUX:-} ]]; then
+    tmux switch-client -t "=$session_name"
+else
+    exec tmux attach-session -t "=$session_name"
+fi
