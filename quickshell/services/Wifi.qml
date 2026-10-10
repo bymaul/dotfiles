@@ -49,7 +49,35 @@ Singleton {
         return nets;
     }
     readonly property var wiredDevice: (Networking.devices?.values ?? []).find(d => d && d.type === DeviceType.Wired) ?? null
-    readonly property bool wiredConnected: wifi.wiredDevice ? !!wifi.wiredDevice.connected : false
+    readonly property bool wiredConnected: !!wifi.wiredDevice?.connected
+    readonly property bool linkUp: wifi.wiredConnected || wifi.connected !== null
+    readonly property int connectivity: Networking.connectivity ?? NetworkConnectivity.Unknown
+    readonly property bool canCheckConnectivity: Networking.canCheckConnectivity ?? false
+    readonly property bool checkActive: wifi.canCheckConnectivity && (Networking.connectivityCheckEnabled ?? false)
+    function connectivityIs(state: int): bool {
+        return wifi.checkActive && wifi.connectivity === state;
+    }
+    readonly property bool isPortal: wifi.connectivityIs(NetworkConnectivity.Portal)
+    readonly property bool isLimited: wifi.connectivityIs(NetworkConnectivity.Limited)
+    readonly property bool isNone: wifi.connectivityIs(NetworkConnectivity.None)
+    readonly property bool noInternet: wifi.linkUp && (wifi.isLimited || wifi.isNone)
+    function refreshConnectivity(): void {
+        if (!wifi.checkActive)
+            return;
+        try {
+            Networking.checkConnectivity();
+        } catch (_) {}
+    }
+    onConnectedChanged: wifi.refreshConnectivity()
+    onWiredConnectedChanged: wifi.refreshConnectivity()
+    Component.onCompleted: {
+        if (wifi.canCheckConnectivity && !Networking.connectivityCheckEnabled) {
+            try {
+                Networking.connectivityCheckEnabled = true;
+            } catch (_) {}
+        }
+        wifi.refreshConnectivity();
+    }
 
     function networkKey(n: var): string {
         if (!n)

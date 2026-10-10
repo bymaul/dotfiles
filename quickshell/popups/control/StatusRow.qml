@@ -10,14 +10,40 @@ Item {
     readonly property var wifiNet: Services.Wifi.connected
     readonly property var connectingNet: Services.Wifi.connecting
     readonly property bool isWired: Services.Wifi.wiredConnected
-    readonly property string wifiGlyph: root.isWired ? "󰈀" : wifiNet ? Services.Wifi.signalGlyph(wifiNet.signalStrength) : "󰤯"
-    readonly property string wifiText: {
+    readonly property bool noInternet: Services.Wifi.noInternet
+    readonly property bool isPortal: Services.Wifi.isPortal
+    readonly property bool isLimited: Services.Wifi.isLimited
+    readonly property bool netDegraded: root.noInternet || root.isPortal
+    readonly property color wifiColor: root.netDegraded ? Services.Theme.warn : Services.Theme.dim
+    readonly property string wifiGlyph: {
         if (root.isWired)
+            return "󰈀";
+        if (!root.wifiNet)
+            return "󰤯";
+        if (root.netDegraded)
+            return "󰤫";
+        return Services.Wifi.signalGlyph(root.wifiNet.signalStrength);
+    }
+    readonly property string wifiText: {
+        if (root.isWired) {
+            if (root.isPortal)
+                return "Portal";
+            if (root.noInternet)
+                return "No internet";
             return (Services.Wifi.wiredDevice?.name ?? "Wired");
-        if (root.wifiNet)
-            return (root.wifiNet.name || "Wi-Fi");
+        }
+        if (root.wifiNet) {
+            const name = root.wifiNet.name || "Wi-Fi";
+            if (root.isPortal)
+                return name + " • portal";
+            if (root.isLimited)
+                return name + " • limited";
+            if (root.noInternet)
+                return "No internet";
+            return name;
+        }
         if (root.connectingNet)
-            return ((root.connectingNet.name || "Wi-Fi") + "…");
+            return (root.connectingNet.name || "Wi-Fi") + "…";
         if (!Services.Wifi.enabled)
             return "Wi-Fi off";
         return "Disconnected";
@@ -111,7 +137,7 @@ Item {
             width: root.glyphW
             horizontalAlignment: Text.AlignHCenter
             text: root.wifiGlyph
-            color: Services.Theme.dim
+            color: root.wifiColor
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px13
         }
@@ -120,7 +146,7 @@ Item {
             elide: Text.ElideRight
             width: Math.min(implicitWidth, root.sideCap)
             text: root.wifiText
-            color: Services.Theme.dim
+            color: root.wifiColor
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px11
         }
