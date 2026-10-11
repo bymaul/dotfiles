@@ -92,7 +92,7 @@ Rectangle {
     }
     Timer {
         id: expiryTimer
-        interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Services.Theme.toastTimeout
+        interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : Services.Theme.osdTimeout
         running: !(card.notification.resident === true)
         repeat: false
         onTriggered: Services.Notifs.dismissToast(card.notification)

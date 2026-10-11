@@ -7,20 +7,29 @@ Rectangle {
     property int seq: Services.Notifs.toastSeq
     property string contentSig: ""
     property string cheapSig: ""
+    function syncHover(): void {
+        if (card.hovered)
+            expiryTimer.stop();
+        else
+            card.maybeRestartExpiry();
+    }
+    function maybeRestartExpiry(): void {
+        if (!card.hovered && !card.neverExpire)
+            expiryTimer.restart();
+    }
     function refreshSig(): void {
         const n = card.notification;
         const cheap = n ? [n.summary ?? "", n.body ?? "", n.appIcon ?? "", n.image ?? "", n.expireTimeout ?? "", card.valueHint].join("\u0001") : "";
         if (cheap !== card.cheapSig) {
             card.cheapSig = cheap;
-            if (card.contentSig !== "" && !cardArea.containsMouse)
-                expiryTimer.restart();
+            if (card.contentSig !== "")
+                card.maybeRestartExpiry();
             card.contentSig = cheap + (n && n.hints ? JSON.stringify(n.hints) : "");
             return;
         }
         const full = cheap + (n && n.hints ? JSON.stringify(n.hints) : "");
         if (full !== card.contentSig) {
-            if (!cardArea.containsMouse)
-                expiryTimer.restart();
+            card.maybeRestartExpiry();
             card.contentSig = full;
         }
     }
@@ -46,17 +55,20 @@ Rectangle {
     }
     readonly property var actionList: card.notification && card.notification.actions ? card.notification.actions : []
     readonly property var visibleActions: Services.Notifs.secondaryActionsOf(card.actionList)
-    readonly property bool sticky: card.notification.resident === true || (card.notification.expireTimeout ?? -1) === 0
+    readonly property bool neverExpire: {
+        card.seq;
+        return Services.Notifs.effectiveTimeout(card.notification) < 0;
+    }
+    readonly property int autoDismissMs: {
+        card.seq;
+        return Math.max(0, Services.Notifs.effectiveTimeout(card.notification));
+    }
+    readonly property bool hovered: cardArea.containsMouse || bodyHover.containsMouse || dismissArea.containsMouse
     MouseArea {
         id: cardArea
         anchors.fill: parent
         hoverEnabled: true
-        onContainsMouseChanged: {
-            if (containsMouse)
-                expiryTimer.stop();
-            else
-                expiryTimer.restart();
-        }
+        onContainsMouseChanged: card.syncHover()
         onClicked: mouse => {
             mouse.accepted = true;
             let ok = false;
@@ -65,16 +77,13 @@ Rectangle {
             } catch (_) {
                 ok = false;
             }
-            if (ok)
-                Services.Notifs.consumeToast(card.notification);
-            else
-                Services.Notifs.hideToast(card.notification);
+            Services.Notifs.finishToastAfterAction(card.notification, ok);
         }
     }
     Timer {
         id: expiryTimer
-        interval: card.notification.expireTimeout > 0 ? card.notification.expireTimeout : (card.sticky ? Services.Theme.toastStickyTimeout : Services.Theme.toastTimeout)
-        running: true
+        interval: card.autoDismissMs
+        running: !card.neverExpire
         repeat: false
         onTriggered: Services.Notifs.hideToast(card.notification)
     }
@@ -98,23 +107,69 @@ Rectangle {
             Column {
                 width: parent.width - (cardIcon.showIcon ? cardIcon.width + 8 : 0)
                 spacing: 2
-                Text {
+                Row {
                     width: parent.width
-                    text: {
-                        card.seq;
-                        return card.notification.summary;
+                    height: 20
+                    spacing: 8
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - timeText.width - dismissSlot.width - parent.spacing * 2
+                        text: {
+                            card.seq;
+                            return card.notification.summary;
+                        }
+                        color: Services.Theme.fg
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px12
+                        elide: Text.ElideRight
                     }
-                    color: Services.Theme.fg
-                    font.family: Services.Theme.font
-                    font.pixelSize: Services.Theme.px12
-                    elide: Text.ElideRight
+                    Text {
+                        id: timeText
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 44
+                        horizontalAlignment: Text.AlignRight
+                        text: {
+                            card.seq;
+                            Services.Notifs.timeTick;
+                            return Services.Notifs.timeAgo(card.notification.addedAt ?? 0);
+                        }
+                        color: Services.Theme.dim
+                        font.family: Services.Theme.font
+                        font.pixelSize: Services.Theme.px10
+                    }
+                    Item {
+                        id: dismissSlot
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 24
+                        height: 20
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.verticalCenterOffset: 1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "󰅖"
+                            color: dismissArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                            font.family: Services.Theme.font
+                            font.pixelSize: Services.Theme.px10
+                        }
+                        MouseArea {
+                            id: dismissArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: mouse => {
+                                mouse.accepted = true;
+                                Services.Notifs.hideToast(card.notification);
+                            }
+                        }
+                    }
                 }
                 Text {
+                    id: bodyText
                     width: parent.width
                     visible: text !== ""
                     text: {
                         card.seq;
-                        return card.notification.body;
+                        return Services.Notifs.richBody(card.notification.body);
                     }
                     color: Services.Theme.dim
                     font.family: Services.Theme.font
@@ -140,11 +195,16 @@ Rectangle {
                 } catch (_) {
                     ok = false;
                 }
-                if (ok)
-                    Services.Notifs.consumeToast(card.notification);
-                else
-                    Services.Notifs.hideToast(card.notification);
+                Services.Notifs.finishToastAfterAction(card.notification, ok);
             }
         }
+    }
+    MouseArea {
+        id: bodyHover
+        anchors.fill: bodyText
+        visible: bodyText.visible
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+        onContainsMouseChanged: card.syncHover()
     }
 }

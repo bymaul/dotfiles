@@ -64,6 +64,7 @@ ShellRoot {
     LockContext {
         id: lockContext
         onUnlocked: sessionLock.locked = false
+        onLockShownChanged: Services.Notifs.setSuppressed(lockContext.lockShown)
     }
     WlSessionLock {
         id: sessionLock

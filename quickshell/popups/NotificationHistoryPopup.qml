@@ -26,8 +26,11 @@ BasePopup {
         historyList.positionViewAtIndex(i, ListView.Contain);
     }
     onVisibleChanged: {
-        if (visible)
+        Services.Notifs.historyVisible = visible;
+        if (visible) {
+            Services.Notifs.markRead();
             polishTimer.restart();
+        }
     }
     PanelNavKeys {
         host: root
@@ -143,7 +146,7 @@ BasePopup {
                                 Services.Notifs.activateDefault(live);
                             } catch (_) {}
                             root.panel.actionIndex = -1;
-                            Services.Notifs.dismissHistoryAt(idx);
+                            Services.Notifs.dismissHistoryAfterAction(idx, live);
                             root.panel.clampSelection();
                             bar.closePopups();
                         }
@@ -184,7 +187,10 @@ BasePopup {
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: 44
                                         horizontalAlignment: Text.AlignRight
-                                        text: modelData.time ? Qt.formatDateTime(modelData.time, "HH:mm") : ""
+                                        text: {
+                                            Services.Notifs.timeTick;
+                                            return Services.Notifs.timeAgo(modelData.time);
+                                        }
                                         color: Services.Theme.dim
                                         font.family: Services.Theme.font
                                         font.pixelSize: Services.Theme.px10
@@ -193,7 +199,7 @@ BasePopup {
                                 Text {
                                     width: parent.width
                                     visible: (modelData.body ?? "") !== ""
-                                    text: modelData.body ?? ""
+                                    text: Services.Notifs.richBody(modelData.body)
                                     color: Services.Theme.dim
                                     font.family: Services.Theme.font
                                     font.pixelSize: Services.Theme.px12
@@ -211,7 +217,7 @@ BasePopup {
                                             Services.Notifs.activateAction(modelData.live, action);
                                         } catch (_) {}
                                         root.panel.actionIndex = -1;
-                                        Services.Notifs.dismissHistoryAt(idx);
+                                        Services.Notifs.dismissHistoryAfterAction(idx, modelData.live);
                                         root.panel.clampSelection();
                                         bar.closePopups();
                                     }

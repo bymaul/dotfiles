@@ -25,12 +25,9 @@ BasePopup {
             actionIndex = -1;
             mprisCol = 1;
             root.clampSelection();
-            Services.Notifs.suppressToasts = true;
-            Services.Notifs.shelveToasts();
-        } else {
-            Services.Notifs.suppressToasts = false;
-            Services.Notifs.flushPending();
         }
+        Services.Notifs.setSuppressed(visible);
+        Services.Notifs.markRead();
     }
     readonly property var mprisPlayer: Services.Media.activePlayer
     readonly property int playerCount: Services.Media.usableCount
@@ -293,7 +290,7 @@ BasePopup {
         try {
             Services.Notifs.activateAction(live, actions[actIdx]);
         } catch (_) {}
-        Services.Notifs.dismissHistoryAt(histItem);
+        Services.Notifs.dismissHistoryAfterAction(histItem, live);
         actionIndex = -1;
         root.clampSelection();
         bar.closePopups();
@@ -310,13 +307,19 @@ BasePopup {
         const item = Services.Notifs.history[histItem] ?? null;
         const live = item?.live ?? null;
         if (!live || (live?.actions ?? []).length === 0) {
-            root.dismissSelected();
+            if (live && live.resident === true) {
+                actionIndex = -1;
+                root.clampSelection();
+                bar.closePopups();
+            } else {
+                root.dismissSelected();
+            }
             return;
         }
         try {
             Services.Notifs.activateDefault(live);
         } catch (_) {}
-        Services.Notifs.dismissHistoryAt(histItem);
+        Services.Notifs.dismissHistoryAfterAction(histItem, live);
         actionIndex = -1;
         root.clampSelection();
         bar.closePopups();

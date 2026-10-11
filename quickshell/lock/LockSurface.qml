@@ -285,6 +285,34 @@ Item {
             wrapMode: Text.WordWrap
         }
         readonly property var lockPlayer: Services.Media.activePlayer
+        Text {
+            anchors {
+                bottom: statusRow.top
+                bottomMargin: 12
+                horizontalCenter: parent.horizontalCenter
+            }
+            visible: Services.Notifs.unread > 0
+            horizontalAlignment: Text.AlignHCenter
+            textFormat: Text.RichText
+            text: {
+                const crit = Services.Notifs.criticalUnread;
+                const norm = Services.Notifs.unread - crit;
+                const bell = "";
+                const gap = "&nbsp;&nbsp;";
+                const label = bell + gap + norm + " Notification" + (norm === 1 ? "" : "s");
+                const seg = function (color, content) {
+                    return '<font color="' + color + '">' + content + "</font>";
+                };
+                if (norm > 0 && crit > 0)
+                    return seg(Services.Theme.fg, label + "&nbsp;&middot;&nbsp;") + seg(Services.Theme.danger, crit + " Critical");
+                if (crit > 0)
+                    return seg(Services.Theme.danger, bell + gap + crit + " Critical");
+                return seg(Services.Theme.fg, label);
+            }
+            opacity: 0.85
+            font.family: Services.Theme.font
+            font.pixelSize: Services.Theme.px12
+        }
         Row {
             id: statusRow
             anchors {

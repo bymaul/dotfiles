@@ -59,7 +59,8 @@ Singleton {
     property int scanTimeout: 15000
     property int toastTimeout: 5000
     property int osdTimeout: 1500
-    property int toastStickyTimeout: 30000
+    property int lowToastTimeout: 3000
+    property int criticalToastTimeout: 30000
     property int toastMax: 5
     property int historyMax: 20
 
