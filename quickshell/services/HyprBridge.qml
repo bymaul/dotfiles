@@ -20,6 +20,8 @@ Singleton {
         bridge.evalCode(bridge.luaFor(key, value));
     }
     function evalCode(code: string): void {
+        if (typeof code !== "string" || code === "" || code.length > 2048)
+            return;
         Quickshell.execDetached(["hyprctl", "eval", code]);
     }
     Timer {
@@ -41,10 +43,13 @@ Singleton {
         return bridge.luaStr(v);
     }
     function luaStr(v: string): string {
-        return '"' + String(v ?? "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ") + '"';
+        const s = String(v ?? "").slice(0, 256).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r/g, " ").replace(/\n/g, " ").replace(/[\x00-\x1F\x7F]/g, " ");
+        return '"' + s + '"';
     }
     function luaFor(key: string, value: string): string {
-        if (!key)
+        if (!key || typeof key !== "string" || key.length > 128)
+            return "";
+        if (!/^[A-Za-z0-9_:.-]+$/.test(key))
             return "";
         const parts = key.split(":");
         let inner = bridge.luaVal(value);

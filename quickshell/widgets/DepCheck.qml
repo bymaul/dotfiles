@@ -4,7 +4,7 @@ import Quickshell.Io
 
 Process {
     id: root
-    command: ["sh", "-c", "for b in cliphist wl-copy hyprctl jq brightnessctl notify-send systemd-inhibit hypridle upower loginctl btop; do command -v \"$b\" >/dev/null || printf '%s\\n' \"$b\"; done"]
+    command: ["sh", "-c", "for b in cliphist wl-copy hyprctl jq brightnessctl notify-send systemd-inhibit hypridle upower loginctl systemctl qs btop; do command -v \"$b\" >/dev/null || printf '%s\\n' \"$b\"; done"]
     stdout: StdioCollector {
         onStreamFinished: {
             const missing = text.trim().split("\n").filter(s => s !== "");

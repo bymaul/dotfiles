@@ -15,8 +15,11 @@ Singleton {
     readonly property string historyFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
         const home = Quickshell.env("HOME") ?? "";
-        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
-        return base + "/quickshell/launch-history.jsonl";
+        if (xdg !== "")
+            return xdg + "/quickshell/launch-history.jsonl";
+        if (home !== "")
+            return home + "/.local/share/quickshell/launch-history.jsonl";
+        return "";
     }
     function lookup(key: string): var {
         return launchHistory.counts[key] ?? {c: 0, t: 0};
@@ -46,6 +49,8 @@ Singleton {
         return out.slice(0, Math.max(0, limit));
     }
     function record(key: string): void {
+        if (typeof key !== "string" || key === "" || key.length > 512)
+            return;
         const e = launchHistory.lookup(key);
         e.c += 1;
         e.t = Date.now();
@@ -59,6 +64,8 @@ Singleton {
     }
     function load(): void {
         if (launchHistory.loaded || launchHistory.loading)
+            return;
+        if (launchHistory.historyFile === "")
             return;
         launchHistory.loading = true;
         reader.running = true;
@@ -84,6 +91,8 @@ Singleton {
         launchHistory.pumpWrites();
     }
     function pumpWrites(): void {
+        if (launchHistory.historyFile === "")
+            return;
         if (writer.running || launchHistory.rewriting || launchHistory.retryQueue.length === 0)
             return;
         if (launchHistory.rewriteQueued) {
@@ -97,6 +106,8 @@ Singleton {
         writer.running = true;
     }
     function writeFull(): void {
+        if (launchHistory.historyFile === "")
+            return;
         if (writer.running || launchHistory.rewriting) {
             launchHistory.rewriteQueued = true;
             return;
@@ -124,8 +135,10 @@ Singleton {
                         continue;
                     lines += 1;
                     try {
+                        if (line.length > 2048)
+                            continue;
                         const r = JSON.parse(line);
-                        if (typeof r.k !== "string")
+                        if (typeof r.k !== "string" || r.k === "" || r.k.length > 512)
                             continue;
                         const e = counts[r.k] ?? {c: 0, t: 0};
                         const dc = (typeof r.c === "number" && isFinite(r.c)) ? Math.max(0, Math.min(100000, r.c)) : 1;

@@ -6,10 +6,20 @@ import Quickshell.Io
 import "../services" as Services
 Scope {
     id: root
-    readonly property string runtimeDir: (Quickshell.env("XDG_RUNTIME_DIR") ?? "") !== "" ? Quickshell.env("XDG_RUNTIME_DIR") : "/tmp"
+    readonly property string runtimeDir: {
+        const r = Quickshell.env("XDG_RUNTIME_DIR") ?? "";
+        if (r !== "")
+            return r;
+        const home = Quickshell.env("HOME") ?? "";
+        if (home !== "")
+            return home + "/.cache";
+        return "/tmp";
+    }
     readonly property string shotDir: {
         const home = Quickshell.env("HOME") ?? "";
-        return (home !== "" ? home : root.runtimeDir) + "/Pictures/Screenshots";
+        if (home === "")
+            return "";
+        return home + "/Pictures/Screenshots";
     }
     readonly property var targetScreen: {
         const want = Hyprland.focusedMonitor?.name ?? "";
@@ -32,7 +42,16 @@ Scope {
     function capture(mode: string): void {
         if (captureWin.visible || picker.visible || winProbe.running)
             return;
-        root.pendingMode = mode;
+        const m = typeof mode === "string" ? mode : "";
+        if (m !== "area" && m !== "window" && m !== "full" && m !== "") {
+            console.warn("quickshell: rejecting invalid screenshot mode");
+            return;
+        }
+        if (root.shotDir === "") {
+            Services.Notifs.notify({app: "screenshot", summary: "Screenshot folder unavailable", body: "HOME is not set", timeout: 5000});
+            return;
+        }
+        root.pendingMode = m === "" ? "full" : m;
         root.snapScreen = root.targetScreen;
         if (root.dirsReady)
             root.startPending();

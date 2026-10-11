@@ -34,7 +34,15 @@ BasePopup {
     property var entries: []
     property string activeAddress: ""
     property string activeClass: ""
-    readonly property string runtimeDir: (Quickshell.env("XDG_RUNTIME_DIR") ?? "") !== "" ? Quickshell.env("XDG_RUNTIME_DIR") : "/tmp"
+    readonly property string runtimeDir: {
+        const r = Quickshell.env("XDG_RUNTIME_DIR") ?? "";
+        if (r !== "")
+            return r;
+        const home = Quickshell.env("HOME") ?? "";
+        if (home !== "")
+            return home + "/.cache";
+        return "/tmp";
+    }
     property string clipTmp: root.runtimeDir + "/qs-emoji-clip-restore"
     function validAddress(addr: string): bool {
         return PasteUtils.validAddress(addr);
@@ -139,6 +147,10 @@ BasePopup {
             Services.Notifs.notify({app: "emoji", summary: "No target window", timeout: Services.Theme.osdTimeout});
             return;
         }
+        if (typeof entry.ch !== "string" || entry.ch === "" || entry.ch.length > 32)
+            return;
+        if (root.clipTmp === "" || !root.clipTmp.endsWith("/qs-emoji-clip-restore"))
+            return;
         Services.EmojiHistory.record(entry.ch);
         root.pendingEmoji = entry.ch;
         saveProbe.command = ["sh", "-c", 'f="$1"; e="$2"; cliphist list 2>/dev/null | head -n 1 | cut -f1 > "$f.maxid"; rm -f "$f" "$f.type"; if t=$(wl-paste --list-types 2>/dev/null | head -n 1) && [ -n "$t" ]; then printf "%s" "$t" > "$f.type"; wl-paste -t "$t" > "$f" 2>/dev/null || rm -f "$f" "$f.type"; fi; printf "%s" "$e" | wl-copy', "qs", root.clipTmp, entry.ch];

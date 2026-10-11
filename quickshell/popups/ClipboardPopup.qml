@@ -37,7 +37,15 @@ BasePopup {
     property string activeClass: ""
     property bool wipeConfirm: false
     property int wipeChoice: 1
-    readonly property string runtimeDir: (Quickshell.env("XDG_RUNTIME_DIR") ?? "") !== "" ? Quickshell.env("XDG_RUNTIME_DIR") : "/tmp"
+    readonly property string runtimeDir: {
+        const r = Quickshell.env("XDG_RUNTIME_DIR") ?? "";
+        if (r !== "")
+            return r;
+        const home = Quickshell.env("HOME") ?? "";
+        if (home !== "")
+            return home + "/.cache";
+        return "/tmp";
+    }
     property string thumbDir: root.runtimeDir + "/qs-cliphist-thumbs"
     property var thumbs: ({})
     property bool thumbPending: false
@@ -79,7 +87,11 @@ BasePopup {
             return;
         const out = [];
         for (const line of text.split("\n")) {
+            if (out.length >= 100)
+                break;
             if (line.trim() === "")
+                continue;
+            if (line.length > 65536)
                 continue;
             const tab = line.indexOf("\t");
             if (tab <= 0)
@@ -87,8 +99,9 @@ BasePopup {
             const id = line.slice(0, tab);
             if (!root.validId(id))
                 continue;
-            const preview = line.slice(tab + 1);
-            const isImage = preview.startsWith("[[ binary data");
+            const rawPreview = line.slice(tab + 1);
+            const isImage = rawPreview.startsWith("[[ binary data");
+            const preview = !isImage && rawPreview.length > 500 ? rawPreview.slice(0, 500) : rawPreview;
             const sizeMatch = isImage ? preview.match(/(\d+(?:\.\d+)?\s*[KMGT]?i?B)/) : null;
             const fmtMatch = isImage ? preview.match(/(?:binary data\s+(?:\d+(?:\.\d+)?\s*[KMGT]?i?B)\s+)([A-Za-z0-9.+-]+(?:\/[A-Za-z0-9.+-]+)?)/) : null;
             const dimsMatch = isImage ? preview.match(/(\d+x\d+)/) : null;
@@ -200,6 +213,8 @@ BasePopup {
         if (!wipe)
             return;
         bar.closePopups();
+        if (root.thumbDir === "" || !root.thumbDir.endsWith("/qs-cliphist-thumbs"))
+            return;
         Quickshell.execDetached(["sh", "-c", 'cliphist wipe; rm -f "$1"/*.png', "qs", root.thumbDir]);
         root.thumbs = {};
     }
@@ -302,8 +317,23 @@ BasePopup {
     Process {
         id: listProbe
         command: ["sh", "-c", "cliphist list 2>/dev/null"]
+        onRunningChanged: {
+            if (listProbe.running)
+                listTimeout.restart();
+            else
+                listTimeout.stop();
+        }
         stdout: StdioCollector {
             onStreamFinished: root.parseHistory(text)
+        }
+    }
+    Timer {
+        id: listTimeout
+        interval: 8000
+        repeat: false
+        onTriggered: {
+            if (listProbe.running)
+                listProbe.running = false;
         }
     }
     Process {

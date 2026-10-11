@@ -13,6 +13,11 @@ BasePopup {
     Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.lock() }
     Shortcut { sequence: "e"; enabled: root.visible; onActivated: root.logout() }
     function execPower(cmd: var): void {
+        if (Array.isArray(cmd) && cmd[0] === "systemctl" && !Services.Power.hasLogind) {
+            bar.closePopups();
+            Services.Notifs.notify({app: "power", summary: "Power action unavailable", body: "systemctl not found", timeout: Services.Theme.osdTimeout});
+            return;
+        }
         bar.closePopups();
         Quickshell.execDetached(cmd);
     }

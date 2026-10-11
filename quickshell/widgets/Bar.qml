@@ -86,12 +86,25 @@ PanelWindow {
             sessionLock.locked = true;
     }
     function handlePowerKey(): void {
-        Services.Power.lock();
         bar.closePopups();
-        Quickshell.execDetached(["systemctl", "suspend", "-i"]);
+        bar.lockScreen();
+        Services.Power.lock();
+        if (Services.Power.hasLogind)
+            suspendDelay.restart();
+    }
+    Timer {
+        id: suspendDelay
+        interval: 600
+        repeat: false
+        onTriggered: Quickshell.execDetached(["systemctl", "suspend", "-i"])
     }
     function screenshot(mode: string): void {
-        screenshotTool.capture(mode);
+        const m = typeof mode === "string" ? mode : "";
+        if (m !== "area" && m !== "window" && m !== "full" && m !== "") {
+            console.warn("quickshell: rejecting invalid screenshot mode: " + m.slice(0, 32));
+            return;
+        }
+        screenshotTool.capture(m === "" ? "full" : m);
     }
     function unlocked(): bool {
         return !(bar.sessionLock && bar.sessionLock.locked === true);

@@ -32,18 +32,26 @@ Singleton {
     readonly property string settingsFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
         const home = Quickshell.env("HOME") ?? "";
-        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
-        return base + "/quickshell/settings.json";
+        if (xdg !== "")
+            return xdg + "/quickshell/settings.json";
+        if (home !== "")
+            return home + "/.local/share/quickshell/settings.json";
+        return "";
     }
     readonly property string hypridleFile: {
         const home = Quickshell.env("HOME") ?? "";
-        return (home !== "" ? home : "/tmp") + "/.config/hypr/hypridle.conf";
+        if (home === "")
+            return "";
+        return home + "/.config/hypr/hypridle.conf";
     }
     readonly property string monitorsLuaFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
         const home = Quickshell.env("HOME") ?? "";
-        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
-        return base + "/quickshell/qs-monitors.lua";
+        if (xdg !== "")
+            return xdg + "/quickshell/qs-monitors.lua";
+        if (home !== "")
+            return home + "/.local/share/quickshell/qs-monitors.lua";
+        return "";
     }
 
     function monitorsLua(): string {
@@ -94,7 +102,9 @@ Singleton {
         if (obj.monitorConfigs && typeof obj.monitorConfigs === "object") {
             const clean = {};
             for (const name of Object.keys(obj.monitorConfigs)) {
-                if (typeof name !== "string" || name === "")
+                if (typeof name !== "string" || name === "" || name.length > 64)
+                    continue;
+                if (!/^[A-Za-z0-9._-]+$/.test(name))
                     continue;
                 const e = obj.monitorConfigs[name];
                 if (!e || typeof e !== "object")
@@ -104,8 +114,11 @@ Singleton {
                     entry.enabled = e.enabled;
                 if (typeof e.scale === "number" && !isNaN(e.scale))
                     entry.scale = Math.max(0.5, Math.min(3, e.scale));
-                if (typeof e.res === "string" && e.res !== "")
-                    entry.res = e.res.slice(0, 64);
+                if (typeof e.res === "string" && e.res !== "") {
+                    const r = e.res.slice(0, 64);
+                    if (r === "preferred" || U.parseMode(r).valid)
+                        entry.res = r;
+                }
                 if (typeof e.pos === "string" && U.isValidMonitorPos(e.pos))
                     entry.pos = e.pos.slice(0, 64);
                 clean[name] = entry;
@@ -311,12 +324,21 @@ Singleton {
             s += "  (last display)";
         return s;
     }
+    function validMonitorName(name: string): bool {
+        return typeof name === "string" && name !== "" && name.length <= 64 && /^[A-Za-z0-9._-]+$/.test(name);
+    }
     function monitorRuleCode(name: string): string {
+        if (!settings.validMonitorName(name))
+            return "-- invalid monitor skipped: " + name.slice(0, 32);
         if (!settings.monitorEnabled(name))
             return 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = true})';
         const scale = HyprBridge.luaVal(String(settings.monitorScale(name)));
-        const res = String(settings.monitorRes(name));
-        const pos = settings.monitorPos(name);
+        let res = String(settings.monitorRes(name));
+        if (res !== "preferred" && !U.parseMode(res).valid)
+            res = "preferred";
+        let pos = settings.monitorPos(name);
+        if (!U.isValidMonitorPos(pos))
+            pos = "auto";
         return 'hl.monitor({output = ' + HyprBridge.luaStr(name) + ', disabled = false, mode = ' + HyprBridge.luaStr(res) + ', position = ' + HyprBridge.luaStr(pos) + ', scale = ' + scale + '})';
     }
     function monitorRuleDesc(name: string): string {
@@ -327,7 +349,7 @@ Singleton {
     }
     function applyMonitor(name: string, quiet: bool, force: bool): void {
         const q = !!quiet;
-        if (typeof name !== "string" || name === "" || name.length > 128)
+        if (!settings.validMonitorName(name))
             return;
         const live = settings.monitorLive(name);
         if (!force && live && settings.monitorInSync(name, live)) {
@@ -534,6 +556,8 @@ Singleton {
         applyTimeout.restart();
     }
     function putMonitorCfg(name: string, patch: var): void {
+        if (!settings.validMonitorName(name))
+            return;
         const cfgs = Object.assign({}, settings.monitorConfigs);
         cfgs[name] = Object.assign({}, settings.monitorCfg(name), patch);
         settings.monitorConfigs = cfgs;
@@ -732,6 +756,11 @@ Singleton {
                 return;
             if (saver.running)
                 return;
+            if (settings.settingsFile === "" || settings.monitorsLuaFile === "") {
+                console.warn("quickshell: HOME/XDG not set, skipping settings save");
+                settings.saveQueued = false;
+                return;
+            }
             settings.saveQueued = false;
             saver.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" > "$2.tmp"; mv -f "$2.tmp" "$2"; mkdir -p "$(dirname "$4")"; printf "%s\\n" "$3" > "$4.tmp"; mv -f "$4.tmp" "$4"', "qs", JSON.stringify(settings.snapshot()), settings.settingsFile, settings.monitorsLua(), settings.monitorsLuaFile];
             saver.running = true;
@@ -816,10 +845,21 @@ Singleton {
     }
     Process {
         id: monitorScan
+        property bool dropNextExit: false
         command: ["hyprctl", "monitors", "all", "-j"]
+        onRunningChanged: {
+            if (monitorScan.running)
+                monScanTimeout.restart();
+            else
+                monScanTimeout.stop();
+        }
         stdout: StdioCollector {
             onStreamFinished: {
+                if (monitorScan.dropNextExit)
+                    return;
                 try {
+                    if (text.length > 1048576)
+                        throw "monitors output too large";
                     const arr = JSON.parse(text);
                     settings.monitors = Array.isArray(arr) ? arr : [];
                 } catch (_) {
@@ -840,6 +880,10 @@ Singleton {
             }
         }
         onExited: exitCode => {
+            if (monitorScan.dropNextExit) {
+                monitorScan.dropNextExit = false;
+                return;
+            }
             if (exitCode !== 0) {
                 settings.monitors = [];
                 settings.monitorsReady = true;
@@ -847,6 +891,21 @@ Singleton {
             }
         }
         Component.onCompleted: monitorScan.running = true
+    }
+    Timer {
+        id: monScanTimeout
+        interval: 10000
+        repeat: false
+        onTriggered: {
+            if (monitorScan.running) {
+                monitorScan.dropNextExit = true;
+                monitorScan.running = false;
+                console.warn("quickshell: hyprctl monitors timed out, using cached state");
+                settings.monitors = [];
+                settings.monitorsReady = true;
+                settings.applyScannedMonitors();
+            }
+        }
     }
     Process {
         id: monApply

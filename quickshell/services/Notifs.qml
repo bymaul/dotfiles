@@ -15,8 +15,11 @@ Singleton {
     readonly property string historyFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
         const home = Quickshell.env("HOME") ?? "";
-        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
-        return base + "/quickshell/notif-history.json";
+        if (xdg !== "")
+            return xdg + "/quickshell/notif-history.json";
+        if (home !== "")
+            return home + "/.local/share/quickshell/notif-history.json";
+        return "";
     }
     function syncIdOf(n): var {
         return n?.hints ? n.hints["x-canonical-private-synchronous"] : undefined;
@@ -274,17 +277,22 @@ Singleton {
         notifs.readCount = Math.min(notifs.readCount, notifs.history.length);
         notifs.schedulePersist();
     }
+    function truncStr(v, max: int): string {
+        const s = typeof v === "string" ? v : String(v ?? "");
+        return s.length > max ? s.slice(0, max) : s;
+    }
     function snapshot(n): var {
         const cands = [n.image, n.appIcon];
         const hit = cands.find(s => typeof s === "string" && s !== "");
+        const syncId = notifs.syncIdOf(n);
         return {
-            app: n.appName ?? "",
-            summary: n.summary ?? "",
-            body: n.body ?? "",
-            icon: hit ?? "",
+            app: notifs.truncStr(n.appName ?? "", 128),
+            summary: notifs.truncStr(n.summary ?? "", 256),
+            body: notifs.truncStr(n.body ?? "", 1024),
+            icon: notifs.truncStr(hit ?? "", 512),
             critical: n.urgency === NotificationUrgency.Critical,
             time: new Date(),
-            syncId: notifs.syncIdOf(n),
+            syncId: typeof syncId === "string" ? notifs.truncStr(syncId, 128) : syncId,
             transient: n.transient === true,
             live: n
         };
@@ -394,18 +402,20 @@ Singleton {
         persistTimer.restart();
     }
     function persistHistory(): void {
+        if (notifs.historyFile === "")
+            return;
         if (saver.running) {
             persistTimer.restart();
             return;
         }
         const data = notifs.history.filter(h => h?.transient !== true).slice(0, Theme.historyMax).map(h => ({
-                    app: h?.app ?? "",
-                    summary: h?.summary ?? "",
-                    body: h?.body ?? "",
-                    icon: h?.icon ?? "",
+                    app: notifs.truncStr(h?.app ?? "", 128),
+                    summary: notifs.truncStr(h?.summary ?? "", 256),
+                    body: notifs.truncStr(h?.body ?? "", 1024),
+                    icon: notifs.truncStr(h?.icon ?? "", 512),
                     critical: !!h?.critical,
                     time: h?.time instanceof Date ? h.time.getTime() : Date.now(),
-                    syncId: h?.syncId ?? null
+                    syncId: typeof h?.syncId === "string" ? notifs.truncStr(h.syncId, 128) : (h?.syncId ?? null)
                 }));
         saver.command = ["sh", "-c", 'mkdir -p "$(dirname "$2")"; printf "%s\\n" "$1" > "$2.tmp"; mv -f "$2.tmp" "$2"', "qs", JSON.stringify(data), notifs.historyFile];
         saver.running = true;
@@ -436,17 +446,19 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
+                    if (text.length > 1048576)
+                        return;
                     const arr = JSON.parse(text);
                     if (!Array.isArray(arr))
                         return;
                     const restored = arr.slice(0, Theme.historyMax).map(e => ({
-                                app: String(e?.app ?? ""),
-                                summary: String(e?.summary ?? ""),
-                                body: String(e?.body ?? ""),
-                                icon: String(e?.icon ?? ""),
+                                app: notifs.truncStr(e?.app ?? "", 128),
+                                summary: notifs.truncStr(e?.summary ?? "", 256),
+                                body: notifs.truncStr(e?.body ?? "", 1024),
+                                icon: notifs.truncStr(e?.icon ?? "", 512),
                                 critical: !!e?.critical,
-                                time: new Date(typeof e?.time === "number" ? e.time : Date.now()),
-                                syncId: e?.syncId ?? undefined,
+                                time: new Date(typeof e?.time === "number" && isFinite(e.time) ? e.time : Date.now()),
+                                syncId: typeof e?.syncId === "string" ? notifs.truncStr(e.syncId, 128) : undefined,
                                 transient: false,
                                 live: null
                             }));
@@ -455,6 +467,9 @@ Singleton {
                 } catch (_) {}
             }
         }
-        Component.onCompleted: historyLoader.running = true
+        Component.onCompleted: {
+            if (notifs.historyFile !== "")
+                historyLoader.running = true;
+        }
     }
 }

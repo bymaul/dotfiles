@@ -13,7 +13,23 @@ Item {
     property bool pendingNewline: true
     property bool hasPending: false
     signal wrote(string file, bool ok)
+    function validFile(file: string): bool {
+        if (typeof file !== "string" || file === "" || file.length > 512)
+            return false;
+        if (file.includes("\n") || file.includes("\0"))
+            return false;
+        return true;
+    }
     function write(file: string, text: string, newline: bool): void {
+        if (!root.validFile(file)) {
+            console.warn("quickshell: AtomicWriter rejecting invalid file path");
+            root.wrote(typeof file === "string" ? file : "", false);
+            return;
+        }
+        if (typeof text !== "string") {
+            root.wrote(file, false);
+            return;
+        }
         if (root.busy) {
             root.pendingFile = file;
             root.pendingText = text;
@@ -24,6 +40,13 @@ Item {
         root.start(file, text, newline ?? true);
     }
     function start(file: string, text: string, newline: bool): void {
+        if (!root.validFile(file)) {
+            console.warn("quickshell: AtomicWriter rejecting invalid file path");
+            root.busy = false;
+            root.hasPending = false;
+            root.wrote(typeof file === "string" ? file : "", false);
+            return;
+        }
         root.busy = true;
         root.currentFile = file;
         root.currentText = text;

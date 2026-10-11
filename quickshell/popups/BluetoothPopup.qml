@@ -91,6 +91,8 @@ DeviceListBase {
         }
         if (root.pairingAddr !== "")
             return;
+        if (typeof device.address !== "string" || !/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(device.address))
+            return;
         root.pairError = "";
         root.pairingAddr = device.address;
         pairProc.command = ["sh", "-c", 'timeout 30 bluetoothctl pair "$1" && bluetoothctl trust "$1" && timeout 30 bluetoothctl connect "$1"', "sh", device.address];

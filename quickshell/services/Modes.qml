@@ -10,14 +10,17 @@ Singleton {
     readonly property string modesFile: {
         const xdg = Quickshell.env("XDG_DATA_HOME") ?? "";
         const home = Quickshell.env("HOME") ?? "";
-        const base = xdg !== "" ? xdg : (home !== "" ? home + "/.local/share" : "/tmp/.local/share");
-        return base + "/quickshell/modes.json";
+        if (xdg !== "")
+            return xdg + "/quickshell/modes.json";
+        if (home !== "")
+            return home + "/.local/share/quickshell/modes.json";
+        return "";
     }
     function snapshot(): string {
         return JSON.stringify({caffeine: modes.caffeineActive, dnd: modes.dndActive});
     }
     function persist(): void {
-        if (!modes.loaded)
+        if (!modes.loaded || modes.modesFile === "")
             return;
         writer.write(modes.modesFile, modes.snapshot(), true);
     }
@@ -86,6 +89,8 @@ Singleton {
                     return;
                 loader.loadDone = true;
                 try {
+                    if (text.length > 16384)
+                        throw "modes file too large";
                     const obj = JSON.parse(text);
                     if (obj && typeof obj === "object") {
                         if (typeof obj.caffeine === "boolean")
@@ -105,6 +110,11 @@ Singleton {
             loader.loadDone = true;
             modes.loaded = true;
         }
-        Component.onCompleted: loader.running = true
+        Component.onCompleted: {
+            if (modes.modesFile !== "")
+                loader.running = true;
+            else
+                modes.loaded = true;
+        }
     }
 }

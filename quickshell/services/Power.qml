@@ -185,19 +185,34 @@ Singleton {
     }
 
     function lock(): void {
+        if (!power.hasLogind) {
+            Notifs.notify({app: "power", summary: "System lock unavailable", body: "loginctl not found — in-app lock only", timeout: Theme.osdTimeout});
+            return;
+        }
         Quickshell.execDetached(["loginctl", "lock-session"]);
     }
 
     function runCriticalAction(): void {
-        if (power.charging || !UPower.onBattery)
+        if (!Settings.loaded || !power.hasBattery)
+            return;
+        if (power.charging || !UPower.onBattery || !power.discharging)
+            return;
+        const crit = Math.min(Settings.criticalBatteryPct, Settings.lowBatteryPct);
+        if (power.pct > crit)
             return;
         const action = Settings.criticalBatteryAction;
+        if (!["notify", "lock", "suspend", "hibernate", "poweroff"].includes(action))
+            return;
         if (action === "notify" || action === "lock") {
             if (action === "lock")
                 power.lock();
             return;
         }
         const cmd = action === "hibernate" ? "hibernate" : action === "poweroff" ? "poweroff" : "suspend";
+        if (!power.hasLogind) {
+            Notifs.notify({app: "power", summary: "Power action unavailable", body: "systemctl not found", timeout: Theme.osdTimeout});
+            return;
+        }
         power.lock();
         Quickshell.execDetached(["systemctl", cmd, "-i"]);
     }
@@ -377,5 +392,14 @@ Singleton {
             if (!ppProbe.running)
                 ppProbe.running = true;
         }
+    }
+    property bool hasLogind: true
+    Process {
+        id: logindProbe
+        command: ["sh", "-c", "command -v loginctl >/dev/null && command -v systemctl >/dev/null"]
+        onExited: exitCode => {
+            power.hasLogind = exitCode === 0;
+        }
+        Component.onCompleted: logindProbe.running = true
     }
 }

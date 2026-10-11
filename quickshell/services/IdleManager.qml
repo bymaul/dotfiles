@@ -13,11 +13,35 @@ Singleton {
     property int suspendTimeout: 0
     property string targetFile: ""
 
+    function clampTimeout(v): int {
+        const n = Math.round(Number(v));
+        if (!isFinite(n) || n <= 0)
+            return 0;
+        return Math.min(86400, n);
+    }
+    function validTargetFile(file: string): bool {
+        if (typeof file !== "string" || file === "" || file.length > 512)
+            return false;
+        if (file.includes("\n") || file.includes("\0"))
+            return false;
+        if (file.includes(".."))
+            return false;
+        const home = Quickshell.env("HOME") ?? "";
+        if (home === "")
+            return false;
+        if (file !== home + "/.config/hypr/hypridle.conf" && !file.startsWith(home + "/.config/hypr/"))
+            return false;
+        return true;
+    }
     function request(dim: int, lock: int, screenOff: int, suspend: int, file: string): void {
-        idle.dimTimeout = dim;
-        idle.lockTimeout = lock;
-        idle.screenOffTimeout = screenOff;
-        idle.suspendTimeout = suspend;
+        idle.dimTimeout = idle.clampTimeout(dim);
+        idle.lockTimeout = idle.clampTimeout(lock);
+        idle.screenOffTimeout = idle.clampTimeout(screenOff);
+        idle.suspendTimeout = idle.clampTimeout(suspend);
+        if (!idle.validTargetFile(file)) {
+            console.warn("quickshell: IdleManager rejecting invalid targetFile");
+            return;
+        }
         idle.targetFile = file;
         debounce.restart();
     }
@@ -68,8 +92,8 @@ Singleton {
         return L.join("\n");
     }
     function writeNow(): void {
-        if (!idle.targetFile || idle.targetFile === "") {
-            console.warn("quickshell: IdleManager targetFile empty, skipping write");
+        if (!idle.targetFile || idle.targetFile === "" || !idle.validTargetFile(idle.targetFile)) {
+            console.warn("quickshell: IdleManager targetFile invalid, skipping write");
             return;
         }
         if (writer.running) {

@@ -34,10 +34,20 @@ ShellRoot {
     IpcHandler {
         target: "bar"
         function closePopups(): void { bar.closePopups(); }
-        function toggle(name: string): void { bar.togglePopup(name); }
+        function toggle(name: string): void {
+            if (typeof name !== "string" || name === "" || name.length > 64)
+                return;
+            if (!/^[A-Za-z0-9_-]+$/.test(name))
+                return;
+            bar.togglePopup(name);
+        }
         function lock(): void { bar.lockScreen(); }
         function powerKey(): void { bar.handlePowerKey(); }
-        function screenshot(mode: string): void { bar.screenshot(mode); }
+        function screenshot(mode: string): void {
+            if (typeof mode !== "string" || mode.length > 16)
+                return;
+            bar.screenshot(mode);
+        }
     }
 
     Variants {

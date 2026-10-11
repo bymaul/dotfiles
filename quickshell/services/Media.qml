@@ -243,6 +243,12 @@ Singleton {
     Process {
         id: brightnessProbe
         command: ["brightnessctl", "-m"]
+        onRunningChanged: {
+            if (brightnessProbe.running)
+                brightnessTimeout.restart();
+            else
+                brightnessTimeout.stop();
+        }
         stdout: StdioCollector {
             onStreamFinished: {
                 if (media.pendingBrightness >= 0)
@@ -266,6 +272,17 @@ Singleton {
         onExited: exitCode => {
             if (exitCode !== 0)
                 media.markBrightnessUnavailable();
+        }
+    }
+    Timer {
+        id: brightnessTimeout
+        interval: 10000
+        repeat: false
+        onTriggered: {
+            if (brightnessProbe.running) {
+                brightnessProbe.running = false;
+                media.markBrightnessUnavailable();
+            }
         }
     }
 }
