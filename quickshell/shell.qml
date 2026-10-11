@@ -30,6 +30,13 @@ ShellRoot {
             targetScreen: modelData
         }
     }
+    Variants {
+        model: Quickshell.screens
+        PopupAnchor {
+            required property var modelData
+            targetScreen: modelData
+        }
+    }
 
     IpcHandler {
         target: "bar"

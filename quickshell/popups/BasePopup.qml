@@ -85,12 +85,15 @@ PopupWindow {
         onActivated: base.close()
     }
     anchor.window: bar
-    readonly property var anchorBar: base.anchor.window ?? bar
-    readonly property real anchorBarWidth: anchorBar && anchorBar.width ? anchorBar.width : (bar && bar.width ? bar.width : 0)
-    readonly property real anchorBarHeight: anchorBar && anchorBar.height ? anchorBar.height : (bar && bar.height ? bar.height : 0)
-    readonly property real anchorScreenHeight: anchorBar && anchorBar.screen && anchorBar.screen.height ? anchorBar.screen.height : (bar && bar.screen && bar.screen.height ? bar.screen.height : 0)
-    anchor.rect.x: base.anchorMode === "middle" ? anchorBarWidth / 2 - width / 2 : anchorBarWidth - width - Services.Theme.popupMargin
-    anchor.rect.y: base.anchorMode === "middle" ? (anchorScreenHeight > 0 ? Math.max(anchorBarHeight + Services.Theme.popupTopGap, anchorScreenHeight / 2 - height / 2) : anchorBarHeight + Services.Theme.popupTopGap) : anchorBarHeight + Services.Theme.popupTopGap + base.extraTop
+    readonly property var anchorWin: base.anchor.window ?? bar
+    readonly property real anchorWidth: anchorWin && anchorWin.width ? anchorWin.width : (bar && bar.width ? bar.width : 0)
+    readonly property real anchorScreenHeight: anchorWin && anchorWin.screen && anchorWin.screen.height ? anchorWin.screen.height : (bar && bar.screen && bar.screen.height ? bar.screen.height : 0)
+    // Anchor strips sit below the bar's exclusive zone, so rect origins are
+    // offset by barHeight from the screen top to land in the same place.
+    readonly property real rightTop: Services.Theme.popupTopGap + base.extraTop
+    readonly property real middleTop: anchorScreenHeight > 0 ? Math.max(Services.Theme.popupTopGap, anchorScreenHeight / 2 - height / 2 - Services.Theme.barHeight) : Services.Theme.popupTopGap
+    anchor.rect.x: base.anchorMode === "middle" ? anchorWidth / 2 - width / 2 : anchorWidth - width - Services.Theme.popupMargin
+    anchor.rect.y: base.anchorMode === "middle" ? base.middleTop : base.rightTop
     visible: false
     color: Services.Theme.transparent
     onVisibleChanged: {

@@ -10,18 +10,6 @@ Item {
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
     readonly property var popupScreen: Services.Settings.popupScreen(Quickshell.screens, root.focusedName)
     readonly property var osdScreen: Services.Settings.mainScreen(Quickshell.screens)
-    readonly property bool fsActive: {
-        const scr = root.popupScreen;
-        const tls = ToplevelManager.toplevels?.values ?? [];
-        for (const t of tls) {
-            if (!t || t.fullscreen !== true)
-                continue;
-            const onScreen = (t.screens ?? []).some(s => s && scr && s.name === scr.name);
-            if (onScreen)
-                return true;
-        }
-        return Hyprland.focusedWorkspace?.hasFullscreen === true;
-    }
     PanelWindow {
         id: toastWin
         screen: root.popupScreen
@@ -54,7 +42,7 @@ Item {
             clip: true
             interactive: false
             spacing: Services.Theme.popupSpacing
-            model: Services.Notifs.toasts.filter(t => !Services.Notifs.isOsd(t) && (!root.fsActive || Services.Notifs.showInFullscreen(t)))
+            model: Services.Notifs.toasts.filter(t => !Services.Notifs.isOsd(t))
             delegate: ToastCard {
                 required property var modelData
                 notification: modelData

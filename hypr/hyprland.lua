@@ -221,9 +221,16 @@ hl.layer_rule({
 })
 
 hl.layer_rule({
+	name = "qs-popup-anchor-glass",
+	match = { namespace = "qs-popup-anchor" },
+	ignore_alpha = 0.1,
+	no_anim = true,
+})
+
+hl.layer_rule({
 	name = "qs-picker-order",
 	match = { namespace = "qs-screenshot-picker" },
-	order = 10,
+	order = 30,
 })
 
 hl.layer_rule({

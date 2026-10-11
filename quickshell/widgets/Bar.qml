@@ -23,7 +23,7 @@ PanelWindow {
     readonly property string mainName: bar.mainScreen?.name ?? ""
 
     function currentPopupAnchor(): var {
-        return Services.Bars.barForScreen(bar.focusedName) ?? bar;
+        return Services.Bars.anchorForScreen(bar.focusedName) ?? bar;
     }
     function syncBarReg(): void {
         Services.Bars.syncBar(bar, bar.mainName);
