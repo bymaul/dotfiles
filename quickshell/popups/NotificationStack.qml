@@ -19,7 +19,9 @@ Item {
         }
         margins.top: Services.Theme.popupTopGap
         margins.right: Services.Theme.popupMargin
-        exclusiveZone: 0
+        readonly property string toastScreenName: root.popupScreen?.name ?? ""
+        readonly property bool screenFullscreen: Services.Bars.isFullscreen(toastWin.toastScreenName)
+        exclusiveZone: toastWin.screenFullscreen ? -1 : 0
         readonly property bool parked: root.bar.rightPopupBottom > 0
         readonly property int stackWidth: toastWin.parked ? root.bar.rightPopupWidth : Services.Theme.toastWidth
         readonly property int parkOffset: toastWin.parked ? root.bar.rightPopupBottom + Services.Theme.popupSpacing - Services.Theme.popupTopGap : 0
