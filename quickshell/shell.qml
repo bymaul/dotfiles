@@ -81,6 +81,7 @@ ShellRoot {
     NotificationStack {
         id: notifStack
         bar: bar
+        pickerCovered: screenshotTool.pickerCovered
     }
     Screenshot {
         id: screenshotTool

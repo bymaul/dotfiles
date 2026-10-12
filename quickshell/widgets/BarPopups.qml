@@ -17,6 +17,43 @@ Item {
     property bool emojiRequested: false
     property string pendingOpen: ""
     property var pendingReturnTo: null
+    property var coveredPopups: []
+    readonly property var screenshotTool: root.bar?.screenshotTool ?? null
+    readonly property bool pickerActive: (root.screenshotTool?.pickerActive) === true
+    readonly property bool pickerCovered: (root.screenshotTool?.pickerCovered) === true
+    onPickerCoveredChanged: {
+        if (root.pickerCovered)
+            root.parkForCover();
+    }
+    onPickerActiveChanged: {
+        if (!root.pickerActive)
+            root.restoreAfterCover();
+    }
+    function parkForCover(): void {
+        const vis = [];
+        for (const p of root.exclusivePopups) {
+            if (p && p.visible) {
+                vis.push(p);
+                p.visible = false;
+            }
+        }
+        root.coveredPopups = vis;
+    }
+    function restoreAfterCover(): void {
+        const vis = root.coveredPopups ?? [];
+        root.coveredPopups = [];
+        if (vis.length > 0) {
+            const anchor = root.bar.currentPopupAnchor();
+            for (const p of vis) {
+                if (!p || p.visible)
+                    continue;
+                if (p.anchor && anchor)
+                    p.anchor.window = anchor;
+                p.visible = true;
+            }
+        }
+        root.flushPending();
+    }
 
     readonly property var settingsPopup: settingsLoader.item
     readonly property var launcherPopup: launcherLoader.item
@@ -73,6 +110,8 @@ Item {
     function flushPending(): void {
         if (root.pendingOpen === "")
             return;
+        if (root.pickerActive)
+            return;
         const target = root.popupByName(root.pendingOpen);
         if (!target)
             return;
@@ -86,8 +125,19 @@ Item {
             if (p)
                 p.visible = false;
         }
+        if (root.pickerCovered)
+            root.coveredPopups = (root.coveredPopups ?? []).filter(p => p && p.visible);
+    }
+    function closeForPicker(name: string, returnTo = null): void {
+        const current = root.popupByName(name);
+        if (current && current.visible)
+            root.openExclusive(current, returnTo);
     }
     function togglePopup(name: string): void {
+        if (root.pickerActive) {
+            root.closeForPicker(name);
+            return;
+        }
         const target = root.ensurePopup(name);
         if (target) {
             root.pendingOpen = "";
@@ -99,6 +149,10 @@ Item {
         }
     }
     function openFromPanel(name: string): void {
+        if (root.pickerActive) {
+            root.closeForPicker(name, controlPanelPopup);
+            return;
+        }
         const target = root.ensurePopup(name);
         if (target) {
             root.pendingOpen = "";
@@ -113,6 +167,8 @@ Item {
         if (!target)
             return;
         const open = !target.visible;
+        if (open && root.pickerActive)
+            return;
         root.closePopups();
         if (open) {
             if (returnTo && returnTo.anchor && returnTo.anchor.window)
@@ -126,11 +182,12 @@ Item {
             target.regrab();
     }
     function followPopupAnchor(anchor): void {
+        const pickerOpen = root.pickerActive;
         for (const p of root.allPopups) {
             if (!p || !p.anchor || p.anchor.window === anchor)
                 continue;
             if (p === historyPanel) {
-                if (!p.visible) {
+                if (!p.visible || pickerOpen) {
                     p.anchor.window = anchor;
                 } else {
                     p.visible = false;
@@ -140,6 +197,10 @@ Item {
                 continue;
             }
             if (!p.visible) {
+                p.anchor.window = anchor;
+                continue;
+            }
+            if (pickerOpen) {
                 p.anchor.window = anchor;
                 continue;
             }

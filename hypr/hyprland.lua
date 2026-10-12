@@ -238,3 +238,9 @@ hl.layer_rule({
 	match = { namespace = "qs-notifications" },
 	order = 20,
 })
+
+hl.layer_rule({
+	name = "qs-popup-anchor-order",
+	match = { namespace = "qs-popup-anchor" },
+	order = 10,
+})

@@ -9,6 +9,7 @@ PopupWindow {
     property int extraTop: 0
     property bool useGrab: true
     property bool preventClose: false
+    readonly property bool pickerActive: (bar?.screenshotTool?.pickerActive) === true
     property int busyMs: 1500
     function kickBusy(): void {
         base.preventClose = true;
@@ -29,10 +30,14 @@ PopupWindow {
             base.focusTarget.forceActiveFocus();
     }
     function regrab(): void {
+        if (base.pickerActive)
+            return;
         if (!grab.active && base.visible)
             grab.active = true;
     }
     function kickGrab(): void {
+        if (base.pickerActive)
+            return;
         if (base.visible && base.useGrab)
             grabTimer.restart();
     }
@@ -96,6 +101,10 @@ PopupWindow {
     anchor.rect.y: base.anchorMode === "middle" ? base.middleTop : base.rightTop
     visible: false
     color: Services.Theme.transparent
+    onPickerActiveChanged: {
+        if (!base.pickerActive && base.visible && base.useGrab)
+            base.kickGrab();
+    }
     onVisibleChanged: {
         if (!base.visible) {
             grab.active = false;
@@ -122,6 +131,8 @@ PopupWindow {
         }
         onCleared: {
             if (!base.visible)
+                return;
+            if (base.pickerActive)
                 return;
             if (base.preventClose) {
                 base.regrab();
@@ -169,7 +180,7 @@ PopupWindow {
         id: busyKeep
         interval: 200
         repeat: true
-        running: base.preventClose && base.visible
+        running: base.preventClose && base.visible && !base.pickerActive
         onTriggered: base.regrab()
     }
     Timer {
@@ -178,13 +189,15 @@ PopupWindow {
         repeat: false
         onTriggered: {
             base.preventClose = false;
-            if (base.visible)
+            if (base.visible && !base.pickerActive)
                 base.regrab();
         }
     }
     Connections {
         target: Hyprland
         function onFocusedWorkspaceChanged(): void {
+            if (base.pickerActive)
+                return;
             if (base.visible && base.useGrab) {
                 grab.active = false;
                 base.kickGrab();
@@ -194,6 +207,8 @@ PopupWindow {
     Connections {
         target: base
         function onWindowConnected(): void {
+            if (base.pickerActive)
+                return;
             if (base.visible && base.useGrab)
                 base.kickGrab();
         }

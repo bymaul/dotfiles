@@ -7,6 +7,8 @@ import "../services" as Services
 Item {
     id: root
     required property var bar
+    property bool pickerCovered: false
+    readonly property int shellLayer: root.pickerCovered ? WlrLayer.Top : WlrLayer.Overlay
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
     readonly property var popupScreen: Services.Settings.popupScreen(Quickshell.screens, root.focusedName)
     readonly property var osdScreen: Services.Settings.mainScreen(Quickshell.screens)
@@ -30,7 +32,7 @@ Item {
         visible: root.popupScreen !== null
         color: Services.Theme.transparent
         WlrLayershell.namespace: "qs-notifications"
-        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.layer: root.shellLayer
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         ListView {
             id: toastList
@@ -65,7 +67,7 @@ Item {
         visible: osdList.count > 0 && root.osdScreen !== null
         color: Services.Theme.transparent
         WlrLayershell.namespace: "qs-osd"
-        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.layer: root.shellLayer
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         ListView {
             id: osdList

@@ -35,6 +35,8 @@ Scope {
     property bool dirsReady: false
     property int stillAttempts: 0
     property int captureSeq: 0
+    readonly property bool pickerActive: picker.visible
+    readonly property bool pickerCovered: picker.visible && picker.stillReady
     function stamp(): string {
         return Qt.formatDateTime(new Date(), "yyyy-MM-dd_HH-mm-ss-zzz") + "-" + (root.captureSeq++);
     }
