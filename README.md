@@ -14,7 +14,9 @@ sudo pacman -S --needed - < pkglist.txt
 ```
 
 - Desktop, shell, and terminal configs live here; `install.sh` symlinks them into `$HOME`.
-- Safe to re-run. Useful flags: `--dry-run`, `--verify`, `--backup`, `--no-plugins`, `-y/--yes`, `--remove`, `--category desktop|shell|tools`.
+- Safe to re-run. Useful flags: `--dry-run`, `--verify`, `--backup`, `--no-plugins`, `-y/--yes`, `--remove`, `--category core|extras`.
+- Categories: `core` (hypr, quickshell, gtk, vague-theme, zsh, starship, tmux, git, foot, bin) and `extras` (bat, btop, fastfetch, lazygit, nvim, mise, yazi, agents).
+- Install one category: `./install.sh --category core` or a single package: `./install.sh nvim`.
 
 ## Notes
 
