@@ -4,15 +4,20 @@ import "../services" as Services
 Row {
     id: root
     anchors {
-        horizontalCenter: parent.horizontalCenter
+        left: Services.Theme.workspacesOnLeft ? parent.left : undefined
+        leftMargin: Services.Theme.barMargin
+        horizontalCenter: Services.Theme.workspacesOnLeft ? undefined : parent.horizontalCenter
         verticalCenter: parent.verticalCenter
     }
     spacing: Services.Theme.listSpacing
     required property string screenName
+    function isSpecialWorkspace(ws): bool {
+        return ws && (ws.id < 0 || ws.name === "special" || String(ws.name).startsWith("special:"));
+    }
     readonly property var pool: {
         const all = Hyprland.workspaces && Hyprland.workspaces.values ? Hyprland.workspaces.values : [];
         return all.filter(ws => {
-            if (!ws)
+            if (!ws || root.isSpecialWorkspace(ws))
                 return false;
             const m = ws.monitor;
             const name = (m && typeof m.name === "string" && m.name !== "") ? m.name : (typeof m === "string" ? m : "");
@@ -22,7 +27,7 @@ Row {
     readonly property int activeId: {
         const mons = Hyprland.monitors && Hyprland.monitors.values ? Hyprland.monitors.values : [];
         for (const m of mons) {
-            if (m && m.name === root.screenName && m.activeWorkspace)
+            if (m && m.name === root.screenName && m.activeWorkspace && !root.isSpecialWorkspace(m.activeWorkspace))
                 return m.activeWorkspace.id ?? -99999;
         }
         return -99999;
