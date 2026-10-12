@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "../components"
 import "../services" as Services
 
 PanelWindow {
@@ -15,18 +16,10 @@ PanelWindow {
     implicitHeight: Services.Theme.barHeight
     exclusiveZone: implicitHeight
     color: Services.Theme.barBg
-    Rectangle {
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
-        }
-        height: 1
-        color: Services.Theme.border
-    }
+    BarDivider {}
     WlrLayershell.namespace: "qs-bar"
     readonly property string slimName: slim.targetScreen?.name ?? ""
-    readonly property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
+    readonly property var mainScreen: Services.Monitors.mainScreen(Quickshell.screens)
     readonly property string mainName: slim.mainScreen?.name ?? ""
     readonly property bool mainFullscreen: Services.Bars.isFullscreen(slim.mainName)
     Component.onCompleted: {

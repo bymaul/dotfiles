@@ -9,7 +9,7 @@ Column {
     visible: popup.tab === 2
     width: parent.width
     spacing: Services.Theme.popupSpacing
-    readonly property var previewMons: Services.Settings.enabledMonitors().slice().sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
+    readonly property var previewMons: Services.Monitors.enabledMonitors().slice().sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
     property var previewOrder: []
     property string previewAxis: ""
     readonly property real previewSpacing: 8
@@ -17,10 +17,10 @@ Column {
     readonly property real previewSlotH: root.previewBoxH + 18
     readonly property int previewAreaH: root.previewAxis === "column" ? root.previewOrder.length * root.previewSlotH + Math.max(0, root.previewOrder.length - 1) * root.previewSpacing + 16 : 78
     function boxWFor(name: string): real {
-        const live = Services.Settings.monitorLive(name);
+        const live = Services.Monitors.monitorLive(name);
         if (!live)
             return 64;
-        const s = Services.Settings.monitorScale(name) || 1;
+        const s = Services.Monitors.monitorScale(name) || 1;
         const effW = (live.width || 1920) / s;
         const effH = (live.height || 1080) / s;
         return Math.max(28, root.previewBoxH * effW / Math.max(1, effH));
@@ -92,10 +92,10 @@ Column {
         root.previewAxis = axis;
         if (order.length === 0)
             return;
-        const map = Services.Settings.layoutCoords(order, axis);
+        const map = Services.Monitors.layoutCoords(order, axis);
         let changed = false;
         for (const n of order) {
-            if (Services.Settings.monitorPos(n) !== map[n]) {
+            if (Services.Monitors.monitorPos(n) !== map[n]) {
                 changed = true;
                 break;
             }
@@ -103,7 +103,7 @@ Column {
         if (!changed)
             return;
         popup.beginMonitorChange();
-        Services.Settings.setMonitorLayout(map);
+        Services.Monitors.setMonitorLayout(map);
     }
     function finishDrag(name: string, cx: real, cy: real): void {
         const pts = [];
@@ -135,7 +135,7 @@ Column {
         popup.closeDrop();
         if (root.previewMons.length < 2)
             return false;
-        const mons = Services.Settings.enabledMonitors();
+        const mons = Services.Monitors.enabledMonitors();
         const f = mons.find(m => m.focused === true) ?? (mons.length > 0 ? mons[0] : null);
         if (!f)
             return false;
@@ -165,7 +165,7 @@ Column {
     onPreviewMonsChanged: root.syncPreviewOrder()
     Component.onCompleted: root.syncPreviewOrder()
     Connections {
-        target: Services.Settings
+        target: Services.Monitors
         function onMonitorConfigsChanged(): void {
             root.syncPreviewOrder();
         }
@@ -176,7 +176,7 @@ Column {
         onHovered: popup.hoverSelect(0)
         z: popup.openMainDrop ? 100 : 0
         options: popup.mainOptions()
-        current: Services.Settings.mainMonitor
+        current: Services.Monitors.mainMonitor
         dropEnabled: popup.enabledCount > 1
         dropOpen: popup.openMainDrop
         cursor: popup.dropCursor
@@ -187,7 +187,7 @@ Column {
         onOptionHovered: index => popup.dropCursor = index
         onOptionClicked: value => {
             popup.selectedIndex = 0;
-            Services.Settings.setMainMonitor(value);
+            Services.Monitors.setMainMonitor(value);
             popup.closeDrop();
         }
     }
@@ -311,7 +311,7 @@ Column {
                             const oldAxis = root.previewAxis;
                             root.finishDrag(boxSlot.monName, cx, cy);
                             if (JSON.stringify(root.previewOrder) === oldOrder && root.previewAxis === oldAxis)
-                                Services.Settings.lastApplyMsg = "Already in this arrangement";
+                                Services.Monitors.lastApplyMsg = "Already in this arrangement";
                             boxSlot.x = Qt.binding(function () {
                                 return root.restingX(root.previewOrder.indexOf(boxSlot.monName));
                             });
@@ -353,12 +353,12 @@ Column {
         spacing: Services.Theme.popupSpacing
         z: popup.openMonRes !== "" ? 50 : 0
         Repeater {
-            model: Services.Settings.monitors
+            model: Services.Monitors.monitors
             delegate: Rectangle {
                 required property var modelData
                 required property int index
                 readonly property string monName: String(modelData.name ?? "")
-                readonly property bool monOn: Services.Settings.monitorEnabled(monName)
+                readonly property bool monOn: Services.Monitors.monitorEnabled(monName)
                 width: parent.width
                 height: popup.monBlockH
                 color: Services.Theme.transparent
@@ -373,7 +373,7 @@ Column {
                         width: parent.width
                         height: popup.monHeaderH
                         verticalAlignment: Text.AlignVCenter
-                        text: Services.Settings.monitorSummary(monName)
+                        text: Services.Monitors.monitorSummary(monName)
                         color: monOn ? Services.Theme.fg : Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
@@ -383,7 +383,7 @@ Column {
                         width: parent.width
                         height: popup.monSubH
                         verticalAlignment: Text.AlignVCenter
-                        text: Services.Settings.monitorDetails(monName)
+                        text: Services.Monitors.monitorDetails(monName)
                         color: Services.Theme.dim
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px10
@@ -396,29 +396,25 @@ Column {
                         value: monOn ? "On" : "Off"
                         SettingsSwitch {
                             on: monOn
-                            disabled: !Services.Settings.canDisableMonitor(monName)
+                            disabled: !Services.Monitors.canDisableMonitor(monName)
                             onToggled: {
                                 popup.beginMonitorChange();
-                                Services.Settings.setMonitorEnabled(monName, !Services.Settings.monitorEnabled(monName))
+                                Services.Monitors.setMonitorEnabled(monName, !Services.Monitors.monitorEnabled(monName))
                             }
                         }
                     }
-                    SettingsRow {
+                    SettingsSliderRow {
                         opacity: monOn ? 1 : 0.45
                         selected: popup.tab === 2 && popup.selectedIndex === popup.monFirst + index * popup.monRows + 1
                         onHovered: popup.hoverSelect(popup.monFirst + index * popup.monRows + 1)
                         title: "Scale"
-                        value: "x" + Services.Settings.monitorScale(monName).toFixed(2).replace(/\.?0+$/, "")
-                        SliderBar {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            minimum: 0.5
-                            maximum: 3
-                            value: Services.Settings.monitorScale(monName)
-                            onSliderMoved: value => {
-                                popup.beginMonitorChange();
-                                Services.Settings.setMonitorScale(monName, Math.round(value * 20) / 20)
-                            }
+                        value: "x" + Services.Monitors.monitorScale(monName).toFixed(2).replace(/\.?0+$/, "")
+                        sliderMinimum: 0.5
+                        sliderMaximum: 3
+                        sliderValue: Services.Monitors.monitorScale(monName)
+                        onSliderMoved: value => {
+                            popup.beginMonitorChange();
+                            Services.Monitors.setMonitorScale(monName, Math.round(value * 20) / 20)
                         }
                     }
                     DropdownRow {
@@ -427,8 +423,8 @@ Column {
                         selected: popup.tab === 2 && popup.selectedIndex === popup.monFirst + index * popup.monRows + 2
                         onHovered: popup.hoverSelect(popup.monFirst + index * popup.monRows + 2)
                         z: popup.openMonRes === monName ? 100 : 0
-                        options: Services.Settings.monitorModes(monName)
-                        current: Services.Settings.monitorRes(monName)
+                        options: Services.Monitors.monitorModes(monName)
+                        current: Services.Monitors.monitorRes(monName)
                         dropOpen: popup.openMonRes === monName
                         cursor: popup.dropCursor
                         openUp: index === popup.monCount - 1
@@ -454,7 +450,7 @@ Column {
         onClicked: {
             popup.selectedIndex = popup.monLastIndex();
             root.syncPreviewOrder();
-            Services.Settings.refreshMonitors(true);
+            Services.Monitors.refreshMonitors(true);
         }
     }
     Text {
@@ -463,7 +459,7 @@ Column {
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
-        text: Services.Settings.lastApplyMsg
+        text: Services.Monitors.lastApplyMsg
         color: Services.Theme.dim
         font.family: Services.Theme.font
         font.pixelSize: Services.Theme.px10

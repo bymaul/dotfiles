@@ -21,7 +21,7 @@ ShellRoot {
     }
     Variants {
         model: {
-            const main = Services.Settings.mainScreen(Quickshell.screens);
+            const main = Services.Monitors.mainScreen(Quickshell.screens);
             const mainName = main && main.name ? main.name : "";
             return Quickshell.screens.filter(s => s && s.name && s.name !== mainName);
         }

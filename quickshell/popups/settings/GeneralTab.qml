@@ -146,33 +146,25 @@ Column {
     Column {
         width: parent.width
         spacing: Services.Theme.listSpacing
-        SettingsRow {
+        SettingsSliderRow {
             title: "Sensitivity"
             value: Services.Settings.sensitivity.toFixed(1)
             selected: popup.tab === 0 && popup.selectedIndex === popup.wpInputBase + 0
             onHovered: popup.hoverSelect(popup.wpInputBase + 0)
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: -1
-                maximum: 1
-                value: Services.Settings.sensitivity
-                onSliderMoved: value => Services.Settings.setSensitivity(value)
-            }
+            sliderMinimum: -1
+            sliderMaximum: 1
+            sliderValue: Services.Settings.sensitivity
+            onSliderMoved: value => Services.Settings.setSensitivity(value)
         }
-        SettingsRow {
+        SettingsSliderRow {
             title: "Touchpad scroll"
             value: Services.Settings.touchScroll.toFixed(1)
             selected: popup.tab === 0 && popup.selectedIndex === popup.wpInputBase + 1
             onHovered: popup.hoverSelect(popup.wpInputBase + 1)
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 0.1
-                maximum: 2
-                value: Services.Settings.touchScroll
-                onSliderMoved: value => Services.Settings.setTouchScroll(value)
-            }
+            sliderMinimum: 0.1
+            sliderMaximum: 2
+            sliderValue: Services.Settings.touchScroll
+            onSliderMoved: value => Services.Settings.setTouchScroll(value)
         }
         SettingsRow {
             title: "Natural scroll"

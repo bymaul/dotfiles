@@ -272,89 +272,46 @@ DeviceListBase {
                     readonly property bool busy: modelData.state === ConnectionState.Connecting || !!modelData.stateChanging
                     onHovered: root.selectRow(index)
                     onClicked: root.activateNetwork(modelData)
-                    Row {
-                    anchors {
-                        fill: parent
-                        leftMargin: 8
-                        rightMargin: 8
-                    }
-                    spacing: Services.Theme.popupSpacing
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 18
-                        text: Services.Wifi.signalGlyph(modelData.signalStrength)
-                        color: row.selected ? Services.Theme.accentFg : (modelData.connected || row.busy) ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
-                        font.family: Services.Theme.font
-                        font.pixelSize: Services.Theme.px13
-                    }
-                    Column {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width - 82
-                        spacing: 2
+                    DeviceRow {
+                        selected: row.selected
+                        hovered: row.isHovered
+                        accented: row.busy || modelData.connected
+                        glyph: Services.Wifi.signalGlyph(modelData.signalStrength)
+                        title: modelData.name || "Hidden network"
+                        subtitle: root.rowSubText(modelData)
+                        reserveRight: 82
                         Text {
-                            width: parent.width
-                            text: modelData.name || "Hidden network"
-                            color: row.selected ? Services.Theme.accentFg : (modelData.connected || row.busy || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
-                            font.family: Services.Theme.font
-                            font.pixelSize: Services.Theme.px12
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            width: parent.width
-                            text: root.rowSubText(modelData)
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 16
+                            text: "󰌾"
                             color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                             font.family: Services.Theme.font
-                            font.pixelSize: Services.Theme.px10
+                            font.pixelSize: Services.Theme.px12
+                            visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
                         }
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 16
-                        text: "󰌾"
-                        color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
-                        font.family: Services.Theme.font
-                        font.pixelSize: Services.Theme.px12
-                        visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
-                    }
-                    ForgetButton {
-                        selected: row.selected
-                        visible: modelData.known && !modelData.connected && !row.busy
-                        onForget: root.forgetSelected()
+                        ForgetButton {
+                            selected: row.selected
+                            visible: modelData.known && !modelData.connected && !row.busy
+                            onForget: root.forgetSelected()
+                        }
                     }
                 }
             }
-            }
-            Text {
-                anchors.centerIn: parent
+            EmptyStateText {
                 visible: !Services.Wifi.device
                 text: 'No Wi-Fi device'
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
             }
-            Text {
-                anchors.centerIn: parent
+            EmptyStateText {
                 visible: Services.Wifi.device && !Services.Wifi.hardwareEnabled
                 text: 'Wi-Fi blocked - check rfkill switch'
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
             }
-            Text {
-                anchors.centerIn: parent
+            EmptyStateText {
                 visible: Services.Wifi.device && Services.Wifi.hardwareEnabled && !Services.Wifi.enabled
                 text: 'Wi-Fi is off - press e to enable'
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
             }
-            Text {
-                anchors.centerIn: parent
+            EmptyStateText {
                 visible: Services.Wifi.device && Services.Wifi.hardwareEnabled && Services.Wifi.enabled && Services.Wifi.sortedNetworks.length === 0
                 text: Services.Wifi.scanning ? 'Scanning...' : 'No networks - press s to scan'
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
             }
         }
         Column {

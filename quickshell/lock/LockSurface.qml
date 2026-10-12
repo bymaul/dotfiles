@@ -9,7 +9,7 @@ Item {
     property var ownScreen: null
     property bool locked: true
     readonly property string ownName: ownScreen && ownScreen.name ? String(ownScreen.name) : ""
-    readonly property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
+    readonly property var mainScreen: Services.Monitors.mainScreen(Quickshell.screens)
     readonly property string mainName: mainScreen && mainScreen.name ? String(mainScreen.name) : ""
     readonly property bool isMain: ownName === "" || mainName === "" || ownName === mainName
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""

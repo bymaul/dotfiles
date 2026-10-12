@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import "../components"
 import "../services" as Services
 
 PanelWindow {
@@ -18,7 +19,7 @@ PanelWindow {
     }
 
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
-    property var mainScreen: Services.Settings.mainScreen(Quickshell.screens)
+    property var mainScreen: Services.Monitors.mainScreen(Quickshell.screens)
     screen: bar.mainScreen ?? Quickshell.screens[0] ?? null
     readonly property string mainName: bar.mainScreen?.name ?? ""
 
@@ -56,15 +57,7 @@ PanelWindow {
     implicitHeight: Services.Theme.barHeight
     exclusiveZone: implicitHeight
     color: Services.Theme.barBg
-    Rectangle {
-        anchors {
-            left: parent.left
-            right: parent.right
-            bottom: parent.bottom
-        }
-        height: 1
-        color: Services.Theme.border
-    }
+    BarDivider {}
     WlrLayershell.namespace: "qs-bar"
 
     readonly property var historyPanel: popups.historyPanel
@@ -123,7 +116,7 @@ PanelWindow {
     readonly property int screenCount: Quickshell.screens.length
     onScreenCountChanged: {
         bar.followPopupAnchor();
-        Services.Settings.refreshMonitors(true);
+        Services.Monitors.refreshMonitors(true);
     }
 
     DepCheck {}

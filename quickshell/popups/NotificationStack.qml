@@ -10,8 +10,8 @@ Item {
     property bool pickerCovered: false
     readonly property int shellLayer: root.pickerCovered ? WlrLayer.Top : WlrLayer.Overlay
     readonly property string focusedName: Hyprland.focusedMonitor?.name ?? ""
-    readonly property var popupScreen: Services.Settings.popupScreen(Quickshell.screens, root.focusedName)
-    readonly property var osdScreen: Services.Settings.mainScreen(Quickshell.screens)
+    readonly property var popupScreen: Services.Monitors.popupScreen(Quickshell.screens, root.focusedName)
+    readonly property var osdScreen: Services.Monitors.mainScreen(Quickshell.screens)
     PanelWindow {
         id: toastWin
         screen: root.popupScreen

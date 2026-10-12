@@ -245,41 +245,14 @@ DeviceListBase {
                     readonly property bool connected: modelData.connected || modelData.state === BluetoothDeviceState.Connected
                     onHovered: root.selectRow(index)
                     onClicked: root.activateDevice(modelData)
-                    Row {
-                        anchors {
-                            fill: parent
-                            leftMargin: 8
-                            rightMargin: 8
-                        }
-                        spacing: Services.Theme.popupSpacing
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 18
-                            text: root.deviceGlyph(modelData)
-                            color: row.selected ? Services.Theme.accentFg : row.connected ? Services.Theme.accent : row.isHovered ? Services.Theme.fg : Services.Theme.dim
-                            font.family: Services.Theme.font
-                            font.pixelSize: Services.Theme.px13
-                        }
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 58
-                            spacing: 2
-                            Text {
-                                width: parent.width
-                                text: modelData.name || modelData.deviceName || modelData.address || "Unknown device"
-                                color: row.selected ? Services.Theme.accentFg : (row.connected || row.isHovered) ? Services.Theme.fg : Services.Theme.dim
-                                font.family: Services.Theme.font
-                                font.pixelSize: Services.Theme.px12
-                                elide: Text.ElideRight
-                            }
-                            Text {
-                                width: parent.width
-                                text: root.statusText(modelData)
-                                color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
-                                font.family: Services.Theme.font
-                                font.pixelSize: Services.Theme.px10
-                            }
-                        }
+                    DeviceRow {
+                        selected: row.selected
+                        hovered: row.isHovered
+                        accented: row.connected
+                        glyph: root.deviceGlyph(modelData)
+                        title: modelData.name || modelData.deviceName || modelData.address || "Unknown device"
+                        subtitle: root.statusText(modelData)
+                        reserveRight: 58
                         ForgetButton {
                             selected: row.selected
                             visible: (modelData.paired || modelData.bonded) && !row.connected
@@ -288,29 +261,17 @@ DeviceListBase {
                     }
                 }
             }
-            Text {
-                anchors.centerIn: parent
+            EmptyStateText {
                 visible: !Bluetooth.defaultAdapter
                 text: "No Bluetooth adapter"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
             }
-            Text {
-                anchors.centerIn: parent
+            EmptyStateText {
                 visible: Bluetooth.defaultAdapter && !Bluetooth.defaultAdapter.enabled
                 text: "󰂲 Bluetooth is off · press e to enable"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
             }
-            Text {
-                anchors.centerIn: parent
+            EmptyStateText {
                 visible: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled && root.sortedDevices.length === 0
                 text: Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.discovering ? "Scanning..." : "No devices · press s to scan"
-                color: Services.Theme.dim
-                font.family: Services.Theme.font
-                font.pixelSize: Services.Theme.px12
             }
         }
         HintText {

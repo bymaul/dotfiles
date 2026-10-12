@@ -22,7 +22,7 @@ Column {
     Column {
         width: parent.width
         spacing: Services.Theme.listSpacing
-        SettingsRow {
+        SettingsSliderRow {
             selected: popup.tab === 1 && popup.selectedIndex === 0
             onHovered: {
                 if (!popup.anyDropOpen())
@@ -30,16 +30,12 @@ Column {
             }
             title: "Dim display"
             value: SettingsUtil.fmtTimeout(Services.Settings.dimTimeout)
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 0
-                maximum: 10
-                value: Services.Settings.dimTimeout / 60
-                onSliderMoved: value => Services.Settings.setDimTimeout(Math.round(value * 2) * 30)
-            }
+            sliderMinimum: 0
+            sliderMaximum: 10
+            sliderValue: Services.Settings.dimTimeout / 60
+            onSliderMoved: value => Services.Settings.setDimTimeout(Math.round(value * 2) * 30)
         }
-        SettingsRow {
+        SettingsSliderRow {
             selected: popup.tab === 1 && popup.selectedIndex === 1
             onHovered: {
                 if (!popup.anyDropOpen())
@@ -47,16 +43,12 @@ Column {
             }
             title: "Lock"
             value: SettingsUtil.fmtTimeout(Services.Settings.lockTimeout)
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 0
-                maximum: 60
-                value: Services.Settings.lockTimeout / 60
-                onSliderMoved: value => Services.Settings.setLockTimeout(Math.round(value) * 60)
-            }
+            sliderMinimum: 0
+            sliderMaximum: 60
+            sliderValue: Services.Settings.lockTimeout / 60
+            onSliderMoved: value => Services.Settings.setLockTimeout(Math.round(value) * 60)
         }
-        SettingsRow {
+        SettingsSliderRow {
             selected: popup.tab === 1 && popup.selectedIndex === 2
             onHovered: {
                 if (!popup.anyDropOpen())
@@ -64,16 +56,12 @@ Column {
             }
             title: "Screen off"
             value: SettingsUtil.fmtTimeout(Services.Settings.screenOffTimeout)
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 0
-                maximum: 60
-                value: Services.Settings.screenOffTimeout / 60
-                onSliderMoved: value => Services.Settings.setScreenOffTimeout(Math.round(value) * 60)
-            }
+            sliderMinimum: 0
+            sliderMaximum: 60
+            sliderValue: Services.Settings.screenOffTimeout / 60
+            onSliderMoved: value => Services.Settings.setScreenOffTimeout(Math.round(value) * 60)
         }
-        SettingsRow {
+        SettingsSliderRow {
             selected: popup.tab === 1 && popup.selectedIndex === 3
             onHovered: {
                 if (!popup.anyDropOpen())
@@ -81,14 +69,10 @@ Column {
             }
             title: "Suspend"
             value: SettingsUtil.fmtTimeout(Services.Settings.suspendTimeout)
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 0
-                maximum: 120
-                value: Services.Settings.suspendTimeout / 60
-                onSliderMoved: value => Services.Settings.setSuspendTimeout(Math.round(value / 5) * 300)
-            }
+            sliderMinimum: 0
+            sliderMaximum: 120
+            sliderValue: Services.Settings.suspendTimeout / 60
+            onSliderMoved: value => Services.Settings.setSuspendTimeout(Math.round(value / 5) * 300)
         }
     }
     Text {
@@ -104,7 +88,7 @@ Column {
         width: parent.width
         spacing: Services.Theme.listSpacing
         z: popup.openDropdown === popup.sysIdx(6) ? 50 : 0
-        SettingsRow {
+        SettingsSliderRow {
             visible: Services.Asus.available
             selected: popup.tab === 1 && popup.selectedIndex === 4
             onHovered: {
@@ -113,16 +97,12 @@ Column {
             }
             title: "Charge limit"
             value: Services.Asus.chargeLimit + "%"
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 20
-                maximum: 100
-                value: Services.Asus.chargeLimit
-                onSliderMoved: value => Services.Asus.setChargeLimit(Math.round(value / 5) * 5)
-            }
+            sliderMinimum: 20
+            sliderMaximum: 100
+            sliderValue: Services.Asus.chargeLimit
+            onSliderMoved: value => Services.Asus.setChargeLimit(Math.round(value / 5) * 5)
         }
-        SettingsRow {
+        SettingsSliderRow {
             selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(4)
             onHovered: {
                 if (!popup.anyDropOpen())
@@ -130,16 +110,12 @@ Column {
             }
             title: "Low battery"
             value: Services.Settings.lowBatteryPct + "%"
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 5
-                maximum: 50
-                value: Services.Settings.lowBatteryPct
-                onSliderMoved: value => Services.Settings.setLowBatteryPct(Math.round(value / 5) * 5)
-            }
+            sliderMinimum: 5
+            sliderMaximum: 50
+            sliderValue: Services.Settings.lowBatteryPct
+            onSliderMoved: value => Services.Settings.setLowBatteryPct(Math.round(value / 5) * 5)
         }
-        SettingsRow {
+        SettingsSliderRow {
             selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(5)
             onHovered: {
                 if (!popup.anyDropOpen())
@@ -148,14 +124,10 @@ Column {
             title: "Critical battery"
             titleWidth: 124
             value: Services.Settings.criticalBatteryPct + "%"
-            SliderBar {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                minimum: 3
-                maximum: 30
-                value: Services.Settings.criticalBatteryPct
-                onSliderMoved: value => Services.Settings.setCriticalBatteryPct(Math.round(value / 2) * 2)
-            }
+            sliderMinimum: 3
+            sliderMaximum: 30
+            sliderValue: Services.Settings.criticalBatteryPct
+            onSliderMoved: value => Services.Settings.setCriticalBatteryPct(Math.round(value / 2) * 2)
         }
         DropdownRow {
             selected: popup.tab === 1 && popup.selectedIndex === popup.sysIdx(6)

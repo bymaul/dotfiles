@@ -10,19 +10,23 @@ Item {
         return root.bar.unlocked();
     }
 
-    BarShortcut {
+    QsShortcut {
+        appid: "qs-bar"
         name: "control"; description: "Open the control panel"
         onPressed: { if (root.unlocked()) root.bar.togglePopup("control"); }
     }
-    BarShortcut {
+    QsShortcut {
+        appid: "qs-bar"
         name: "calendar"; description: "Open the calendar"
         onPressed: { if (root.unlocked()) root.bar.togglePopup("calendar"); }
     }
-    BarShortcut {
+    QsShortcut {
+        appid: "qs-bar"
         name: "power"; description: "Open the power menu"
         onPressed: { if (root.unlocked()) root.bar.togglePopup("power"); }
     }
-    BarShortcut {
+    QsShortcut {
+        appid: "qs-bar"
         name: "settings"; description: "Open settings"
         onPressed: { if (root.unlocked()) root.bar.togglePopup("settings"); }
     }

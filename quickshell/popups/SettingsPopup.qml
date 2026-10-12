@@ -42,7 +42,7 @@ BasePopup {
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
 
     Connections {
-        target: Services.Settings
+        target: Services.Monitors
         function onLastApplyMsgChanged(): void {
             if (!root.preventClose)
                 return;
@@ -125,7 +125,7 @@ BasePopup {
         root.syncWallCursor();
         root.syncLastAsusRows();
         if (root.visible && root.tab === 2)
-            Services.Settings.refreshMonitors(false);
+            Services.Monitors.refreshMonitors(false);
         if (root.visible && root.tab === 1)
             Services.Asus.refresh();
     }
@@ -135,7 +135,7 @@ BasePopup {
         root.syncWallCursor();
     }
     onMonCountChanged: {
-        if (root.openMonRes !== "" && Services.Settings.monitorLive(root.openMonRes) === null)
+        if (root.openMonRes !== "" && Services.Monitors.monitorLive(root.openMonRes) === null)
             root.closeDrop();
         root.clampSelection();
     }
@@ -155,7 +155,7 @@ BasePopup {
             displaysTab.syncPreviewOrder();
             Services.Settings.refreshWallpapers(false);
             if (root.tab === 2)
-                Services.Settings.refreshMonitors(false);
+                Services.Monitors.refreshMonitors(false);
             if (root.tab === 1)
                 Services.Asus.refresh();
         } else {
@@ -172,12 +172,12 @@ BasePopup {
     function toggleMonitorEnabled(name: string): void {
         if (name === "")
             return;
-        if (Services.Settings.monitorEnabled(name) && !Services.Settings.canDisableMonitor(name)) {
-            Services.Settings.setMonitorEnabled(name, false);
+        if (Services.Monitors.monitorEnabled(name) && !Services.Monitors.canDisableMonitor(name)) {
+            Services.Monitors.setMonitorEnabled(name, false);
             return;
         }
         root.beginMonitorChange();
-        Services.Settings.setMonitorEnabled(name, !Services.Settings.monitorEnabled(name));
+        Services.Monitors.setMonitorEnabled(name, !Services.Monitors.monitorEnabled(name));
     }
     function itemCount(): int {
         if (root.tab === 0)
@@ -233,7 +233,7 @@ BasePopup {
             return;
         }
         if (root.tab === 2 && root.openMonRes !== "") {
-            root.moveCursor(Services.Settings.monitorModes(root.openMonRes), dir);
+            root.moveCursor(Services.Monitors.monitorModes(root.openMonRes), dir);
             return;
         }
         if (root.tab === 0 && root.wpCount > 0) {
@@ -307,7 +307,7 @@ BasePopup {
     function monitorNameAt(i: int): string {
         if (i < root.monFirst || i >= root.monFirst + root.monCount * root.monRows)
             return "";
-        const m = Services.Settings.monitors[Math.floor((i - root.monFirst) / root.monRows)] ?? null;
+        const m = Services.Monitors.monitors[Math.floor((i - root.monFirst) / root.monRows)] ?? null;
         return m && typeof m.name === "string" ? m.name : "";
     }
     function adjustSelected(dir: int): void {
@@ -380,7 +380,7 @@ BasePopup {
             root.toggleMonitorEnabled(name);
         } else if (kind === 1) {
             root.beginMonitorChange();
-            Services.Settings.cycleValidScale(name, dir);
+            Services.Monitors.cycleValidScale(name, dir);
         } else if (kind === 2) {
             if (root.openMonRes === name) {
                 if (dir < 0)
@@ -389,7 +389,7 @@ BasePopup {
                     root.commitMonModeCursor();
             } else {
                 root.beginMonitorChange();
-                Services.Settings.cycleMonitorResolution(name, dir);
+                Services.Monitors.cycleMonitorResolution(name, dir);
             }
         }
         return;
@@ -439,7 +439,7 @@ BasePopup {
             return;
         }
         if (root.tab === 2 && root.selectedIndex === root.monLastIndex()) {
-            Services.Settings.refreshMonitors(true);
+            Services.Monitors.refreshMonitors(true);
             return;
         }
         const name = root.monitorNameAt(selectedIndex);
@@ -551,15 +551,15 @@ BasePopup {
             root.closeDrop();
             return;
         }
-        const opts = Services.Settings.monitorModes(name);
-        let at = opts.indexOf(Services.Settings.monitorRes(name));
+        const opts = Services.Monitors.monitorModes(name);
+        let at = opts.indexOf(Services.Monitors.monitorRes(name));
         if (at < 0)
             at = 0;
         root.dropCursor = at;
         root.openMenu = {kind: "res", name: name};
     }
     function mainOptions(): var {
-        return Services.Settings.mainMonitorOptions();
+        return Services.Monitors.mainMonitorOptions();
     }
     function toggleMainDrop(): void {
         if (root.enabledCount < 2)
@@ -569,7 +569,7 @@ BasePopup {
             return;
         }
         const opts = root.mainOptions();
-        let at = opts.indexOf(Services.Settings.mainMonitor);
+        let at = opts.indexOf(Services.Monitors.mainMonitor);
         if (at < 0)
             at = 0;
         root.dropCursor = at;
@@ -581,7 +581,7 @@ BasePopup {
         const opts = root.mainOptions();
         if (opts.length === 0)
             return;
-        Services.Settings.setMainMonitor(SettingsUtil.cycleOpt(opts, Services.Settings.mainMonitor, dir));
+        Services.Monitors.setMainMonitor(SettingsUtil.cycleOpt(opts, Services.Monitors.mainMonitor, dir));
     }
     function commitMainCursor(): void {
         const opts = root.mainOptions();
@@ -589,17 +589,17 @@ BasePopup {
             root.closeDrop();
             return;
         }
-        Services.Settings.setMainMonitor(opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
+        Services.Monitors.setMainMonitor(opts[Services.Theme.clamp(root.dropCursor, 0, opts.length - 1)]);
         root.closeDrop();
     }
     function commitMonMode(name: string, mode: string): void {
         root.beginMonitorChange();
-        Services.Settings.setMonitorRes(name, mode);
+        Services.Monitors.setMonitorRes(name, mode);
         root.closeDrop();
     }
     function commitMonModeCursor(): void {
         const name = root.openMonRes;
-        const opts = Services.Settings.monitorModes(name);
+        const opts = Services.Monitors.monitorModes(name);
         if (name === "" || opts.length === 0) {
             root.closeDrop();
             return;
@@ -619,14 +619,14 @@ BasePopup {
     property int wallWrapPad: 6
     property int inputRows: 3
     property int sectionH: 18
-    property int enabledCount: Services.Settings.enabledMonitors().length
+    property int enabledCount: Services.Monitors.enabledMonitors().length
     property int monFirst: 2
     property int monRows: 3
     property int monCardPad: 8
     property int monHeaderH: 22
     property int monSubH: 16
     property int monBlockH: root.monHeaderH + root.monSubH + root.monRows * Services.Theme.rowHeight + (root.monRows + 1) * Services.Theme.listSpacing + 2 * root.monCardPad
-    property int monCount: Services.Settings.monitors.length
+    property int monCount: Services.Monitors.monitors.length
     property int monFootH: Services.Theme.rowHeight + Services.Theme.popupSpacing + 14
     property int monFullH: root.monCount * root.monBlockH + Math.max(0, root.monCount - 1) * Services.Theme.popupSpacing
     property int previewH: displaysTab.previewAreaH
