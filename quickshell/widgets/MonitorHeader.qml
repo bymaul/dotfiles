@@ -1,4 +1,5 @@
 import QtQuick
+import "../services" as Services
 
 Item {
     id: root
@@ -6,8 +7,10 @@ Item {
     anchors.fill: parent
     WindowTitle {
         screenName: root.screenName
+        leftItem: Services.Theme.workspacesOnLeft ? workspaces : null
     }
     Workspaces {
+        id: workspaces
         screenName: root.screenName
     }
 }
