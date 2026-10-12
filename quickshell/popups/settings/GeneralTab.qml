@@ -26,6 +26,12 @@ Column {
             width: parent.width
             height: popup.wpListH + popup.wallWrapPad * 2
             visible: popup.wpCount > 0
+            Rectangle {
+                anchors.fill: parent
+                color: Services.Theme.transparent
+                border.width: 1
+                border.color: popup.tab === 0 && popup.selectedIndex === 0 ? Services.Theme.accent : Services.Theme.border
+            }
             GridView {
                 id: wallList
                 anchors.fill: parent
