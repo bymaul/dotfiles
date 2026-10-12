@@ -151,6 +151,9 @@ hl.bind(secondMod .. " + J", hl.dsp.window.move({ direction = "down" }))
 hl.bind(secondMod .. " + K", hl.dsp.window.move({ direction = "up" }))
 hl.bind(secondMod .. " + L", hl.dsp.window.move({ direction = "right" }))
 
+hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratchpad"))
+hl.bind(secondMod .. " + S", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
+
 for i = 1, 10 do
 	local key = i % 10
 	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
