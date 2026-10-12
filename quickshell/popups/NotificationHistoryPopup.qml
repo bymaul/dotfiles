@@ -121,8 +121,16 @@ BasePopup {
                     width: historyList.width
                     height: content.height + 16
                     color: selected ? Services.Theme.activeBg : cardArea.containsMouse ? Services.Theme.hoverBg : Services.Theme.bg
-                    border.width: 1
-                    border.color: modelData.critical ? Services.Theme.danger : Services.Theme.dim
+                    Rectangle {
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                        }
+                        width: 1
+                        visible: modelData.critical
+                        color: Services.Theme.danger
+                    }
                     MouseArea {
                         id: cardArea
                         anchors.fill: parent
