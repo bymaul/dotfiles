@@ -18,8 +18,6 @@ MANIFEST=(
     "core   dir   hypr        hypr              .config/hypr"
     "core   dir   quickshell  quickshell        .config/quickshell"
     "core   dir   foot        foot              .config/foot"
-    "core   tree  gtk         gtk               .config"
-    "core   dir   vague-theme vague-theme       .local/share/themes/Vague"
     "core   tree  zsh         zsh               ."
     "core   tree  starship    starship          .config"
     "core   dir   tmux        tmux              .config/tmux"
