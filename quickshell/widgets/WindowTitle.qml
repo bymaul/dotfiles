@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Hyprland
 import Quickshell.Wayland
 import "../services" as Services
 Text {
@@ -12,11 +13,36 @@ Text {
     }
     readonly property string activeTitle: {
         const active = ToplevelManager.activeToplevel;
-        if (active && active.activated && (active.screens ?? []).some(s => s && s.name === root.screenName))
+        if (!active || !active.activated)
+            return "";
+        if (Services.Bars.isSpecialWorkspace(Services.Bars.hyprWorkspaceFor(active)))
+            return "";
+        if ((active.screens ?? []).some(s => s && s.name === root.screenName))
             return active.title ?? "";
         return "";
     }
-    text: root.activeTitle
+    readonly property string specialTag: {
+        const n = Services.Bars.specialName(root.screenName);
+        return n !== "" ? "[" + n + "]" : "";
+    }
+    readonly property string specialTitle: {
+        if (root.specialTag === "")
+            return "";
+        const ht = Hyprland.activeToplevel;
+        const hw = ht?.workspace;
+        if (!ht || !Services.Bars.isSpecialWorkspace(hw))
+            return "";
+        if (hw.name !== Services.Bars.specialFullName(root.screenName))
+            return "";
+        return ht.title ?? "";
+    }
+    text: {
+        if (root.specialTag === "")
+            return root.activeTitle;
+        if (root.specialTitle === "")
+            return root.specialTag;
+        return root.specialTag + " " + root.specialTitle;
+    }
     visible: text !== ""
     width: Math.min(implicitWidth, Services.Theme.titleMax)
     color: Services.Theme.fg

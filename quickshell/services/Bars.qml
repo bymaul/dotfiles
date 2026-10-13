@@ -114,6 +114,36 @@ Singleton {
         const wss = Hyprland.workspaces?.values ?? [];
         return wss.some(w => w && w.active === true && bars.isSpecialWorkspace(w) && w.monitor?.name === name);
     }
+    function shortSpecialName(full: string): string {
+        if (typeof full !== "string" || !bars.isSpecialWorkspace(full))
+            return "";
+        if (full.indexOf("special:") === 0)
+            return full.slice("special:".length, "special:".length + 32);
+        return full.slice(0, 32);
+    }
+    function specialFullName(name: string): string {
+        if (!bars.isSpecialActive(name))
+            return "";
+        const mon = (Hyprland.monitors?.values ?? []).find(m => m && m.name === name) ?? null;
+        const raw = mon?.lastIpcObject?.specialWorkspace?.name;
+        if (typeof raw === "string" && bars.isSpecialWorkspace(raw))
+            return raw;
+        const wss = Hyprland.workspaces?.values ?? [];
+        const ws = wss.find(w => w && w.active === true && bars.isSpecialWorkspace(w) && w.monitor?.name === name) ?? null;
+        const wn = ws?.name;
+        if (typeof wn === "string" && bars.isSpecialWorkspace(wn))
+            return wn;
+        return "";
+    }
+    function specialName(name: string): string {
+        return bars.shortSpecialName(bars.specialFullName(name));
+    }
+    function hyprWorkspaceFor(toplevel): var {
+        if (!toplevel)
+            return null;
+        const hit = (Hyprland.toplevels?.values ?? []).find(t => t && t.wayland === toplevel) ?? null;
+        return hit?.workspace ?? null;
+    }
     function hasWlrFullscreen(name: string): bool {
         if (typeof name !== "string" || name === "")
             return false;
