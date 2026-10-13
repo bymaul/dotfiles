@@ -22,7 +22,7 @@ Item {
         margins.top: Services.Theme.popupTopGap
         margins.right: Services.Theme.popupMargin
         readonly property string toastScreenName: root.popupScreen?.name ?? ""
-        readonly property bool screenFullscreen: Services.Bars.isFullscreen(toastWin.toastScreenName)
+        readonly property bool screenFullscreen: Services.Bars.isAnyFullscreen(toastWin.toastScreenName)
         exclusiveZone: toastWin.screenFullscreen ? -1 : 0
         readonly property bool parked: root.bar.rightPopupBottom > 0
         readonly property int stackWidth: toastWin.parked ? root.bar.rightPopupWidth : Services.Theme.toastWidth

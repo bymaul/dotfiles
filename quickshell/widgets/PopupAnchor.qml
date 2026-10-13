@@ -14,7 +14,7 @@ PanelWindow {
     }
     implicitHeight: 1
     readonly property string anchorName: anchor.targetScreen?.name ?? ""
-    readonly property bool screenFullscreen: Services.Bars.isFullscreen(anchor.anchorName)
+    readonly property bool screenFullscreen: Services.Bars.isAnyFullscreen(anchor.anchorName)
     exclusiveZone: anchor.screenFullscreen ? -1 : 0
     color: Services.Theme.transparent
     WlrLayershell.namespace: "qs-popup-anchor"

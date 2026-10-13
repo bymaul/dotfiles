@@ -94,7 +94,7 @@ PopupWindow {
     readonly property real anchorWidth: anchorWin && anchorWin.width ? anchorWin.width : (bar && bar.width ? bar.width : 0)
     readonly property real anchorScreenHeight: anchorWin && anchorWin.screen && anchorWin.screen.height ? anchorWin.screen.height : (bar && bar.screen && bar.screen.height ? bar.screen.height : 0)
     readonly property string anchorScreenName: anchorWin && anchorWin.screen && anchorWin.screen.name ? anchorWin.screen.name : (bar && bar.screen && bar.screen.name ? bar.screen.name : "")
-    readonly property bool anchorFullscreen: Services.Bars.isFullscreen(base.anchorScreenName)
+    readonly property bool anchorFullscreen: Services.Bars.isAnyFullscreen(base.anchorScreenName)
     readonly property real rightTop: Services.Theme.popupTopGap + base.extraTop
     readonly property real middleTop: anchorScreenHeight > 0 ? Math.max(Services.Theme.popupTopGap, anchorScreenHeight / 2 - height / 2 - (base.anchorFullscreen ? 0 : Services.Theme.barHeight)) : Services.Theme.popupTopGap
     anchor.rect.x: base.anchorMode === "middle" ? anchorWidth / 2 - width / 2 : anchorWidth - width - Services.Theme.popupMargin

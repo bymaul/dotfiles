@@ -21,7 +21,7 @@ PanelWindow {
     readonly property string slimName: slim.targetScreen?.name ?? ""
     readonly property var mainScreen: Services.Monitors.mainScreen(Quickshell.screens)
     readonly property string mainName: slim.mainScreen?.name ?? ""
-    readonly property bool mainFullscreen: Services.Bars.isFullscreen(slim.mainName)
+    readonly property bool mainFullscreen: Services.Bars.isAnyFullscreen(slim.mainName)
     Component.onCompleted: {
         Services.Bars.syncBar(slim, slim.slimName);
     }
