@@ -64,6 +64,8 @@ Singleton {
     property int criticalToastTimeout: 30000
     property int toastMax: 5
     property int historyMax: 20
+    property int toastBodyMaxLines: 3
+    property int historyBodyMaxLines: 4
 
     property real volumeMax: 1.5
     property real volumeStep: 0.02

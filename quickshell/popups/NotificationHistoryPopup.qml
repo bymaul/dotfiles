@@ -211,8 +211,10 @@ BasePopup {
                                     color: Services.Theme.dim
                                     font.family: Services.Theme.font
                                     font.pixelSize: Services.Theme.px12
-                                    textFormat: Text.RichText
+                                    textFormat: Text.StyledText
                                     wrapMode: Text.WordWrap
+                                    maximumLineCount: Services.Theme.historyBodyMaxLines
+                                    elide: Text.ElideRight
                                 }
                                 ActionPills {
                                     width: parent.width
