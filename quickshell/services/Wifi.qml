@@ -14,40 +14,6 @@ Singleton {
     readonly property bool hardwareEnabled: Networking.wifiHardwareEnabled ?? true
     readonly property bool enabled: !!Networking.wifiEnabled
     readonly property bool scanning: wifi.device ? !!wifi.device.scannerEnabled : false
-    property bool listActive: false
-    property var _networksCache: null
-    function snapshotNetworks(): void {
-        wifi._networksCache = wifi.sortedNetworks;
-    }
-    readonly property var sortedNetworks: {
-        if (!wifi.listActive && wifi._networksCache !== null)
-            return wifi._networksCache;
-        const nets = wifi.rawNetworks.slice();
-        function rank(n) {
-            if (!n)
-                return 4;
-            if (n.connected)
-                return 0;
-            if (n.state === ConnectionState.Connecting || n.stateChanging)
-                return 1;
-            if (n.known)
-                return 2;
-            return 3;
-        }
-        nets.sort((a, b) => {
-            const r = rank(a) - rank(b);
-            if (r !== 0)
-                return r;
-            const sa = Number(a?.signalStrength ?? 0) || 0;
-            const sb = Number(b?.signalStrength ?? 0) || 0;
-            if (sb !== sa)
-                return sb - sa;
-            const na = String(a?.name ?? "").toLowerCase();
-            const nb = String(b?.name ?? "").toLowerCase();
-            return na < nb ? -1 : na > nb ? 1 : 0;
-        });
-        return nets;
-    }
     readonly property var wiredDevice: (Networking.devices?.values ?? []).find(d => d && d.type === DeviceType.Wired) ?? null
     readonly property bool wiredConnected: !!wifi.wiredDevice?.connected
     readonly property bool linkUp: wifi.wiredConnected || wifi.connected !== null

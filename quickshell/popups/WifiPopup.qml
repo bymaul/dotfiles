@@ -1,50 +1,46 @@
 import QtQuick
 import Quickshell
-import Quickshell.Networking
 import "../components"
 import "../services" as Services
 DeviceListBase {
     id: root
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: (root.authTarget === null ? wifiList.height : authCol.height) + 36 + 36 + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
+    implicitHeight: (root.inAuth ? authCol.height : wifiList.height) + 36 + 36 + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
     targetList: wifiList
-    listBlocked: root.authTarget !== null
-    Shortcut { sequence: "j"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
-    Shortcut { sequence: "k"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
-    Shortcut { sequence: "Return"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
-    Shortcut { sequence: "Enter"; enabled: root.visible && root.authTarget !== null && !field.activeFocus; onActivated: root.activateSelectedButton() }
-    property var authTarget: null
-    property string authBssid: ""
+    listBlocked: root.inAuth || root.isBusy
+    Shortcut { sequence: "j"; enabled: root.visible && root.inAuth && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
+    Shortcut { sequence: "k"; enabled: root.visible && root.inAuth && !field.activeFocus; onActivated: root.selectedButton = (root.selectedButton + 1) % 2 }
+    Shortcut { sequence: "Return"; enabled: root.visible && root.inAuth && !field.activeFocus; onActivated: root.activateSelectedButton() }
+    Shortcut { sequence: "Enter"; enabled: root.visible && root.inAuth && !field.activeFocus; onActivated: root.activateSelectedButton() }
+    property string authSsid: ""
     property string authError: ""
-    property var pendingNetwork: null
+    property string listError: ""
+    property bool showPassword: false
     property int selectedButton: 1
+    readonly property bool inAuth: root.authSsid !== ""
+    readonly property bool isBusy: Services.Nmcli.busySsid !== ""
     function quitArmed(): bool {
-        return root.authTarget === null;
+        return !root.inAuth;
     }
     function cancelOrClose(): void {
-        if (root.authTarget)
+        if (Services.Nmcli.pendingSsid !== "")
+            return;
+        if (root.inAuth)
             root.cancelAuth();
         else
             root.close();
     }
     onVisibleChanged: {
-        Services.Wifi.listActive = visible;
         if (visible) {
+            root.listError = "";
             root.resetNav();
-            root.autoScanOnOpen();
+            if (!Services.Nmcli.connected && Services.Nmcli.networks.length === 0)
+                Services.Nmcli.rescan();
+            else
+                Services.Nmcli.refresh();
         } else {
             root.cancelAuth();
-            Services.Wifi.snapshotNetworks();
         }
-    }
-    function autoScanOnOpen(): void {
-        const dev = Services.Wifi.device;
-        if (!dev || !Services.Wifi.enabled || !Services.Wifi.hardwareEnabled || dev.scannerEnabled)
-            return;
-        if (Services.Wifi.connected || Services.Wifi.connecting)
-            return;
-        dev.scannerEnabled = true;
-        scanTimeout.restart();
     }
     function activateRow(): void {
         root.activateNetwork(root.selectedNetwork());
@@ -53,78 +49,84 @@ DeviceListBase {
         root.forgetSelected();
     }
     function selectedNetwork(): var {
-        const nets = Services.Wifi.sortedNetworks;
+        const nets = Services.Nmcli.networks;
         if (wifiList.currentIndex < 0 || wifiList.currentIndex >= nets.length)
             return null;
         return nets[wifiList.currentIndex];
     }
     function activateNetwork(network: var): void {
-        if (!network || network.stateChanging)
+        if (!network || !network.ssid)
             return;
-        if (network.connected) {
-            network.disconnect();
+        root.listError = "";
+        if (network.ssid === Services.Nmcli.pendingSsid)
+            return;
+        if (network.active) {
+            Services.Nmcli.disconnect(function (ok, msg) {
+                if (!ok)
+                    root.listError = msg;
+            });
             return;
         }
-        if (network.state === ConnectionState.Connecting)
-            return;
-        if (network.known) {
-            network.connect();
+        if (network.known || !network.secure) {
+            root.submitConnect(network.ssid, "");
             return;
         }
-        root.enterAuth(network);
+        root.enterAuth(network.ssid);
     }
-    function enterAuth(network: var): void {
-        root.authTarget = network;
-        root.authBssid = String(network?.bssid ?? network?.macAddress ?? "");
+    function enterAuth(ssid: string): void {
+        if (!ssid)
+            return;
+        root.authSsid = ssid;
         root.authError = "";
-        root.pendingNetwork = null;
-        connectTimeout.stop();
+        root.showPassword = false;
         root.selectedButton = 1;
         root.focusTarget = field;
         field.forceActiveFocus();
     }
     function cancelAuth(): void {
-        connectTimeout.stop();
-        root.authTarget = null;
-        root.authBssid = "";
+        root.authSsid = "";
         root.authError = "";
-        root.pendingNetwork = null;
         field.text = "";
         field.focus = false;
         root.focusTarget = null;
     }
     function activateSelectedButton(): void {
+        if (Services.Nmcli.pendingSsid !== "")
+            return;
         if (root.selectedButton === 0)
             root.cancelAuth();
         else
             root.doConnect();
     }
-    function resolveAuthNetwork(): var {
-        if (!root.authTarget)
-            return null;
-        const live = Services.Wifi.rawNetworks;
-        if (live.includes(root.authTarget))
-            return root.authTarget;
-        const key = Services.Wifi.networkKey(root.authTarget);
-        if (key !== "") {
-            const byKey = live.find(n => n && Services.Wifi.networkKey(n) === key);
-            if (byKey)
-                return byKey;
-        }
-        const name = root.authTarget?.name;
-        if (!name)
-            return root.authTarget;
-        const sameName = live.filter(n => n && n.name === name);
-        if (sameName.length === 0)
-            return root.authTarget;
-        const wantSec = root.authTarget?.security;
-        return sameName.find(n => n && n.security === wantSec) ?? sameName[0];
+    function submitConnect(ssid: string, psk: string): void {
+        if (!ssid || ssid === Services.Nmcli.pendingSsid)
+            return;
+        if (root.inAuth)
+            root.authError = "Connecting…";
+        Services.Nmcli.connect(ssid, psk, function (ok, msg) {
+            if (ok) {
+                root.authSsid = "";
+                root.authError = "";
+                root.listError = "";
+                field.text = "";
+                if (bar && typeof bar.closePopups === "function")
+                    bar.closePopups();
+                else
+                    root.close();
+            } else if (root.authSsid !== "") {
+                root.authError = msg;
+                field.selectAll();
+                root.focusTarget = field;
+                field.forceActiveFocus();
+            } else {
+                root.listError = msg;
+            }
+        });
     }
     function doConnect(): void {
-        if (root.pendingNetwork)
+        if (!root.inAuth)
             return;
-        const net = root.resolveAuthNetwork();
-        if (!net || net.stateChanging)
+        if (Services.Nmcli.pendingSsid !== "")
             return;
         const psk = String(field.text ?? "");
         if (psk === "") {
@@ -133,132 +135,71 @@ DeviceListBase {
             field.forceActiveFocus();
             return;
         }
-        if (psk.length < 8) {
-            root.authError = "Password must be at least 8 characters";
-            root.focusTarget = field;
-            field.forceActiveFocus();
-            return;
-        }
         if (psk.length > 256)
             return;
-        root.authError = "Connecting...";
-        root.pendingNetwork = net;
-        connectTimeout.restart();
-        net.connectWithPsk(psk);
-        field.text = "";
+        root.submitConnect(root.authSsid, psk);
         field.forceActiveFocus();
-    }
-    Timer {
-        id: connectTimeout
-        interval: 20000
-        repeat: false
-        onTriggered: {
-            if (!root.pendingNetwork)
-                return;
-            const net = root.pendingNetwork;
-            root.pendingNetwork = null;
-            root.authTarget = net;
-            root.authError = "Timed out - try again";
-            root.focusTarget = field;
-            field.forceActiveFocus();
-        }
-    }
-    Connections {
-        target: root.pendingNetwork
-        enabled: root.pendingNetwork !== null
-        function onConnectedChanged() {
-            if (root.pendingNetwork?.connected) {
-                connectTimeout.stop();
-                root.pendingNetwork = null;
-                if (bar && typeof bar.closePopups === "function")
-                    bar.closePopups();
-                else
-                    root.close();
-            }
-        }
-        function onConnectionFailed(reason) {
-            connectTimeout.stop();
-            const net = root.pendingNetwork;
-            root.pendingNetwork = null;
-            root.authTarget = net ?? root.authTarget;
-            root.authError = (reason === ConnectionFailReason.NoSecrets || reason === ConnectionFailReason.WifiAuthTimeout) ? "Wrong password, try again" : "Connection failed (" + ConnectionFailReason.toString(reason) + ")";
-            root.focusTarget = field;
-            field.forceActiveFocus();
-        }
     }
     function forgetSelected(): void {
         const net = root.selectedNetwork();
-        if (net && net.known && !net.connected && !net.stateChanging)
-            net.forget();
+        if (!net || !net.ssid || !net.known || net.ssid === Services.Nmcli.pendingSsid)
+            return;
+        Services.Nmcli.forget(net.ssid, function (ok, msg) {
+            if (!ok)
+                root.listError = msg;
+        });
     }
     function toggleScan(): void {
-        const dev = Services.Wifi.device;
-        if (!dev || !Services.Wifi.enabled || !Services.Wifi.hardwareEnabled)
+        if (!Services.Nmcli.wifiEnabled)
             return;
-        dev.scannerEnabled = !dev.scannerEnabled;
-        if (dev.scannerEnabled)
-            scanTimeout.restart();
-        else
-            scanTimeout.stop();
-    }
-    Timer {
-        id: scanTimeout
-        interval: Services.Theme.scanTimeout
-        repeat: false
-        onTriggered: {
-            if (Services.Wifi.device)
-                Services.Wifi.device.scannerEnabled = false;
-        }
+        Services.Nmcli.rescan();
     }
     function toggleEnabled(): void {
-        if (!Services.Wifi.hardwareEnabled)
-            return;
-        Networking.wifiEnabled = !Networking.wifiEnabled;
+        Services.Nmcli.setEnabled(!Services.Nmcli.wifiEnabled, function (ok, msg) {
+            if (!ok)
+                root.listError = msg;
+        });
     }
     function headerStatus(): string {
-        if (!Services.Wifi.device)
+        if (Services.Nmcli.iface === "" && Services.Nmcli.networks.length === 0)
             return "No Wi-Fi device found";
-        if (!Services.Wifi.hardwareEnabled)
-            return "󰤯 Wi-Fi blocked (rfkill)";
-        if (!Services.Wifi.enabled)
+        if (!Services.Nmcli.wifiEnabled)
             return "󰤯 Wi-Fi off";
-        if (Services.Wifi.connected)
-            return "󰤨 " + (Services.Wifi.connected.name || "Connected");
-        if (Services.Wifi.connecting)
-            return "󰤭 Connecting to " + (Services.Wifi.connecting.name || "…") + "…";
-        if (Services.Wifi.sortedNetworks.length === 0)
-            return Services.Wifi.scanning ? "󰑓  Scanning..." : "󰤭 No networks found";
+        if (Services.Nmcli.connected)
+            return "󰤨 " + (Services.Nmcli.connected.ssid || "Connected");
+        if (Services.Nmcli.networks.length === 0)
+            return Services.Nmcli.scanning ? "󰑓  Scanning..." : "󰤭 No networks found";
         return "󰤭 Not connected";
     }
     function rowSubText(net: var): string {
         if (!net)
             return "";
-        if (net.connected)
+        if (net.active)
             return "Connected";
-        if (net.state === ConnectionState.Connecting || net.stateChanging)
-            return "Connecting...";
+        if (net.ssid !== "" && net.ssid === Services.Nmcli.pendingSsid)
+            return "Connecting…";
         if (net.known)
             return "Saved";
-        return net.security !== WifiSecurityType.Open && net.security !== WifiSecurityType.Unknown ? "Secured" : "Open";
+        return net.secure ? "Secured" : "Open";
     }
     PopupCard {
         DeviceHeader {
             statusText: root.headerStatus()
-            statusColor: Services.Wifi.connected ? Services.Theme.fg : Services.Theme.dim
-            enableLabel: Services.Wifi.enabled ? "󰖪  Disable" : "󰖩  Enable"
-            scanLabel: Services.Wifi.scanning ? "󰑓  Scanning..." : "󰑐  Scan"
+            statusColor: Services.Nmcli.connected ? Services.Theme.fg : Services.Theme.dim
+            enableLabel: Services.Nmcli.wifiEnabled ? "󰖪  Disable" : "󰖩  Enable"
+            scanLabel: Services.Nmcli.scanning ? "󰑓  Scanning..." : "󰑐  Scan"
             onEnableClicked: root.toggleEnabled()
             onScanClicked: root.toggleScan()
         }
         Item {
-            visible: root.authTarget === null
+            visible: !root.inAuth
             width: parent.width
             height: Services.Theme.listHeight(Services.Theme.listVisible)
             ListView {
                 id: wifiList
                 anchors.fill: parent
                 clip: true
-                model: Services.Wifi.sortedNetworks
+                model: Services.Nmcli.networks
                 spacing: Services.Theme.listSpacing
                 onCountChanged: clampListView(wifiList)
                 onModelChanged: clampListView(wifiList)
@@ -267,17 +208,17 @@ DeviceListBase {
                     required property var modelData
                     required property int index
                     selected: wifiList.currentIndex === index
-                    highlighted: row.busy || modelData.connected
+                    highlighted: row.busy || modelData.active
                     rowHeight: Services.Theme.listRowHeight
-                    readonly property bool busy: modelData.state === ConnectionState.Connecting || !!modelData.stateChanging
+                    readonly property bool busy: modelData.ssid !== "" && modelData.ssid === Services.Nmcli.pendingSsid
                     onHovered: root.selectRow(index)
                     onClicked: root.activateNetwork(modelData)
                     DeviceRow {
                         selected: row.selected
                         hovered: row.isHovered
-                        accented: row.busy || modelData.connected
-                        glyph: Services.Wifi.signalGlyph(modelData.signalStrength)
-                        title: modelData.name || "Hidden network"
+                        accented: row.busy || modelData.active
+                        glyph: Services.Wifi.signalGlyph((Number(modelData.signal ?? 0) || 0) / 100)
+                        title: modelData.ssid || "Hidden network"
                         subtitle: root.rowSubText(modelData)
                         reserveRight: 82
                         Text {
@@ -287,41 +228,50 @@ DeviceListBase {
                             color: row.selected ? Services.Theme.accentFg : row.isHovered ? Services.Theme.fg : Services.Theme.dim
                             font.family: Services.Theme.font
                             font.pixelSize: Services.Theme.px12
-                            visible: modelData.security !== WifiSecurityType.Open && modelData.security !== WifiSecurityType.Unknown
+                            visible: !!modelData.secure
                         }
                         ForgetButton {
                             selected: row.selected
-                            visible: modelData.known && !modelData.connected && !row.busy
+                            visible: modelData.known && !modelData.active && !row.busy
                             onForget: root.forgetSelected()
                         }
                     }
                 }
             }
             EmptyStateText {
-                visible: !Services.Wifi.device
+                visible: !Services.Nmcli.iface && Services.Nmcli.networks.length === 0
                 text: 'No Wi-Fi device'
             }
             EmptyStateText {
-                visible: Services.Wifi.device && !Services.Wifi.hardwareEnabled
-                text: 'Wi-Fi blocked - check rfkill switch'
-            }
-            EmptyStateText {
-                visible: Services.Wifi.device && Services.Wifi.hardwareEnabled && !Services.Wifi.enabled
+                visible: Services.Nmcli.iface !== "" && !Services.Nmcli.wifiEnabled
                 text: 'Wi-Fi is off - press e to enable'
             }
             EmptyStateText {
-                visible: Services.Wifi.device && Services.Wifi.hardwareEnabled && Services.Wifi.enabled && Services.Wifi.sortedNetworks.length === 0
-                text: Services.Wifi.scanning ? 'Scanning...' : 'No networks - press s to scan'
+                visible: Services.Nmcli.iface !== "" && Services.Nmcli.wifiEnabled && Services.Nmcli.networks.length === 0
+                text: Services.Nmcli.scanning ? 'Scanning...' : 'No networks - press s to scan'
+            }
+            Text {
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+                visible: !root.inAuth && root.listError !== ""
+                text: root.listError
+                color: Services.Theme.danger
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px12
+                wrapMode: Text.WordWrap
             }
         }
         Column {
             id: authCol
-            visible: root.authTarget !== null
+            visible: root.inAuth
             width: parent.width
             spacing: Services.Theme.popupSpacing
             Text {
                 width: parent.width
-                text: "  " + (root.authTarget?.name ?? "Wi-Fi password")
+                text: "  " + (root.authSsid !== "" ? root.authSsid : "Wi-Fi password")
                 color: Services.Theme.fg
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px12
@@ -332,7 +282,7 @@ DeviceListBase {
                 visible: root.authError !== ""
                 height: visible ? implicitHeight : 0
                 text: root.authError
-                color: root.pendingNetwork ? Services.Theme.dim : Services.Theme.danger
+                color: Services.Nmcli.pendingSsid !== "" ? Services.Theme.dim : Services.Theme.danger
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px12
                 wrapMode: Text.WordWrap
@@ -348,20 +298,40 @@ DeviceListBase {
                     anchors {
                         fill: parent
                         leftMargin: 10
-                        rightMargin: 10
+                        rightMargin: 34
                     }
                     verticalAlignment: TextInput.AlignVCenter
                     color: Services.Theme.fg
-                    echoMode: TextInput.Password
+                    echoMode: root.showPassword ? TextInput.Normal : TextInput.Password
+                    readOnly: Services.Nmcli.pendingSsid !== ""
                     maximumLength: 256
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
                     Keys.onReturnPressed: root.doConnect()
                     Keys.onEnterPressed: root.doConnect()
                 }
+                Text {
+                    anchors {
+                        right: parent.right
+                        rightMargin: 8
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: 18
+                    horizontalAlignment: Text.AlignHCenter
+                    text: root.showPassword ? "󰈉" : "󰈈"
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px13
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.showPassword = !root.showPassword
+                    }
+                }
             }
             ConfirmRow {
                 choice: root.selectedButton
+                enabled: Services.Nmcli.pendingSsid === ""
                 noLabel: "Cancel"
                 yesLabel: "Connect"
                 accentYes: true
@@ -377,7 +347,7 @@ DeviceListBase {
         }
         HintText {
             id: hint
-            text: root.authTarget === null ? "d forget · s scan · e on/off" : "Enter connect · Esc back"
+            text: !root.inAuth ? "d forget · s scan · e on/off" : "Enter connect · Esc back"
         }
     }
 }

@@ -9,6 +9,7 @@ DeviceListBase {
     implicitWidth: Services.Theme.popupWidth
     implicitHeight: 36 + 36 + Services.Theme.listHeight(Services.Theme.listVisible) + Services.Theme.popupSpacing * 3 + 16 + hint.implicitHeight
     targetList: btList
+    listBlocked: root.pairingAddr !== ""
     property var rawDevices: Bluetooth.devices?.values ?? []
     property var _devicesCache: null
     function snapshotDevices(): void {
@@ -154,6 +155,8 @@ DeviceListBase {
         }
     }
     function forgetSelected(): void {
+        if (root.pairingAddr !== "")
+            return;
         const dev = root.selectedDevice();
         if (dev && (dev.paired || dev.bonded) && !(dev.connected || dev.state === BluetoothDeviceState.Connected)) {
             dev.forget();
@@ -171,11 +174,11 @@ DeviceListBase {
         else if (dev.connected || dev.state === BluetoothDeviceState.Connected)
             s = "Connected";
         else if (dev.state === BluetoothDeviceState.Connecting)
-            s = "Connecting...";
+            s = "Connecting…";
         else if (dev.state === BluetoothDeviceState.Disconnecting)
-            s = "Disconnecting...";
+            s = "Disconnecting…";
         else if (dev.pairing || (dev.address !== "" && dev.address === root.pairingAddr))
-            s = "Pairing... confirm on device if asked";
+            s = "Pairing… confirm on device if asked";
         else if (dev.paired || dev.bonded)
             s = "Paired";
         const tags = [];
