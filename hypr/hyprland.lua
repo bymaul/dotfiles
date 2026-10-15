@@ -32,8 +32,8 @@ hl.env("QS_ICON_THEME", "Adwaita")
 
 hl.config({
 	general = {
-		gaps_in = 3,
-		gaps_out = 6,
+		gaps_in = 2,
+		gaps_out = 4,
 
 		border_size = 1,
 
@@ -52,8 +52,8 @@ hl.config({
 		rounding = 0,
 		rounding_power = 1.0,
 
-		active_opacity = 0.92,
-		inactive_opacity = 0.9,
+		active_opacity = 0.96,
+		inactive_opacity = 0.94,
 
 		shadow = {
 			enabled = true,
