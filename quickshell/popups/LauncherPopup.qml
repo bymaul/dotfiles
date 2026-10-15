@@ -96,6 +96,31 @@ BasePopup {
             return "app:" + (e.entry.id ?? e.name);
         return "bin:" + e.name;
     }
+    readonly property var systemActions: [
+        {name: "Wi-Fi", popup: "wifi", keywords: ["wifi", "wireless", "network", "wlan"]},
+        {name: "Bluetooth", popup: "bluetooth", keywords: ["bluetooth", "bt", "wireless"]}
+    ]
+    function matchSystemActions(q: string, out: var): void {
+        const empty = q === "";
+        for (const def of root.systemActions) {
+            const name = String(def.name ?? "").toLowerCase();
+            let best = 4;
+            if (empty) {
+                best = 1;
+            } else {
+                best = FilterUtils.matchScoreLn(name, q);
+                for (const h of def.keywords ?? []) {
+                    best = Math.min(best, FilterUtils.matchScoreLn(String(h ?? "").toLowerCase(), q));
+                    if (best === 0)
+                        break;
+                }
+            }
+            if (best < 4) {
+                const key = "popup:" + def.popup;
+                out.push({name: def.name, ln: name, key: key, popup: def.popup, icon: "", score: best, use: Services.LaunchHistory.countFor(key), last: Services.LaunchHistory.lastFor(key)});
+            }
+        }
+    }
     function sortScored(out: var): void {
         out.sort((a, b) => (a.score - b.score) || ((b.use ?? 0) - (a.use ?? 0)) || ((b.last ?? 0) - (a.last ?? 0)) || ((a.ln ?? "") < (b.ln ?? "") ? -1 : (a.ln ?? "") > (b.ln ?? "") ? 1 : 0));
     }
@@ -130,6 +155,7 @@ BasePopup {
                 out.push({name: name, ln: String(name ?? "").toLowerCase(), key: appKey, entry: app, icon: app.icon ?? "", score: best, use: Services.LaunchHistory.countFor(appKey), last: Services.LaunchHistory.lastFor(appKey)});
             }
         }
+        root.matchSystemActions(q, out);
         root.sortScored(out);
         root.applyResults(out.slice(0, Services.Theme.resultMax));
     }
@@ -201,7 +227,14 @@ BasePopup {
             return;
         }
         const entry = root.entries[resultList.currentIndex];
-        if (!entry || !entry.entry)
+        if (!entry)
+            return;
+        if (entry.popup) {
+            Services.LaunchHistory.record(entry.key ?? ("popup:" + entry.popup));
+            bar.togglePopup(entry.popup);
+            return;
+        }
+        if (!entry.entry)
             return;
         Services.LaunchHistory.record(entry.key ?? ("app:" + (entry.entry.id ?? entry.name ?? "")));
         root.runApp(entry.entry);
