@@ -85,7 +85,7 @@ Rectangle {
         interval: card.autoDismissMs
         running: !card.neverExpire
         repeat: false
-        onTriggered: Services.Notifs.hideToast(card.notification)
+        onTriggered: Services.Notifs.expireToast(card.notification)
     }
     Column {
         id: content
@@ -158,7 +158,7 @@ Rectangle {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: mouse => {
                                 mouse.accepted = true;
-                                Services.Notifs.hideToast(card.notification);
+                                Services.Notifs.dismissToast(card.notification);
                             }
                         }
                     }

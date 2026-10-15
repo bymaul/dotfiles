@@ -19,11 +19,10 @@ Item {
             top: true
             right: true
         }
-        margins.top: Services.Theme.popupTopGap
+        margins.top: (toastWin.screenFullscreen ? 0 : Services.Theme.barHeight) + Services.Theme.popupTopGap
         margins.right: Services.Theme.popupMargin
-        readonly property string toastScreenName: root.popupScreen?.name ?? ""
-        readonly property bool screenFullscreen: Services.Bars.isAnyFullscreen(toastWin.toastScreenName)
-        exclusiveZone: toastWin.screenFullscreen ? -1 : 0
+        readonly property bool screenFullscreen: Services.Bars.isAnyFullscreen(root.popupScreen?.name ?? "")
+        exclusiveZone: -1
         readonly property bool parked: root.bar.rightPopupBottom > 0
         readonly property int stackWidth: toastWin.parked ? root.bar.rightPopupWidth : Services.Theme.toastWidth
         readonly property int parkOffset: toastWin.parked ? root.bar.rightPopupBottom + Services.Theme.popupSpacing - Services.Theme.popupTopGap : 0
@@ -46,7 +45,7 @@ Item {
             clip: true
             interactive: false
             spacing: Services.Theme.popupSpacing
-            model: Services.Notifs.toasts.filter(t => !Services.Notifs.isOsd(t))
+            model: Services.Notifs.toasts.filter(t => !Services.Notifs.isOsd(t) && (!toastWin.screenFullscreen || Services.Notifs.showInFullscreen(t)))
             delegate: ToastCard {
                 required property var modelData
                 notification: modelData
