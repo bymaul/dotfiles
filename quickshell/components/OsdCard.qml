@@ -40,7 +40,7 @@ Rectangle {
         var n = card.notification;
         return n && n.qsSyncKey ? String(n.qsSyncKey) : "";
     }
-    readonly property bool showBar: card.hasProgress && card.syncKey !== "charger"
+    readonly property bool showBar: card.hasProgress && card.syncKey !== "charger" && card.syncKey !== "headphones"
     readonly property string glyph: {
         card.seq;
         var n = card.notification;
@@ -55,6 +55,8 @@ Rectangle {
             return "󰅶";
         if (key === "dnd")
             return "";
+        if (key === "headphones")
+            return icon.indexOf("headphone") !== -1 ? "󰋋" : "󰓃";
         if (key === "charger") {
             if (summary === "Charging")
                 return "󰂄";
