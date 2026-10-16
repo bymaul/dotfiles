@@ -206,7 +206,29 @@ hl.window_rule({
 hl.window_rule({
 	name = "float-transparency",
 	match = { float = true },
-	opacity = "0.85 override 0.85 override",
+	opacity = "0.9 override 0.9 override",
+})
+
+hl.window_rule({
+	match = {
+		class = "^Bitwarden$",
+	},
+	no_screen_share = true,
+	float = true,
+	center = true,
+	size = { 1000, 800 },
+	tag = "+floating-window",
+})
+
+hl.window_rule({
+	name = "float-bitwarden-chromium",
+	match = {
+		class = ".*nngceckbapebfimnlniiiahkandclblb.*",
+	},
+	no_screen_share = true,
+	float = true,
+	center = true,
+	tag = "+floating-window",
 })
 
 hl.layer_rule({
