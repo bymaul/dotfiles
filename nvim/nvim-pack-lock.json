@@ -14,7 +14,7 @@
       "src": "https://github.com/stevearc/conform.nvim"
     },
     "fff": {
-      "rev": "6412ec7b31cd77e1570a7ea5506a6a1fa996c554",
+      "rev": "8154eec7bdd9ccfa2ec5e3ea2b77df60734bf448",
       "src": "https://github.com/dmtrKovalenko/fff"
     },
     "friendly-snippets": {
@@ -38,7 +38,7 @@
       "src": "https://github.com/mason-org/mason.nvim"
     },
     "mini.nvim": {
-      "rev": "8831fa150fa26492cfe135801fa498132f1491d2",
+      "rev": "e3f2349a65143ff062f0b70ee9d68d8ce35c7059",
       "src": "https://github.com/echasnovski/mini.nvim"
     },
     "nvim-treesitter": {
