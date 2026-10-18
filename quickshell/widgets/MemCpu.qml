@@ -46,7 +46,7 @@ Item {
         anchors.centerIn: parent
         spacing: Services.Theme.tightSpacing
         Text {
-            text: Services.Perf.memUsed > 0 ? " " + Services.Perf.memUsed.toFixed(1) + "G" : " --G"
+            text: Services.Perf.memUsed > 0 ? " " + Services.Perf.memUsed.toFixed(1) + "G" : " --G"
             color: Services.Theme.fg
             font.family: Services.Theme.font
             font.pixelSize: Services.Theme.px13
