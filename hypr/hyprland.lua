@@ -52,8 +52,8 @@ hl.config({
 		rounding = 0,
 		rounding_power = 1.0,
 
-		-- active_opacity = 0.96,
-		-- inactive_opacity = 0.94,
+		active_opacity = 0.96,
+		inactive_opacity = 0.94,
 
 		shadow = {
 			enabled = true,
@@ -231,13 +231,12 @@ hl.window_rule({
 	tag = "+floating-window",
 })
 
--- uncomments this block to enable quickshell bar blur
--- hl.layer_rule({
--- 	name = "qs-bar-glass",
--- 	match = { namespace = "qs-bar" },
--- 	blur = true,
--- 	ignore_alpha = 0.1,
--- })
+hl.layer_rule({
+	name = "qs-bar-glass",
+	match = { namespace = "qs-bar" },
+	blur = true,
+	ignore_alpha = 0.1,
+})
 
 hl.layer_rule({
 	name = "qs-notifications-glass",

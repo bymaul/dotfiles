@@ -5,7 +5,7 @@ import Quickshell
 Singleton {
     id: root
 
-    property string barBg: "#141415" // "#D9141415" -- transparent
+    property string barBg: "#D9141415"
     property string bg: "#141415"
     property string surface: "#1c1c24"
     property string hoverBg: "#252530"
@@ -40,7 +40,7 @@ Singleton {
     property int listRowHeight: 40
     property int toastWidth: 300
     property int osdWidth: 150
-    property int osdBottomMargin: 32
+    property int osdBottomMargin: 20
     property int barHeight: 34
     property bool workspacesOnLeft: false
     property int groupSpacing: 16
