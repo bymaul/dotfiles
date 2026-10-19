@@ -5,7 +5,7 @@ import Quickshell
 Singleton {
     id: root
 
-    property string barBg: "#D9141415"
+    property string barBg: "#141415" // "#D9141415" -- transparent
     property string bg: "#141415"
     property string surface: "#1c1c24"
     property string hoverBg: "#252530"

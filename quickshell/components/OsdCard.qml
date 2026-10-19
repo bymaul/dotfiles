@@ -82,7 +82,7 @@ Rectangle {
         if (!isNaN(v)) {
             if (v <= 30)
                 return "󰖀";
-            if (v < 100)
+            if (v <= 100)
                 return "󰕾";
             return "󰝝";
         }

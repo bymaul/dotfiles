@@ -52,8 +52,8 @@ hl.config({
 		rounding = 0,
 		rounding_power = 1.0,
 
-		active_opacity = 0.96,
-		inactive_opacity = 0.94,
+		-- active_opacity = 0.96,
+		-- inactive_opacity = 0.94,
 
 		shadow = {
 			enabled = true,
@@ -112,7 +112,7 @@ hl.animation({ leaf = "border", enabled = true, speed = 8, bezier = "smoothOut" 
 hl.animation({ leaf = "windows", enabled = true, speed = 5.5, bezier = "smoothOut", style = "slide" })
 hl.animation({ leaf = "fade", enabled = false })
 hl.animation({ leaf = "layers", enabled = false })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smoothOut", style = "slidefade" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smoothOut", style = "slide" })
 hl.animation({ leaf = "zoomFactor", enabled = true, speed = 6, bezier = "smoothOut" })
 
 hl.gesture({
@@ -231,12 +231,13 @@ hl.window_rule({
 	tag = "+floating-window",
 })
 
-hl.layer_rule({
-	name = "qs-bar-glass",
-	match = { namespace = "qs-bar" },
-	blur = true,
-	ignore_alpha = 0.1,
-})
+-- uncomments this block to enable quickshell bar blur
+-- hl.layer_rule({
+-- 	name = "qs-bar-glass",
+-- 	match = { namespace = "qs-bar" },
+-- 	blur = true,
+-- 	ignore_alpha = 0.1,
+-- })
 
 hl.layer_rule({
 	name = "qs-notifications-glass",
