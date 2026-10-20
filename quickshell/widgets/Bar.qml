@@ -60,7 +60,7 @@ PanelWindow {
     BarDivider {}
     WlrLayershell.namespace: "qs-bar"
 
-    readonly property var historyPanel: popups.historyPanel
+    readonly property var bodyPanel: popups.bodyPanel
     readonly property int rightPopupBottom: popups.rightPopupBottom
     readonly property int rightPopupWidth: popups.rightPopupWidth
     function popupByName(name: string): var { return popups.popupByName(name); }

@@ -4,23 +4,29 @@ import "../components"
 import "../services" as Services
 BasePopup {
     id: root
-    required property var panel
+    required property var controlPanel
     useGrab: false
-    extraTop: panel.height + Services.Theme.popupSpacing
+    extraTop: controlPanel.height + Services.Theme.popupSpacing
     implicitWidth: Services.Theme.popupWidth
-    readonly property int listCap: Math.max(96, Math.round(Screen.height / 2) - 32 - 8)
-    implicitHeight: Services.Theme.rowHeight + (Services.Notifs.history.length > 0 ? Services.Theme.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0)
-    visible: panel.visible && Services.Notifs.history.length > 0
+    readonly property int calendarFixedHeight: calendarCard.fixedHeight
+    readonly property int maxStackedHeight: Math.max(0, root.anchorScreenHeight - Services.Theme.popupTopGap - Services.Theme.popupMargin - (root.anchorFullscreen ? 0 : Services.Theme.barHeight))
+    readonly property int chromeHeight: controlPanel.height + Services.Theme.popupSpacing + root.calendarFixedHeight + (Services.Notifs.history.length > 0 ? Services.Theme.rowHeight + 2 * Services.Theme.popupSpacing : Services.Theme.popupSpacing)
+    readonly property int listCap: Math.max(64, root.maxStackedHeight - root.chromeHeight)
+    implicitHeight: (Services.Notifs.history.length > 0 ? Services.Theme.rowHeight + Services.Theme.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0) + (Services.Notifs.history.length > 0 ? Services.Theme.popupSpacing : 0) + root.calendarFixedHeight
+    visible: controlPanel.visible && !root.hidden
+    property bool hidden: false
+    readonly property alias calendar: calendarCard
+    required property var clock
     function close(): void {
-        panel.close();
+        controlPanel.close();
     }
-    function rebindVisibility(): void {
-        root.visible = Qt.binding(function() {
-            return root.panel.visible && Services.Notifs.history.length > 0;
-        });
+    function reanchor(window): void {
+        root.hidden = true;
+        root.anchor.window = window;
+        root.hidden = false;
     }
     function cancelOrClose(): void {
-        root.panel.close();
+        root.controlPanel.close();
     }
     function revealAt(i: int): void {
         historyList.positionViewAtIndex(i, ListView.Contain);
@@ -29,15 +35,25 @@ BasePopup {
         Services.Notifs.historyVisible = visible;
         if (visible) {
             Services.Notifs.markRead();
+            calendarCard.resetToToday();
             polishTimer.restart();
         }
     }
     PanelNavKeys {
         host: root
-        panel: root.panel
+        panel: root.controlPanel
     }
-    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.panel.stepSection(-1) }
-    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.panel.stepSection(1) }
+    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.controlPanel.stepSection(-1) }
+    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.controlPanel.stepSection(1) }
+    Shortcut { sequence: "t"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.resetToToday() }
+    Shortcut { sequence: "Shift+H"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(-1) }
+    Shortcut { sequence: "Shift+L"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(1) }
+    Shortcut { sequence: "Shift+K"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(-12) }
+    Shortcut { sequence: "Shift+J"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(12) }
+    Shortcut { sequence: "Shift+Left"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(-1) }
+    Shortcut { sequence: "Shift+Right"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(1) }
+    Shortcut { sequence: "Shift+Up"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(-12) }
+    Shortcut { sequence: "Shift+Down"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(12) }
     Timer {
         id: polishTimer
         interval: Services.Theme.focusDelay
@@ -57,6 +73,7 @@ BasePopup {
         Rectangle {
             width: parent.width
             height: Services.Theme.rowHeight
+            visible: Services.Notifs.history.length > 0
             color: Services.Theme.bg
             Row {
                 anchors {
@@ -78,7 +95,7 @@ BasePopup {
                     width: 60
                     horizontalAlignment: Text.AlignRight
                     text: "Clear"
-                    readonly property bool selected: root.panel.selectedKind() === "clear"
+                    readonly property bool selected: root.controlPanel.selectedKind() === "clear"
                     color: selected ? Services.Theme.accent : clearArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
                     font.family: Services.Theme.font
                     font.pixelSize: Services.Theme.px12
@@ -90,12 +107,12 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
                         onContainsMouseChanged: {
                             if (containsMouse && Services.Notifs.history.length > 0)
-                                root.panel.selectIndex(root.panel.clearIdx());
+                                root.controlPanel.selectIndex(root.controlPanel.clearIdx());
                         }
                         onClicked: {
-                            root.panel.actionIndex = -1;
+                            root.controlPanel.actionIndex = -1;
                             Services.Notifs.clearHistory();
-                            root.panel.clampSelection();
+                            root.controlPanel.clampSelection();
                         }
                     }
                 }
@@ -116,7 +133,7 @@ BasePopup {
                     id: historyCard
                     required property var modelData
                     required property int index
-                    readonly property bool selected: root.panel.selectedIndex === root.panel.firstHistIdx() + index
+                    readonly property bool selected: root.controlPanel.selectedIndex === root.controlPanel.firstHistIdx() + index
                     readonly property string rawIcon: modelData.icon ?? ""
                     width: historyList.width
                     height: content.height + 16
@@ -138,24 +155,24 @@ BasePopup {
                         cursorShape: Qt.PointingHandCursor
                         onContainsMouseChanged: {
                             if (containsMouse)
-                                root.panel.selectIndex(root.panel.firstHistIdx() + historyCard.index);
+                                root.controlPanel.selectIndex(root.controlPanel.firstHistIdx() + historyCard.index);
                         }
                         onClicked: mouse => {
                             mouse.accepted = true;
                             const idx = historyCard.index;
                             const live = historyCard.modelData.live;
                             if (live == null) {
-                                root.panel.actionIndex = -1;
+                                root.controlPanel.actionIndex = -1;
                                 Services.Notifs.dismissHistoryAt(idx);
-                                root.panel.clampSelection();
+                                root.controlPanel.clampSelection();
                                 return;
                             }
                             try {
                                 Services.Notifs.activateDefault(live);
                             } catch (_) {}
-                            root.panel.actionIndex = -1;
+                            root.controlPanel.actionIndex = -1;
                             Services.Notifs.dismissHistoryAfterAction(idx, live);
-                            root.panel.clampSelection();
+                            root.controlPanel.clampSelection();
                             bar.closePopups();
                         }
                     }
@@ -219,16 +236,16 @@ BasePopup {
                                 ActionPills {
                                     width: parent.width
                                     actions: Services.Notifs.secondaryActionsOf(modelData.live?.actions ?? [])
-                                    focusedIndex: historyCard.selected ? root.panel.actionIndex : -1
-                                    onHovered: index => root.panel.selectAction(historyCard.index, index)
+                                    focusedIndex: historyCard.selected ? root.controlPanel.actionIndex : -1
+                                    onHovered: index => root.controlPanel.selectAction(historyCard.index, index)
                                     onPicked: action => {
                                         const idx = historyCard.index;
                                         try {
                                             Services.Notifs.activateAction(modelData.live, action);
                                         } catch (_) {}
-                                        root.panel.actionIndex = -1;
+                                        root.controlPanel.actionIndex = -1;
                                         Services.Notifs.dismissHistoryAfterAction(idx, modelData.live);
-                                        root.panel.clampSelection();
+                                        root.controlPanel.clampSelection();
                                         bar.closePopups();
                                     }
                                 }
@@ -237,6 +254,10 @@ BasePopup {
                     }
                 }
             }
+        }
+        CalendarCard {
+            id: calendarCard
+            clock: root.clock
         }
     }
 }

@@ -8,7 +8,7 @@ Item {
     required property var bar
     required property var clock
 
-    readonly property alias historyPanel: historyPanel
+    readonly property alias bodyPanel: bodyPanel
     readonly property alias controlPanel: controlPanelPopup
 
     property bool settingsRequested: false
@@ -60,9 +60,9 @@ Item {
     readonly property var clipboardPopup: clipboardLoader.item
     readonly property var emojiPopup: emojiLoader.item
 
-    readonly property var allPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup, historyPanel]
-    readonly property var exclusivePopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup]
-    readonly property var rightPopups: [calendarPopup, controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, historyPanel]
+    readonly property var allPopups: [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup, bodyPanel]
+    readonly property var exclusivePopups: [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, root.launcherPopup, root.clipboardPopup, root.emojiPopup]
+    readonly property var rightPopups: [controlPanelPopup, wifiPopup, bluetoothPopup, powerPopup, root.settingsPopup, bodyPanel]
 
     property int rightPopupBottom: {
         const top = Services.Theme.popupTopGap;
@@ -84,7 +84,6 @@ Item {
 
     function popupByName(name: string): var {
         switch (name) {
-        case "calendar": return calendarPopup;
         case "control": return controlPanelPopup;
         case "wifi": return wifiPopup;
         case "bluetooth": return bluetoothPopup;
@@ -175,6 +174,8 @@ Item {
                 target.anchor.window = returnTo.anchor.window;
             else
                 target.anchor.window = root.bar.currentPopupAnchor();
+            if (target === controlPanelPopup && bodyPanel && bodyPanel.anchor)
+                bodyPanel.anchor.window = target.anchor.window;
         }
         target.returnTo = open ? returnTo : null;
         target.visible = open;
@@ -186,14 +187,8 @@ Item {
         for (const p of root.allPopups) {
             if (!p || !p.anchor || p.anchor.window === anchor)
                 continue;
-            if (p === historyPanel) {
-                if (!p.visible || pickerOpen) {
-                    p.anchor.window = anchor;
-                } else {
-                    p.visible = false;
-                    p.anchor.window = anchor;
-                    p.rebindVisibility();
-                }
+            if (p === bodyPanel) {
+                p.reanchor(anchor);
                 continue;
             }
             if (!p.visible) {
@@ -212,23 +207,19 @@ Item {
         }
     }
     function revealHistory(i: int): void {
-        historyPanel.revealAt(i);
+        bodyPanel.revealAt(i);
     }
 
-    CalendarPopup {
-        id: calendarPopup
-        bar: root.bar
-        clock: root.clock
-    }
     ControlPanelPopup {
         id: controlPanelPopup
         bar: root.bar
-        historyWindow: historyPanel
+        body: bodyPanel
     }
-    NotificationHistoryPopup {
-        id: historyPanel
+    ControlBodyPopup {
+        id: bodyPanel
         bar: root.bar
-        panel: controlPanelPopup
+        controlPanel: controlPanelPopup
+        clock: root.clock
     }
     WifiPopup {
         id: wifiPopup

@@ -8,17 +8,17 @@ import "../services" as Services
 import "control"
 BasePopup {
     id: root
-    property var historyWindow: null
-    extraGrabWindows: root.historyWindow != null ? [root.historyWindow] : []
+    property var body: null
+    extraGrabWindows: root.body != null ? [root.body] : []
     implicitWidth: Services.Theme.popupWidth
     implicitHeight: 2 * Services.Theme.popupPadding + statusRow.height + brightnessRow.height + volumeRow.height + mprisRow.height + tileGrid.height + 4 * Services.Theme.popupSpacing
     PanelNavKeys {
         host: root
         panel: root
-        navActive: !(bar.historyPanel?.visible ?? false)
+        navActive: !(bar.bodyPanel?.visible ?? false)
     }
-    Shortcut { sequence: "["; enabled: root.visible && !(bar.historyPanel?.visible ?? false); onActivated: root.stepSection(-1) }
-    Shortcut { sequence: "]"; enabled: root.visible && !(bar.historyPanel?.visible ?? false); onActivated: root.stepSection(1) }
+    Shortcut { sequence: "["; enabled: root.visible && !(bar.bodyPanel?.visible ?? false); onActivated: root.stepSection(-1) }
+    Shortcut { sequence: "]"; enabled: root.visible && !(bar.bodyPanel?.visible ?? false); onActivated: root.stepSection(1) }
     onVisibleChanged: {
         if (visible) {
             selectedIndex = 0;
@@ -36,26 +36,57 @@ BasePopup {
     property int mprisCol: 1
     property var micSource: Services.Media.source
     readonly property var audioSink: Services.Media.sink
+    readonly property var sections: {
+        const s = [];
+        if (Services.Media.brightnessAvailable)
+            s.push({ kind: "brightness", count: 1 });
+        s.push({ kind: "volume", count: 1 });
+        if (root.mprisPlayer !== null)
+            s.push({ kind: "mpris", count: 1 });
+        s.push({ kind: "tile", count: 9 });
+        if (Services.Notifs.history.length > 0) {
+            s.push({ kind: "clear", count: 1 });
+            s.push({ kind: "history", count: Services.Notifs.history.length });
+        }
+        s.push({ kind: "calendar", count: 1 });
+        let start = 0;
+        for (const e of s) {
+            e.start = start;
+            start += e.count;
+        }
+        return s;
+    }
+    function sectionStart(kind: string): int {
+        const s = root.sections.find(e => e.kind === kind);
+        return s ? s.start : -1;
+    }
     function volumeIdx(): int {
-        return Services.Media.brightnessAvailable ? 1 : 0;
+        return root.sectionStart("volume");
     }
     function mprisIdx(): int {
-        return root.mprisPlayer !== null ? root.volumeIdx() + 1 : -1;
+        return root.sectionStart("mpris");
     }
     function mprisMaxCol(): int {
         return root.playerCount > 1 ? 3 : 2;
     }
     function firstTileIdx(): int {
-        return root.volumeIdx() + 1 + (root.mprisPlayer !== null ? 1 : 0);
+        return root.sectionStart("tile");
     }
     function clearIdx(): int {
-        return Services.Notifs.history.length > 0 ? root.firstTileIdx() + 9 : -1;
+        return root.sectionStart("clear");
     }
     function firstHistIdx(): int {
-        return root.firstTileIdx() + 9 + (Services.Notifs.history.length > 0 ? 1 : 0);
+        return root.sectionStart("history");
+    }
+    function firstCalIdx(): int {
+        return root.sectionStart("calendar");
+    }
+    function calCard(): var {
+        return root.body?.calendar ?? null;
     }
     function itemCount(): int {
-        return root.firstHistIdx() + Services.Notifs.history.length;
+        const last = root.sections[root.sections.length - 1];
+        return last.start + last.count;
     }
     function clampSelection(): void {
         selectedIndex = Services.Theme.clamp(selectedIndex, 0, root.itemCount() - 1);
@@ -113,6 +144,8 @@ BasePopup {
     }
     function revealSelection(): void {
         const kind = root.selectedKind();
+        if (kind === "calendar")
+            return;
         if (kind === "history")
             bar.revealHistory(root.selectedHistItem());
         else if (kind === "clear")
@@ -128,8 +161,9 @@ BasePopup {
         const bounds = [0, root.firstTileIdx()];
         if (root.clearIdx() >= 0)
             bounds.push(root.clearIdx());
-        else if (Services.Notifs.history.length > 0)
+        if (Services.Notifs.history.length > 0)
             bounds.push(root.firstHistIdx());
+        bounds.push(root.firstCalIdx());
         return bounds;
     }
     function stepSection(dir: int): void {
@@ -157,6 +191,10 @@ BasePopup {
     }
     function stepVertical(dir: int): void {
         actionIndex = -1;
+        if (root.selectedKind() === "calendar") {
+            root.calCard()?.moveSelection(dir * 7);
+            return;
+        }
         if (root.selectedKind() !== "tile") {
             root.stepSelection(dir);
             return;
@@ -172,16 +210,10 @@ BasePopup {
         root.revealSelection();
     }
     function selectedKind(): string {
-        if (Services.Media.brightnessAvailable && selectedIndex === 0)
-            return "brightness";
-        if (selectedIndex === root.volumeIdx())
-            return "volume";
-        if (root.mprisPlayer !== null && selectedIndex === root.mprisIdx())
-            return "mpris";
-        if (Services.Notifs.history.length > 0 && selectedIndex === root.clearIdx())
-            return "clear";
-        if (selectedIndex >= root.firstHistIdx())
-            return "history";
+        for (const s of root.sections) {
+            if (selectedIndex >= s.start && selectedIndex < s.start + s.count)
+                return s.kind;
+        }
         return "tile";
     }
     function selectedTile(): int {
@@ -217,6 +249,8 @@ BasePopup {
             root.adjustVolume(dir * Services.Theme.volumeStep);
         else if (kind === "mpris")
             mprisCol = Services.Theme.clamp(mprisCol + dir, 0, root.mprisMaxCol());
+        else if (kind === "calendar")
+            root.calCard()?.moveSelection(dir);
         else if (kind === "history")
             root.moveAction(dir);
         else
@@ -340,6 +374,10 @@ BasePopup {
             actionIndex = -1;
             Services.Notifs.clearHistory();
             root.clampSelection();
+            return;
+        }
+        if (kind === "calendar") {
+            root.calCard()?.openSelected();
             return;
         }
         if (kind === "history") {

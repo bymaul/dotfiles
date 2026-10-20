@@ -1,39 +1,20 @@
 import QtQuick
-import Quickshell
-import "../components"
 import "../services" as Services
-BasePopup {
+
+Rectangle {
     id: root
     required property var clock
-    anchorMode: "right"
-    implicitWidth: Services.Theme.popupWidth
-    implicitHeight: 256
+    width: parent.width
+    color: Services.Theme.bg
+    readonly property int gridHeight: 156
+    readonly property int headerHeight: 26
+    readonly property int weekdayHeight: 16
+    readonly property int dateHeight: 16
+    readonly property int fixedHeight: 2 * Services.Theme.popupPadding + root.headerHeight + root.dateHeight + root.weekdayHeight + root.gridHeight + 3 * Services.Theme.popupSpacing
+    implicitHeight: root.fixedHeight
     property date viewDate: new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
     property int selectedDay: clock.date.getDate()
-    Shortcut { sequence: "h"; enabled: root.visible; onActivated: root.moveSelection(-1) }
-    Shortcut { sequence: "l"; enabled: root.visible; onActivated: root.moveSelection(1) }
-    Shortcut { sequence: "k"; enabled: root.visible; onActivated: root.moveSelection(-7) }
-    Shortcut { sequence: "j"; enabled: root.visible; onActivated: root.moveSelection(7) }
-    Shortcut { sequence: "Left"; enabled: root.visible; onActivated: root.moveSelection(-1) }
-    Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.moveSelection(1) }
-    Shortcut { sequence: "Up"; enabled: root.visible; onActivated: root.moveSelection(-7) }
-    Shortcut { sequence: "Down"; enabled: root.visible; onActivated: root.moveSelection(7) }
-    Shortcut { sequence: "Shift+H"; enabled: root.visible; onActivated: root.stepMonth(-1) }
-    Shortcut { sequence: "Shift+L"; enabled: root.visible; onActivated: root.stepMonth(1) }
-    Shortcut { sequence: "Shift+K"; enabled: root.visible; onActivated: root.stepMonth(-12) }
-    Shortcut { sequence: "Shift+J"; enabled: root.visible; onActivated: root.stepMonth(12) }
-    Shortcut { sequence: "Shift+Left"; enabled: root.visible; onActivated: root.stepMonth(-1) }
-    Shortcut { sequence: "Shift+Right"; enabled: root.visible; onActivated: root.stepMonth(1) }
-    Shortcut { sequence: "Shift+Up"; enabled: root.visible; onActivated: root.stepMonth(-12) }
-    Shortcut { sequence: "Shift+Down"; enabled: root.visible; onActivated: root.stepMonth(12) }
-    Shortcut { sequence: "t"; enabled: root.visible; onActivated: root.resetToToday() }
-    Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.openSelected() }
-    Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.openSelected() }
-    Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.openSelected() }
-    onVisibleChanged: {
-        if (visible)
-            root.resetToToday();
-    }
+    Component.onCompleted: root.resetToToday()
     function resetToToday(): void {
         root.viewDate = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
         root.selectedDay = clock.date.getDate();
@@ -86,10 +67,18 @@ BasePopup {
         const month = root.viewDate.getMonth() + 1;
         Qt.openUrlExternally(`https://calendar.google.com/calendar/u/0/r/day/${year}/${month}/${day}`);
     }
-    PopupCard {
+    Column {
+        id: column
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            margins: Services.Theme.popupPadding
+        }
+        spacing: Services.Theme.popupSpacing
         Row {
             width: parent.width
-            height: 26
+            height: root.headerHeight
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 26
@@ -134,6 +123,8 @@ BasePopup {
         }
         Text {
             width: parent.width
+            height: root.dateHeight
+            verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
             text: Qt.formatDateTime(clock.date, "dddd, dd MMMM yyyy")
             color: Services.Theme.dim
@@ -142,7 +133,7 @@ BasePopup {
         }
         Row {
             width: parent.width
-            height: 16
+            height: root.weekdayHeight
             Repeater {
                 model: root.weekdayHeaders()
                 Text {
@@ -158,7 +149,7 @@ BasePopup {
         }
         Grid {
             width: parent.width
-            height: 156
+            height: root.gridHeight
             columns: 7
             Repeater {
                 model: root.dayCells()
