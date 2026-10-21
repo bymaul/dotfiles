@@ -26,7 +26,10 @@ BasePopup {
         root.hidden = false;
     }
     function cancelOrClose(): void {
-        root.controlPanel.close();
+        root.controlPanel.handleEscape();
+    }
+    function quitAction(): void {
+        root.controlPanel.handleEscape();
     }
     function revealAt(i: int): void {
         historyList.positionViewAtIndex(i, ListView.Contain);
@@ -258,6 +261,8 @@ BasePopup {
         CalendarCard {
             id: calendarCard
             clock: root.clock
+            popup: root.controlPanel
+            focused: root.controlPanel.selectedKind() === "calendar"
         }
     }
 }

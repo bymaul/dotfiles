@@ -4,8 +4,12 @@ import "../services" as Services
 Rectangle {
     id: root
     required property var clock
+    property bool focused: false
+    property var popup: null
     width: parent.width
     color: Services.Theme.bg
+    border.color: Services.Theme.accent
+    border.width: root.focused ? 1 : 0
     readonly property int gridHeight: 156
     readonly property int headerHeight: 26
     readonly property int weekdayHeight: 16
@@ -156,10 +160,11 @@ Rectangle {
                 Rectangle {
                     required property var modelData
                     readonly property bool isTodayCell: modelData > 0 && root.isToday(modelData)
-                    readonly property bool isSelectedCell: modelData > 0 && modelData === root.selectedDay
+                    readonly property bool isSelectedCell: modelData > 0 && modelData === root.selectedDay && root.focused
+                    readonly property bool showDay: root.focused || isTodayCell || isSelectedCell
                     width: parent.width / 7
                     height: 26
-                    color: isSelectedCell ? Services.Theme.accent : isTodayCell ? Services.Theme.activeBg : Services.Theme.transparent
+                    color: showDay ? (isSelectedCell ? Services.Theme.accent : isTodayCell ? Services.Theme.activeBg : Services.Theme.bg) : Services.Theme.transparent
                     Text {
                         anchors.centerIn: parent
                         text: modelData === 0 ? "" : modelData
@@ -167,12 +172,24 @@ Rectangle {
                         font.family: Services.Theme.font
                         font.pixelSize: Services.Theme.px12
                     }
+                    focus: true
+                    Keys.onReturnPressed: root.openCalendar(root.selectedDay)
+                    Keys.onSpacePressed: root.openCalendar(root.selectedDay)
+                    Keys.onLeftPressed: root.moveSelection(-1)
+                    Keys.onRightPressed: root.moveSelection(1)
+                    Keys.onUpPressed: root.moveSelection(-1)
+                    Keys.onDownPressed: root.moveSelection(1)
+                    Keys.onEscapePressed: root.popup?.handleEscape()
                     MouseArea {
                         anchors.fill: parent
                         enabled: parent.modelData > 0
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: root.selectedDay = parent.modelData
+                        onEntered: {
+                            root.selectedDay = parent.modelData;
+                            if (root.popup)
+                                root.popup.selectIndex(root.popup.firstCalIdx());
+                        }
                         onClicked: root.openCalendar(parent.modelData)
                     }
                 }

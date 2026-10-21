@@ -33,6 +33,8 @@ BasePopup {
     readonly property int playerCount: Services.Media.usableCount
     property int selectedIndex: 0
     property int actionIndex: -1
+    property double lastEscapeAt: 0
+    property double lastCalendarExitAt: 0
     property int mprisCol: 1
     property var micSource: Services.Media.source
     readonly property var audioSink: Services.Media.sink
@@ -83,6 +85,35 @@ BasePopup {
     }
     function calCard(): var {
         return root.body?.calendar ?? null;
+    }
+    function exitCalendarFocus(): void {
+        if (root.selectedKind() !== "calendar")
+            return;
+        actionIndex = -1;
+        root.stepSelection(-1);
+    }
+    function handleEscape(): void {
+        const now = Date.now();
+        if (now - root.lastEscapeAt < 200)
+            return;
+        root.lastEscapeAt = now;
+        if (root.selectedKind() === "calendar") {
+            root.exitCalendarFocus();
+            return;
+        }
+        root.close();
+    }
+    function cancelOrClose(): void {
+        root.handleEscape();
+    }
+    function quitAction(): void {
+        root.handleEscape();
+    }
+    function escArmed(): bool {
+        return !(bar.bodyPanel?.visible ?? false);
+    }
+    function quitArmed(): bool {
+        return !(bar.bodyPanel?.visible ?? false);
     }
     function itemCount(): int {
         const last = root.sections[root.sections.length - 1];

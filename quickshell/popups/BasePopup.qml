@@ -58,6 +58,9 @@ PopupWindow {
     function quitArmed(): bool {
         return true;
     }
+    function quitAction(): void {
+        base.close();
+    }
     function cancelOrClose(): void {
         base.close();
     }
@@ -87,7 +90,7 @@ PopupWindow {
     Shortcut {
         sequence: "q"
         enabled: base.visible && base.quitArmed()
-        onActivated: base.close()
+        onActivated: base.quitAction()
     }
     anchor.window: bar
     readonly property var anchorWin: base.anchor.window ?? bar
