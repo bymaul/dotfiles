@@ -52,12 +52,12 @@ BasePopup {
             columns: 2
             columnSpacing: Services.Theme.popupSpacing
             rowSpacing: Services.Theme.popupSpacing
-            Tile { glyph: "󰐥"; label: "Power off [s]"; columns: 2; onClicked: root.powerOff() }
-            Tile { glyph: "󰜉"; label: "Reboot [r]"; columns: 2; onClicked: root.reboot() }
-            Tile { glyph: "󰤄"; label: "Suspend [u]"; columns: 2; onClicked: root.suspend() }
-            Tile { glyph: "󰋊"; label: "Hibernate [h]"; columns: 2; onClicked: root.hibernate() }
-            Tile { glyph: "󰌾"; label: "Lock [l]"; columns: 2; onClicked: root.lock() }
-            Tile { glyph: "󰍃"; label: "Logout [e]"; columns: 2; onClicked: root.logout() }
+            Tile { glyph: "󰐥"; label: Services.Theme.powerShowShortcuts ? "Power off [s]" : "Power off"; columns: 2; onClicked: root.powerOff() }
+            Tile { glyph: "󰜉"; label: Services.Theme.powerShowShortcuts ? "Reboot [r]" : "Reboot"; columns: 2; onClicked: root.reboot() }
+            Tile { glyph: "󰤄"; label: Services.Theme.powerShowShortcuts ? "Suspend [u]" : "Suspend"; columns: 2; onClicked: root.suspend() }
+            Tile { glyph: "󰋊"; label: Services.Theme.powerShowShortcuts ? "Hibernate [h]" : "Hibernate"; columns: 2; onClicked: root.hibernate() }
+            Tile { glyph: "󰌾"; label: Services.Theme.powerShowShortcuts ? "Lock [l]" : "Lock"; columns: 2; onClicked: root.lock() }
+            Tile { glyph: "󰍃"; label: Services.Theme.powerShowShortcuts ? "Logout [e]" : "Logout"; columns: 2; onClicked: root.logout() }
         }
     }
 }

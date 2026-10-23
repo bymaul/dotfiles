@@ -43,6 +43,7 @@ Singleton {
     property int osdBottomMargin: 20
     property int barHeight: 34
     property bool workspacesOnLeft: false
+    property bool powerShowShortcuts: true
     property int groupSpacing: 16
     property int tightSpacing: 8
     property int barIconPadding: 0
