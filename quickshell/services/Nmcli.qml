@@ -28,6 +28,20 @@ Singleton {
     property var _radioCb: null
     property string _radioErr: ""
     property bool _radioWant: false
+    property string _lastConnectedSsid: ""
+    property bool _userDisconnect: false
+    property bool _reconnectArmed: false
+    property int _reconnectAttempts: 0
+    readonly property int _reconnectMax: 3
+    property bool refreshing: false
+
+    property var wiredDevice: null
+    property bool wiredConnected: false
+    property string connectivityState: "unknown"
+
+    Component.onCompleted: {
+        nmcli.refresh();
+    }
 
     function splitFields(line: string): var {
         const out = [];
@@ -148,11 +162,13 @@ Singleton {
         watchdog.stop();
         nmcli._refreshBusy = false;
         nmcli.scanning = pollTimer.running;
+        nmcli.refreshing = false;
     }
     function refresh(): void {
         if (nmcli._refreshBusy)
             return;
         nmcli._refreshBusy = true;
+        nmcli.refreshing = true;
         watchdog.restart();
         devProc.running = true;
     }
@@ -169,6 +185,7 @@ Singleton {
             return;
         }
         nmcli.scanning = true;
+        nmcli.refreshing = true;
         nmcli._scanArmed = true;
         const cmd = ["timeout", "15", "nmcli", "device", "wifi", "rescan"];
         if (nmcli.iface !== "")
@@ -202,6 +219,7 @@ Singleton {
                 onDone(false, "No Wi-Fi device");
             return;
         }
+        nmcli._userDisconnect = true;
         nmcli._downCb = (typeof onDone === "function") ? onDone : null;
         nmcli._downErr = "";
         nmcli.busySsid = (nmcli.connected && nmcli.connected.ssid) || "";
@@ -226,9 +244,22 @@ Singleton {
         onoffProc.running = true;
         watchdog.restart();
     }
+    onConnectedChanged: {
+        if (nmcli.connected) {
+            nmcli._lastConnectedSsid = nmcli.connected.ssid;
+            nmcli._userDisconnect = false;
+            nmcli._reconnectArmed = false;
+            nmcli._reconnectAttempts = 0;
+            reconnectTimer.stop();
+        } else if (nmcli._lastConnectedSsid && !nmcli._userDisconnect && nmcli.wifiEnabled && nmcli.iface && !nmcli.pendingSsid && !nmcli._reconnectArmed) {
+            nmcli._reconnectArmed = true;
+            reconnectTimer.start();
+        }
+        nmcli.startPoll();
+    }
     Timer {
         id: pollTimer
-        interval: 3000
+        interval: 10000
         repeat: true
         onTriggered: {
             if (nmcli._pollCount <= 0) {
@@ -238,6 +269,37 @@ Singleton {
             }
             nmcli._pollCount--;
             nmcli.refresh();
+        }
+    }
+    Timer {
+        id: maintTimer
+        interval: 30000
+        repeat: true
+        running: true
+        onTriggered: {
+            if (!nmcli._refreshBusy && nmcli.wifiEnabled && nmcli.iface !== "")
+                nmcli.refresh();
+        }
+    }
+    Timer {
+        id: reconnectTimer
+        interval: 5000
+        repeat: false
+        onTriggered: {
+            nmcli._reconnectArmed = false;
+            if (!nmcli._lastConnectedSsid || nmcli._userDisconnect || !nmcli.wifiEnabled || !nmcli.iface || nmcli.pendingSsid || nmcli.connected)
+                return;
+            const net = nmcli.networks.find(n => n && n.ssid === nmcli._lastConnectedSsid);
+            if (net && net.secure) {
+                nmcli._reconnectAttempts = 0;
+                return;
+            }
+            if (nmcli._reconnectAttempts >= nmcli._reconnectMax) {
+                nmcli._reconnectAttempts = 0;
+                return;
+            }
+            nmcli._reconnectAttempts++;
+            nmcli.connect(nmcli._lastConnectedSsid, "", null);
         }
     }
     Timer {
@@ -254,6 +316,8 @@ Singleton {
             nmcli._downCb = null;
             nmcli._delCb = null;
             nmcli._radioCb = null;
+            nmcli._reconnectArmed = false;
+            nmcli._reconnectAttempts = 0;
             nmcli._pollCount = 0;
             pollTimer.stop();
             nmcli.finishRefresh();
@@ -267,15 +331,25 @@ Singleton {
         }
         onExited: {
             let iface = "";
+            let wired = null;
             const lines = devOut.text.split("\n");
             for (let i = 0; i < lines.length; i++) {
                 const f = nmcli.splitFields(lines[i].replace(/\r$/, ""));
-                if (f.length >= 2 && f[1].trim() === "wifi" && f[0].trim() !== "") {
-                    iface = f[0].trim();
-                    break;
-                }
+                if (f.length < 3)
+                    continue;
+                const type = f[1].trim();
+                const name = f[0].trim();
+                const state = f[2].trim();
+                if (name === "")
+                    continue;
+                if (type === "wifi" && iface === "")
+                    iface = name;
+                else if ((type === "ethernet" || type === "wired") && wired === null)
+                    wired = { name: name, state: state, connected: state === "connected" };
             }
             nmcli.iface = iface;
+            nmcli.wiredDevice = wired;
+            nmcli.wiredConnected = wired !== null && wired.connected;
             radioProc.running = true;
         }
     }
@@ -309,6 +383,27 @@ Singleton {
         }
         onExited: {
             nmcli._knownNames = nmcli.parseProfiles(profOut.text);
+            connProc.running = true;
+        }
+    }
+    Process {
+        id: connProc
+        command: ["timeout", "10", "nmcli", "connectivity"]
+        stdout: StdioCollector {
+            id: connOut
+        }
+        onExited: {
+            const s = String(connOut.text ?? "").trim().toLowerCase();
+            if (s === "none")
+                nmcli.connectivityState = "none";
+            else if (s === "portal")
+                nmcli.connectivityState = "portal";
+            else if (s === "limited")
+                nmcli.connectivityState = "limited";
+            else if (s === "full")
+                nmcli.connectivityState = "full";
+            else
+                nmcli.connectivityState = "unknown";
             nmcli.publish();
             nmcli.finishRefresh();
         }

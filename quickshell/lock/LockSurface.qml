@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Networking
 import "../services" as Services
 Item {
     id: root
@@ -348,16 +347,16 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: {
-                    if (Services.Wifi.wiredConnected)
-                        return "󰈀  " + (Services.Wifi.wiredDevice?.name ?? "Wired");
-                    if (!Networking.wifiEnabled)
+                    if (Services.Nmcli.wiredConnected)
+                        return "󰈀  " + (Services.Nmcli.wiredDevice?.name ?? "Wired");
+                    if (!Services.Nmcli.wifiEnabled)
                         return "󰤭  Wi-Fi off";
-                    if (Services.Wifi.connected == null)
+                    if (Services.Nmcli.connected == null)
                         return "󰤯  Not connected";
-                    const level = Number(Services.Wifi.connected.signalStrength ?? 0) || 0;
-                    return Services.Wifi.signalGlyph(level) + "  " + (Services.Wifi.connected.name ?? "Wi-Fi");
+                    const level = Number(Services.Nmcli.connected?.signal ?? 0) || 0;
+                    return Services.Wifi.signalGlyph(level / 100) + "  " + (Services.Nmcli.connected.ssid ?? "Wi-Fi");
                 }
-                color: (Services.Wifi.wiredConnected || (Networking.wifiEnabled && Services.Wifi.connected != null)) ? Services.Theme.fg : Services.Theme.dim
+                color: (Services.Nmcli.wiredConnected || (Services.Nmcli.wifiEnabled && Services.Nmcli.connected != null)) ? Services.Theme.fg : Services.Theme.dim
                 font.family: Services.Theme.font
                 font.pixelSize: Services.Theme.px12
             }

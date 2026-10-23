@@ -7,12 +7,14 @@ Item {
     width: parent.width
     height: 18
 
-    readonly property var wifiNet: Services.Wifi.connected
-    readonly property var connectingNet: Services.Wifi.connecting
-    readonly property bool isWired: Services.Wifi.wiredConnected
-    readonly property bool noInternet: Services.Wifi.noInternet
-    readonly property bool isPortal: Services.Wifi.isPortal
-    readonly property bool isLimited: Services.Wifi.isLimited
+    readonly property var wifiNet: Services.Nmcli.connected
+    readonly property var connectingNet: (Services.Nmcli.networks?.find(n => n && n.ssid === Services.Nmcli.pendingSsid && !n.active) ?? null)
+    readonly property bool isWired: Services.Nmcli.wiredConnected
+    readonly property bool refreshing: Services.Nmcli.refreshing
+    readonly property string connectivityState: Services.Nmcli.connectivityState
+    readonly property bool noInternet: root.connectivityState === "none" || root.connectivityState === "limited"
+    readonly property bool isPortal: root.connectivityState === "portal"
+    readonly property bool isLimited: root.connectivityState === "limited"
     readonly property bool netDegraded: root.noInternet || root.isPortal
     readonly property color wifiColor: root.netDegraded ? Services.Theme.warn : Services.Theme.dim
     readonly property string wifiGlyph: {
@@ -22,7 +24,7 @@ Item {
             return "󰤯";
         if (root.netDegraded)
             return "󰤫";
-        return Services.Wifi.signalGlyph(root.wifiNet.signalStrength);
+        return Services.Wifi.signalGlyph((root.wifiNet?.signal ?? 0) / 100);
     }
     readonly property string wifiText: {
         if (root.isWired) {
@@ -30,10 +32,10 @@ Item {
                 return "Portal";
             if (root.noInternet)
                 return "No internet";
-            return (Services.Wifi.wiredDevice?.name ?? "Wired");
+            return (Services.Nmcli.wiredDevice?.name ?? "Wired");
         }
         if (root.wifiNet) {
-            const name = root.wifiNet.name || "Wi-Fi";
+            const name = root.wifiNet.ssid || "Wi-Fi";
             if (root.isPortal)
                 return name + " • portal";
             if (root.isLimited)
@@ -43,9 +45,11 @@ Item {
             return name;
         }
         if (root.connectingNet)
-            return (root.connectingNet.name || "Wi-Fi") + "…";
-        if (!Services.Wifi.enabled)
+            return (root.connectingNet.ssid || "Wi-Fi") + "…";
+        if (!Services.Nmcli.wifiEnabled)
             return "Wi-Fi off";
+        if (root.refreshing && !root.wifiNet)
+            return "Refreshing…";
         return "Disconnected";
     }
 

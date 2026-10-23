@@ -165,10 +165,12 @@ DeviceListBase {
             return "No Wi-Fi device found";
         if (!Services.Nmcli.wifiEnabled)
             return "󰤯 Wi-Fi off";
+        if (Services.Nmcli.refreshing && !Services.Nmcli.connected)
+            return "󰑓  Refreshing…";
         if (Services.Nmcli.connected)
             return "󰤨 " + (Services.Nmcli.connected.ssid || "Connected");
         if (Services.Nmcli.networks.length === 0)
-            return Services.Nmcli.scanning ? "󰑓  Scanning..." : "󰤭 No networks found";
+            return Services.Nmcli.scanning ? "󰑓  Scanning…" : "󰤭 No networks found";
         return "󰤭 Not connected";
     }
     function rowSubText(net: var): string {
