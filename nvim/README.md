@@ -2,6 +2,9 @@
 
 A lean Neovim 0.12+ config built on native `vim.pack` (no plugin manager).
 
+Part of [dotfiles](https://github.com/bymaul/dotfiles) — installed as the `nvim`
+extra via `./install.sh --category extras` or `./install.sh nvim`.
+
 ## Requirements
 
 - Neovim 0.12 or newer
@@ -10,28 +13,28 @@ A lean Neovim 0.12+ config built on native `vim.pack` (no plugin manager).
 
 ## Installation
 
-This config lives inside [winfiles](https://github.com/bymaul/winfiles) and is
-linked into place by its installers:
+Via dotfiles:
 
-- Windows: `.\install.ps1` (junctions `%LOCALAPPDATA%\nvim`)
-- WSL / Linux / macOS: `winfiles/install-wsl.sh` (links `~/.config/nvim`)
+```sh
+git clone https://github.com/bymaul/dotfiles ~/dotfiles
+cd ~/dotfiles
+./install.sh --category extras   # or: ./install.sh nvim
+```
 
-Want just the editor config? Link the `nvim/` directory manually:
+This links `nvim/` to `~/.config/nvim`. Plugins are installed on first launch.
+LSP servers and formatters are auto-installed via mason on startup.
+
+Want just the editor config? Link it manually:
 
 ```sh
 # Linux / macOS
-git clone https://github.com/bymaul/winfiles.git
-ln -s "$(pwd)/winfiles/nvim" "${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+ln -s "$(pwd)/nvim" "${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
 ```
 
 ```powershell
 # Windows (pwsh)
-git clone https://github.com/bymaul/winfiles.git
-New-Item -ItemType Junction -Path "$env:LOCALAPPDATA\nvim" -Target "$PWD\winfiles\nvim"
+New-Item -ItemType Junction -Path "$env:LOCALAPPDATA\nvim" -Target "$PWD\nvim"
 ```
-
-Plugins are installed on first launch. LSP servers and formatters are
-auto-installed via mason on startup.
 
 ## Structure
 
