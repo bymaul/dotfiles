@@ -20,11 +20,14 @@ Rectangle {
         id: artBox
         anchors {
             left: parent.left
-            verticalCenter: parent.verticalCenter
+            top: parent.top
+            bottom: parent.bottom
+            topMargin: 2
+            bottomMargin: 2
             leftMargin: 10
         }
-        width: 28
-        height: 28
+        width: 32
+        height: 32
         Text {
             anchors.centerIn: parent
             visible: artImg.status !== Image.Ready
@@ -41,8 +44,8 @@ Rectangle {
             asynchronous: true
             cache: false
             smooth: true
-            sourceSize.width: 56
-            sourceSize.height: 56
+            sourceSize.width: 64
+            sourceSize.height: 64
             fillMode: Image.PreserveAspectCrop
         }
     }
