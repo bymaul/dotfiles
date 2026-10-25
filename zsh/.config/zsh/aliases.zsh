@@ -1,7 +1,7 @@
 # aliases.zsh - aliases and helper functions.
 
 alias cat=bat
-alias vim=nvim
+alias n=nvim
 alias lg=lazygit
 alias oc=opencode
 alias rf=rainfrog
