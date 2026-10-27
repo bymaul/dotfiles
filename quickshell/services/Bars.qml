@@ -163,12 +163,15 @@ Singleton {
                 return false;
             if (!(Number(t.lastIpcObject?.fullscreen ?? 0) >= 2))
                 return false;
-            const special = bars.isSpecialWorkspace(t.workspace) || bars.isSpecialWorkspace(t.lastIpcObject?.workspace);
+            const ws = t.workspace;
+            if (!ws || ws.active !== true)
+                return false;
+            const special = bars.isSpecialWorkspace(ws) || bars.isSpecialWorkspace(t.lastIpcObject?.workspace);
             if (specialOnly && !special)
                 return false;
             if (!specialOnly && special)
                 return false;
-            return t.monitor?.name === name || t.workspace?.monitor?.name === name;
+            return t.monitor?.name === name || ws.monitor?.name === name;
         });
     }
     function isFullscreen(name: string): bool {
