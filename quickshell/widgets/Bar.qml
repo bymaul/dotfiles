@@ -136,7 +136,6 @@ PanelWindow {
             verticalCenter: parent.verticalCenter
         }
         spacing: Services.Theme.groupSpacing
-        Tray {}
         SystemGroup {
             bar: bar
         }

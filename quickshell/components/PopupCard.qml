@@ -5,6 +5,7 @@ Rectangle {
     anchors.fill: parent
     default property alias content: column.data
     color: Services.Theme.bg
+    readonly property alias contentHeight: column.implicitHeight
     Column {
         id: column
         anchors.fill: parent

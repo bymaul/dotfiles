@@ -11,7 +11,7 @@ BasePopup {
     property var body: null
     extraGrabWindows: root.body != null ? [root.body] : []
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: 2 * Services.Theme.popupPadding + statusRow.height + brightnessRow.height + volumeRow.height + mprisRow.height + tileGrid.height + 4 * Services.Theme.popupSpacing
+    implicitHeight: 2 * Services.Theme.popupPadding + card.contentHeight
     PanelNavKeys {
         host: root
         panel: root
@@ -25,6 +25,7 @@ BasePopup {
             actionIndex = -1;
             mprisCol = 1;
             root.clampSelection();
+            trayRow.resetState();
         }
         Services.Notifs.setSuppressed(visible);
         Services.Notifs.markRead();
@@ -46,6 +47,8 @@ BasePopup {
         if (root.mprisPlayer !== null)
             s.push({ kind: "mpris", count: 1 });
         s.push({ kind: "tile", count: 9 });
+        if (trayRow.visible)
+            s.push({ kind: "tray", count: 1 });
         if (Services.Notifs.history.length > 0) {
             s.push({ kind: "clear", count: 1 });
             s.push({ kind: "history", count: Services.Notifs.history.length });
@@ -67,6 +70,9 @@ BasePopup {
     }
     function mprisIdx(): int {
         return root.sectionStart("mpris");
+    }
+    function trayIdx(): int {
+        return root.sectionStart("tray");
     }
     function mprisMaxCol(): int {
         return root.playerCount > 1 ? 3 : 2;
@@ -97,6 +103,10 @@ BasePopup {
         if (now - root.lastEscapeAt < 200)
             return;
         root.lastEscapeAt = now;
+        if (trayRow.visible && trayRow.expanded) {
+            trayRow.back();
+            return;
+        }
         if (root.selectedKind() === "calendar") {
             root.exitCalendarFocus();
             return;
@@ -162,6 +172,10 @@ BasePopup {
         mprisCol = Services.Theme.clamp(col, 0, root.mprisMaxCol());
         root.clampSelection();
     }
+    function selectTray(): void {
+        if (trayRow.visible)
+            root.selectIndex(trayIdx());
+    }
     Connections {
         target: Services.Notifs
         function onHistoryChanged() {
@@ -184,18 +198,16 @@ BasePopup {
     }
     function stepSelection(dir: int): void {
         actionIndex = -1;
+        if (trayRow.visible && root.selectedKind() === "tray" && trayRow.expanded) {
+            trayRow.moveInList(dir);
+            return;
+        }
         selectedIndex += dir;
         root.clampSelection();
         root.revealSelection();
     }
     function sectionBounds(): var {
-        const bounds = [0, root.firstTileIdx()];
-        if (root.clearIdx() >= 0)
-            bounds.push(root.clearIdx());
-        if (Services.Notifs.history.length > 0)
-            bounds.push(root.firstHistIdx());
-        bounds.push(root.firstCalIdx());
-        return bounds;
+        return root.sections.map(s => s.start);
     }
     function stepSection(dir: int): void {
         actionIndex = -1;
@@ -230,11 +242,14 @@ BasePopup {
             root.stepSelection(dir);
             return;
         }
+        const tileStart = root.firstTileIdx();
+        const tileEnd = tileStart + 8;
         const target = selectedIndex + dir * 3;
-        if (target < root.firstTileIdx())
-            selectedIndex = root.mprisPlayer !== null ? root.mprisIdx() : root.volumeIdx();
-        else if (dir > 0 && Services.Notifs.history.length > 0 && target >= root.clearIdx())
-            selectedIndex = root.clearIdx();
+        const tileSection = root.sections.findIndex(s => s.kind === "tile");
+        if (target > tileEnd)
+            selectedIndex = root.sections[tileSection + 1] ? root.sections[tileSection + 1].start : tileEnd;
+        else if (target < tileStart)
+            selectedIndex = tileSection > 0 ? root.sections[tileSection - 1].start : tileStart;
         else
             selectedIndex = target;
         root.clampSelection();
@@ -280,6 +295,12 @@ BasePopup {
             root.adjustVolume(dir * Services.Theme.volumeStep);
         else if (kind === "mpris")
             mprisCol = Services.Theme.clamp(mprisCol + dir, 0, root.mprisMaxCol());
+        else if (kind === "tray") {
+            if (dir > 0)
+                trayRow.forward();
+            else
+                trayRow.back();
+        }
         else if (kind === "calendar")
             root.calCard()?.moveSelection(dir);
         else if (kind === "history")
@@ -401,6 +422,10 @@ BasePopup {
             root.activateMpris(mprisCol);
             return;
         }
+        if (kind === "tray") {
+            trayRow.activate();
+            return;
+        }
         if (kind === "clear") {
             actionIndex = -1;
             Services.Notifs.clearHistory();
@@ -425,6 +450,7 @@ BasePopup {
         objects: [root.micSource]
     }
     PopupCard {
+        id: card
         StatusRow {
             id: statusRow
         }
@@ -442,6 +468,10 @@ BasePopup {
         }
         TileGrid {
             id: tileGrid
+            popup: root
+        }
+        TrayRow {
+            id: trayRow
             popup: root
         }
     }
