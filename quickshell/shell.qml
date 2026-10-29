@@ -13,7 +13,6 @@ import "screenshot"
 import "services" as Services
 
 ShellRoot {
-    Component.onCompleted: Services.AudioJack.requestQuery()
     Bar {
         id: bar
         lockContext: lockContext
