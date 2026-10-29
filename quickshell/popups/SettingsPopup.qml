@@ -213,7 +213,7 @@ BasePopup {
         root.clampSelection();
         if (root.tab === 0 && root.wpCount > 0 && selectedIndex === 0) {
             generalTab.wallList.currentIndex = root.wallCursor;
-            generalTab.wallList.positionViewAtIndex(root.wallCursor, GridView.Visible);
+            generalTab.wallList.positionViewAtIndex(root.wallCursor, GridView.Contain);
         } else {
             generalTab.wallList.currentIndex = -1;
         }
