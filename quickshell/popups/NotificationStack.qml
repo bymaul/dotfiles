@@ -28,6 +28,7 @@ Item {
         readonly property int parkOffset: toastWin.parked ? root.bar.rightPopupBottom + Services.Theme.popupSpacing - Services.Theme.popupTopGap : 0
         implicitWidth: toastWin.stackWidth
         implicitHeight: toastWin.parkOffset + toastList.contentHeight
+        mask: Region { item: toastList }
         visible: root.popupScreen !== null
         color: Services.Theme.transparent
         WlrLayershell.namespace: "qs-notifications"

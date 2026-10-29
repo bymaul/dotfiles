@@ -139,6 +139,8 @@ PopupWindow {
             }
         }
         onCleared: {
+            if (grab.active)
+                return;
             if (!base.visible)
                 return;
             if (base.pickerActive)

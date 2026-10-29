@@ -25,7 +25,7 @@ BasePopup {
             actionIndex = -1;
             mprisCol = 1;
             root.clampSelection();
-            trayRow.resetState();
+            trayRow.reset();
         }
         Services.Notifs.setSuppressed(visible);
         Services.Notifs.markRead();
