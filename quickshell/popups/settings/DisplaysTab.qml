@@ -105,32 +105,6 @@ Column {
         popup.beginMonitorChange();
         Services.Monitors.setMonitorLayout(map);
     }
-    function finishDrag(name: string, cx: real, cy: real): void {
-        const pts = [];
-        for (const n of root.previewOrder) {
-            if (n === name) {
-                pts.push({name: name, cx: cx, cy: cy});
-            } else {
-                const i = root.previewOrder.indexOf(n);
-                pts.push({name: n, cx: root.restingX(i) + root.boxWFor(n) / 2, cy: root.restingY(i) + root.previewSlotH / 2});
-            }
-        }
-        let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
-        for (const p of pts) {
-            if (p.cx < minX)
-                minX = p.cx;
-            if (p.cx > maxX)
-                maxX = p.cx;
-            if (p.cy < minY)
-                minY = p.cy;
-            if (p.cy > maxY)
-                maxY = p.cy;
-        }
-        const axis = (maxY - minY) > (maxX - minX) ? "column" : "row";
-        const sorted = pts.slice().sort((a, b) => axis === "row" ? a.cx - b.cx : a.cy - b.cy).map(p => p.name);
-        if (axis !== root.previewAxis || JSON.stringify(sorted) !== JSON.stringify(root.previewOrder))
-            root.applyOrder(sorted, axis);
-    }
     function startGrab(): bool {
         popup.closeDrop();
         if (root.previewMons.length < 2)
@@ -223,15 +197,13 @@ Column {
                     height: root.previewSlotH
                     x: root.restingX(orderIdx < 0 ? 0 : orderIdx)
                     y: root.restingY(orderIdx < 0 ? 0 : orderIdx)
-                    z: boxMouse.dragging ? 10 : grabbed ? 5 : 0
+                    z: grabbed ? 5 : 0
                     Behavior on x {
-                        enabled: !boxMouse.dragging
                         NumberAnimation {
                             duration: 180
                         }
                     }
                     Behavior on y {
-                        enabled: !boxMouse.dragging
                         NumberAnimation {
                             duration: 180
                         }
@@ -242,10 +214,10 @@ Column {
                         Rectangle {
                             width: boxSlot.bw
                             height: root.previewBoxH
-                            scale: boxMouse.dragging || boxSlot.grabbed ? 1.06 : 1
+                            scale: boxSlot.grabbed ? 1.06 : 1
                             color: boxSlot.isFocused || boxSlot.grabbed ? Services.Theme.activeBg : Services.Theme.surface
                             border.width: 1
-                            border.color: boxMouse.dragging || boxSlot.grabbed ? Services.Theme.accent : boxSlot.isFocused ? Services.Theme.accent : Services.Theme.dim
+                            border.color: boxSlot.grabbed ? Services.Theme.accent : boxSlot.isFocused ? Services.Theme.accent : Services.Theme.dim
                             Text {
                                 anchors.centerIn: parent
                                 text: boxSlot.monName.replace(/-.*$/, "")
@@ -274,50 +246,10 @@ Column {
                         id: boxMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        cursorShape: boxMouse.dragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                        property real pressX: 0
-                        property real pressY: 0
-                        property real startBoxX: 0
-                        property real startBoxY: 0
-                        property bool dragging: false
+                        cursorShape: Qt.ArrowCursor
                         onContainsMouseChanged: {
                             if (containsMouse)
                                 popup.hoverSelect(1);
-                        }
-                        onPressed: mouse => {
-                            popup.hoverSelect(1);
-                            boxMouse.pressX = mouse.x;
-                            boxMouse.pressY = mouse.y;
-                            boxMouse.startBoxX = boxSlot.x;
-                            boxMouse.startBoxY = boxSlot.y;
-                            mouse.accepted = true;
-                        }
-                        onPositionChanged: mouse => {
-                            if (!pressed)
-                                return;
-                            if (!boxMouse.dragging && Math.abs(mouse.x - boxMouse.pressX) + Math.abs(mouse.y - boxMouse.pressY) < 5)
-                                return;
-                            boxMouse.dragging = true;
-                            boxSlot.x = Services.Theme.clamp(boxMouse.startBoxX + mouse.x - boxMouse.pressX, -boxSlot.width / 2, previewArea.width - boxSlot.width / 2);
-                            boxSlot.y = Services.Theme.clamp(boxMouse.startBoxY + mouse.y - boxMouse.pressY, -180, previewArea.height + 114);
-                        }
-                        onReleased: {
-                            if (!boxMouse.dragging)
-                                return;
-                            boxMouse.dragging = false;
-                            const cx = boxSlot.x + boxSlot.width / 2;
-                            const cy = boxSlot.y + boxSlot.height / 2;
-                            const oldOrder = JSON.stringify(root.previewOrder);
-                            const oldAxis = root.previewAxis;
-                            root.finishDrag(boxSlot.monName, cx, cy);
-                            if (JSON.stringify(root.previewOrder) === oldOrder && root.previewAxis === oldAxis)
-                                Services.Monitors.lastApplyMsg = "Already in this arrangement";
-                            boxSlot.x = Qt.binding(function () {
-                                return root.restingX(root.previewOrder.indexOf(boxSlot.monName));
-                            });
-                            boxSlot.y = Qt.binding(function () {
-                                return root.restingY(root.previewOrder.indexOf(boxSlot.monName));
-                            });
                         }
                     }
                 }
@@ -330,7 +262,7 @@ Column {
         height: popup.enabledCount > 1 ? popup.previewHintH : 0
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
-        text: popup.previewGrab ? "Arrows move · Enter applies · Esc cancels" : "Drag to reorder · Enter to move with keyboard"
+        text: popup.previewGrab ? "Arrows move · Enter applies · Esc cancels" : "Enter to move with keyboard"
         color: Services.Theme.dim
         font.family: Services.Theme.font
         font.pixelSize: Services.Theme.px10
