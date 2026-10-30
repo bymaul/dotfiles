@@ -16,12 +16,20 @@ Rectangle {
     readonly property int dateHeight: 16
     readonly property int fixedHeight: 2 * Services.Theme.popupPadding + root.headerHeight + root.dateHeight + root.weekdayHeight + root.gridHeight + 3 * Services.Theme.popupSpacing
     implicitHeight: root.fixedHeight
-    property date viewDate: new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
-    property int selectedDay: clock.date.getDate()
+    property date viewDate: new Date()
+    property int selectedDay: 1
     Component.onCompleted: root.resetToToday()
     function resetToToday(): void {
-        root.viewDate = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
-        root.selectedDay = clock.date.getDate();
+        const year = clock.date.getFullYear();
+        const month = clock.date.getMonth();
+        const day = clock.date.getDate();
+
+        const newViewDate = new Date(year, month, 1);
+        if (root.viewDate.getTime() !== newViewDate.getTime())
+            root.viewDate = newViewDate;
+
+        if (root.selectedDay !== day)
+            root.selectedDay = day;
     }
     function stepMonth(offset: int): void {
         root.viewDate = new Date(root.viewDate.getFullYear(), root.viewDate.getMonth() + offset, 1);
@@ -33,7 +41,9 @@ Rectangle {
     }
     function moveSelection(delta: int): void {
         const d = new Date(root.viewDate.getFullYear(), root.viewDate.getMonth(), root.selectedDay + delta);
-        root.viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+        const newViewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+        if (root.viewDate.getTime() !== newViewDate.getTime())
+            root.viewDate = newViewDate;
         root.selectedDay = d.getDate();
     }
     function openSelected(): void {
@@ -50,10 +60,13 @@ Rectangle {
         const start = root.weekStart();
         return names.slice(start).concat(names.slice(0, start));
     }
+    readonly property int todayDay: clock.date.getDate()
+    readonly property int todayMonth: clock.date.getMonth()
+    readonly property int todayYear: clock.date.getFullYear()
     function isToday(day: int): bool {
-        return day === clock.date.getDate() && viewDate.getMonth() === clock.date.getMonth() && viewDate.getFullYear() === clock.date.getFullYear();
+        return day === root.todayDay && viewDate.getMonth() === root.todayMonth && viewDate.getFullYear() === root.todayYear;
     }
-    function dayCells(): var {
+    readonly property var dayCells: {
         const first = (viewDate.getDay() - root.weekStart() + 7) % 7;
         const total = root.daysInMonth(viewDate.getFullYear(), viewDate.getMonth());
         const cells = [];
@@ -156,7 +169,7 @@ Rectangle {
             height: root.gridHeight
             columns: 7
             Repeater {
-                model: root.dayCells()
+                model: root.dayCells
                 Rectangle {
                     required property var modelData
                     readonly property bool isTodayCell: modelData > 0 && root.isToday(modelData)

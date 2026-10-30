@@ -14,6 +14,7 @@ BasePopup {
     readonly property int listCap: Math.max(64, root.maxStackedHeight - root.chromeHeight)
     implicitHeight: (Services.Notifs.history.length > 0 ? Services.Theme.rowHeight + Services.Theme.popupSpacing + Math.min(root.listCap, historyList.contentHeight) : 0) + (Services.Notifs.history.length > 0 ? Services.Theme.popupSpacing : 0) + root.calendarFixedHeight
     visible: controlPanel.visible && !root.hidden
+    property int lastPanelHeight: 0
     property bool hidden: false
     property bool reanchoring: false
     readonly property alias calendar: calendarCard
@@ -22,6 +23,11 @@ BasePopup {
         controlPanel.close();
     }
     function reanchor(window): void {
+        const currentHeight = root.controlPanel.height;
+        if (root.anchor.window === window && currentHeight === root.lastPanelHeight && root.visible)
+            return;
+
+        root.lastPanelHeight = currentHeight;
         root.reanchoring = true;
         root.hidden = true;
         root.anchor.window = window;
