@@ -202,7 +202,7 @@ Singleton {
         settings.promptLidApply(v);
     }
     function promptLidApply(v: string): void {
-        Notifs.notify({app: "settings", summary: "Lid close → " + v, body: "Click to install into logind (needs root). Reboot to take effect.", syncId: "lid-apply", timeout: 15000, actions: [{identifier: "default", text: "Apply", invoke: () => settings.applyLidSwitch(v)}]});
+        Notifs.notify({app: "settings", summary: "Lid close → " + v, body: "Click to install into logind (needs root). Applies immediately.", syncId: "lid-apply", timeout: 15000, actions: [{identifier: "default", text: "Apply", invoke: () => settings.applyLidSwitch(v)}]});
     }
     function applyLidSwitch(v: string): void {
         if (!["suspend", "lock", "ignore"].includes(v))
@@ -236,7 +236,7 @@ Singleton {
         L.push("general {");
         L.push("    lock_cmd = qs ipc call bar lock");
         L.push("    before_sleep_cmd = loginctl lock-session");
-        L.push("    after_sleep_cmd = hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"on\"))'");
+        L.push("    after_sleep_cmd = sleep 1; brightnessctl -r >/dev/null 2>&1; brightnessctl -rd '*:kbd_backlight' >/dev/null 2>&1; hyprctl hyprsunset gamma 100; hyprctl eval 'hl.dispatch(hl.dsp.dpms(\"on\"))'");
         L.push("}");
         L.push("");
         if (settings.dimTimeout > 0) {
@@ -339,7 +339,7 @@ Singleton {
         id: lidApply
         onExited: exitCode => {
             if (exitCode === 0)
-                Notifs.notify({app: "settings", summary: "Lid action installed", body: "Reboot for logind to pick it up.", syncId: "lid-apply", timeout: 8000});
+                Notifs.notify({app: "settings", summary: "Lid action installed", body: "Applied to logind.", syncId: "lid-apply", timeout: 8000});
             else
                 Notifs.notify({app: "settings", summary: "Lid install cancelled/failed", body: "Run qs-power-logind --apply in a terminal.", syncId: "lid-apply", timeout: 8000});
         }

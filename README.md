@@ -37,6 +37,6 @@ foot and Hyprland reload immediately. btop, yazi, lazygit, and nvim pick up the 
 ## Notes
 
 - Needs a Nerd Font. `starship` installs itself on first `zsh` run.
-- Power, display scale, and theming live in the Settings popup. Lid-close handling needs `qs-power-logind --apply` + reboot.
+- Power, display scale, and theming live in the Settings popup. Lid-close handling is installed with `qs-power-logind --apply` or from Settings and reloads logind immediately; no reboot needed.
 - Tweak Hyprland directly in `hypr/hyprland.lua`.
 - ASUS laptops only: `sudo pacman -S asusctl` unlocks Quiet / Balanced / Performance + charge limit.
