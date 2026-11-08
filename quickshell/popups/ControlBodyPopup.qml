@@ -75,8 +75,6 @@ BasePopup {
         host: root
         panel: root.controlPanel
     }
-    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.controlPanel.stepSection(-1) }
-    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.controlPanel.stepSection(1) }
     Shortcut { sequence: "t"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.resetToToday() }
     Shortcut { sequence: "Shift+H"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(-1) }
     Shortcut { sequence: "Shift+L"; enabled: root.visible && root.controlPanel.selectedKind() === "calendar"; onActivated: calendarCard.stepMonth(1) }

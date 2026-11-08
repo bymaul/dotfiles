@@ -16,8 +16,6 @@ BasePopup {
         host: root
         panel: root
     }
-    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.stepSection(-1) }
-    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.stepSection(1) }
     onVisibleChanged: {
         if (visible) {
             selectedIndex = 0;
@@ -195,12 +193,20 @@ BasePopup {
         root.clampSelection();
         root.revealSelection();
     }
-    function sectionBounds(): var {
-        return root.sections.map(s => s.start);
+    function sectionStops(): var {
+        const stops = [];
+        let inMedia = false;
+        for (const s of root.sections) {
+            const media = s.kind === "brightness" || s.kind === "volume";
+            if (!media || !inMedia)
+                stops.push(s.start);
+            inMedia = media;
+        }
+        return stops;
     }
     function stepSection(dir: int): void {
         actionIndex = -1;
-        const bounds = root.sectionBounds();
+        const bounds = root.sectionStops();
         let target = selectedIndex;
         if (dir > 0) {
             for (const b of bounds) {
@@ -220,6 +226,18 @@ BasePopup {
         selectedIndex = target;
         root.clampSelection();
         root.revealSelection();
+    }
+    function goFirstSection(): void {
+        const stops = root.sectionStops();
+        if (stops.length === 0)
+            return;
+        root.selectIndex(stops[0]);
+    }
+    function goLastSection(): void {
+        const stops = root.sectionStops();
+        if (stops.length === 0)
+            return;
+        root.selectIndex(stops[stops.length - 1]);
     }
     function stepVertical(dir: int): void {
         actionIndex = -1;

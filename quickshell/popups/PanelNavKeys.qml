@@ -19,4 +19,8 @@ Item {
     Shortcut { sequence: "Space"; enabled: keys.host.visible && keys.navActive; onActivated: keys.panel.activateSelected() }
     Shortcut { sequence: "m"; enabled: keys.host.visible && keys.navActive; onActivated: keys.panel.toggleVolumeMute() }
     Shortcut { sequence: "d"; enabled: keys.host.visible && keys.navActive; onActivated: keys.panel.dismissSelected() }
+    Shortcut { sequence: "w"; enabled: keys.host.visible && keys.navActive; onActivated: keys.panel.stepSection(1) }
+    Shortcut { sequence: "b"; enabled: keys.host.visible && keys.navActive; onActivated: keys.panel.stepSection(-1) }
+    Shortcut { sequence: "g"; enabled: keys.host.visible && keys.navActive; onActivated: keys.panel.goFirstSection() }
+    Shortcut { sequence: "Shift+G"; enabled: keys.host.visible && keys.navActive; onActivated: keys.panel.goLastSection() }
 }

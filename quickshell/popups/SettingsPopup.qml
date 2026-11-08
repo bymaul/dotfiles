@@ -35,8 +35,10 @@ BasePopup {
     Shortcut { sequence: "Right"; enabled: root.visible; onActivated: root.adjustSelected(1) }
     Shortcut { sequence: "Tab"; enabled: root.visible; onActivated: root.tabStep(1) }
     Shortcut { sequence: "Shift+Tab"; enabled: root.visible; onActivated: root.tabStep(-1) }
-    Shortcut { sequence: "["; enabled: root.visible; onActivated: root.stepSection(-1) }
-    Shortcut { sequence: "]"; enabled: root.visible; onActivated: root.stepSection(1) }
+    Shortcut { sequence: "w"; enabled: root.visible; onActivated: root.stepSection(1) }
+    Shortcut { sequence: "b"; enabled: root.visible; onActivated: root.stepSection(-1) }
+    Shortcut { sequence: "g"; enabled: root.visible; onActivated: root.goFirstSection() }
+    Shortcut { sequence: "Shift+G"; enabled: root.visible; onActivated: root.goLastSection() }
     Shortcut { sequence: "Space"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Return"; enabled: root.visible; onActivated: root.activateSelected() }
     Shortcut { sequence: "Enter"; enabled: root.visible; onActivated: root.activateSelected() }
@@ -270,7 +272,7 @@ BasePopup {
         bounds.push(root.monLastIndex());
         return bounds;
     }
-    function stepSection(dir: int): void {
+    function jumpToSection(target: int): void {
         if (root.wallFocus)
             return;
         if (root.tab === 2 && root.previewGrab)
@@ -279,26 +281,41 @@ BasePopup {
             root.closeDrop();
             return;
         }
+        root.selectedIndex = target;
+        root.clampSelection();
+        root.syncWallCursor();
+    }
+    function stepSection(dir: int): void {
         const bounds = root.sectionBounds();
-        let target = selectedIndex;
+        let target = root.selectedIndex;
         if (dir > 0) {
             for (const b of bounds) {
-                if (b > selectedIndex) {
+                if (b > root.selectedIndex) {
                     target = b;
                     break;
                 }
             }
         } else {
             for (let i = bounds.length - 1; i >= 0; i--) {
-                if (bounds[i] < selectedIndex) {
+                if (bounds[i] < root.selectedIndex) {
                     target = bounds[i];
                     break;
                 }
             }
         }
-        selectedIndex = target;
-        root.clampSelection();
-        root.syncWallCursor();
+        root.jumpToSection(target);
+    }
+    function goFirstSection(): void {
+        const bounds = root.sectionBounds();
+        if (bounds.length === 0)
+            return;
+        root.jumpToSection(bounds[0]);
+    }
+    function goLastSection(): void {
+        const bounds = root.sectionBounds();
+        if (bounds.length === 0)
+            return;
+        root.jumpToSection(bounds[bounds.length - 1]);
     }
     function tabStep(dir: int): void {
         root.cancelWallFocus();
