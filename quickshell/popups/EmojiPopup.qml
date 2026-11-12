@@ -66,7 +66,7 @@ BasePopup {
         return 99;
     }
     onVisibleChanged: {
-        if (visible) {
+        if (visible && !wasVisible) {
             root.loadRecents();
             search.text = "";
             filter.selMoved = false;
@@ -75,7 +75,7 @@ BasePopup {
             root.pendingEmoji = "";
             focusProbe.running = true;
             root.refilter();
-        } else {
+        } else if (!visible && !wasVisible) {
             root.entries = [];
             if (focusProbe.running)
                 focusProbe.running = false;

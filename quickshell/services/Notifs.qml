@@ -383,6 +383,8 @@ Singleton {
         actionsSupported: true
         imageSupported: true
         bodyMarkupSupported: true
+        persistenceSupported: true
+        keepOnReload: false
         onNotification: notification => notifs.handleNotification(notification)
     }
     function handleNotification(notification): void {

@@ -33,14 +33,14 @@ BasePopup {
         }
     }
     onVisibleChanged: {
-        if (visible) {
+        if (visible && !wasVisible) {
             root.appsCache = DesktopEntries.applications?.values ?? [];
             root.refreshBins();
             root.loadHistory();
             search.text = "";
             filter.selMoved = false;
             root.refilter();
-        } else {
+        } else if (!visible && !wasVisible) {
             root.appsCache = null;
             root.entries = [];
         }

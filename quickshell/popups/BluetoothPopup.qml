@@ -40,9 +40,11 @@ DeviceListBase {
     }
     onVisibleChanged: {
         if (visible) {
-            root.resetNav();
-            root.autoScanOnOpen();
-        } else {
+            if (!wasVisible) {
+                root.resetNav();
+                root.autoScanOnOpen();
+            }
+        } else if (!wasVisible) {
             root.snapshotDevices();
         }
     }

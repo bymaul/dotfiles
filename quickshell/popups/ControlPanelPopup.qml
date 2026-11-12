@@ -11,21 +11,35 @@ BasePopup {
     property var body: null
     extraGrabWindows: root.body != null ? [root.body] : []
     implicitWidth: Services.Theme.popupWidth
-    implicitHeight: 2 * Services.Theme.popupPadding + card.contentHeight
+    readonly property bool hasHistory: Services.Notifs.history.length > 0
+    readonly property int calendarFixedHeight: root.body?.calendarFixedHeight ?? 0
+    readonly property int maxStackedHeight: Math.max(0, root.anchorScreenHeight - Services.Theme.popupTopGap - Services.Theme.popupMargin - (root.anchorFullscreen ? 0 : Services.Theme.barHeight))
+    readonly property int panelMaxHeight: Math.max(0, root.maxStackedHeight - Services.Theme.popupSpacing - root.calendarFixedHeight)
+    readonly property int chromeHeight: fixedRows.implicitHeight + (root.hasHistory ? 2 * Services.Theme.popupSpacing + Services.Theme.rowHeight : 0)
+    readonly property int baseHeight: 2 * Services.Theme.popupPadding + root.chromeHeight
+    readonly property int listCap: Math.max(64, root.panelMaxHeight - root.baseHeight)
+    readonly property int listHeight: root.hasHistory ? Math.min(root.listCap, historyList.contentHeight) : 0
+    implicitHeight: root.baseHeight + root.listHeight
     PanelNavKeys {
         host: root
         panel: root
     }
     onVisibleChanged: {
-        if (visible) {
+        if (visible && !wasVisible) {
             selectedIndex = 0;
             actionIndex = -1;
             mprisCol = 1;
             root.clampSelection();
+            root.captureAnchor();
+            root.historySpan = Services.Notifs.history.length > 0 ? Services.Notifs.history.length + 1 : 0;
+            root.pendingCalendarShift = 0;
             trayRow.reset();
         }
         Services.Notifs.setSuppressed(visible);
+        Services.Notifs.historyVisible = visible;
         Services.Notifs.markRead();
+        if (visible)
+            historyPolish.restart();
     }
     readonly property var mprisPlayer: Services.Media.activePlayer
     readonly property int playerCount: Services.Media.usableCount
@@ -33,6 +47,11 @@ BasePopup {
     property int actionIndex: -1
     property double lastEscapeAt: 0
     property double lastCalendarExitAt: 0
+    property string anchorKind: ""
+    property int anchorSeq: -1
+    property int historySpan: 0
+    property int pendingCalendarShift: 0
+    onSelectedIndexChanged: root.captureAnchor()
     property int mprisCol: 1
     property var micSource: Services.Media.source
     readonly property var audioSink: Services.Media.sink
@@ -46,7 +65,7 @@ BasePopup {
         s.push({ kind: "tile", count: 9 });
         if (trayRow.visible)
             s.push({ kind: "tray", count: 1 });
-        if (Services.Notifs.history.length > 0) {
+        if (root.hasHistory) {
             s.push({ kind: "clear", count: 1 });
             s.push({ kind: "history", count: Services.Notifs.history.length });
         }
@@ -163,11 +182,53 @@ BasePopup {
         if (trayRow.visible)
             root.selectIndex(trayIdx());
     }
+    function focusLastTile(): void {
+        selectedIndex = root.firstTileIdx() + 8;
+        actionIndex = -1;
+        root.clampSelection();
+    }
+    function captureAnchor(): void {
+        const kind = root.selectedKind();
+        root.anchorKind = kind;
+        root.anchorSeq = kind === "history" ? (Services.Notifs.history[root.selectedHistItem()]?.seq ?? -1) : -1;
+    }
+    function syncHistorySelection(): void {
+        const shift = root.pendingCalendarShift;
+        root.pendingCalendarShift = 0;
+        if (root.anchorKind === "history") {
+            const seq = root.anchorSeq;
+            const idx = seq >= 0 ? Services.Notifs.history.findIndex(h => h.seq === seq) : -1;
+            if (idx >= 0) {
+                selectedIndex = root.firstHistIdx() + idx;
+                root.clampSelection();
+                root.revealAt(idx);
+            } else {
+                actionIndex = -1;
+                if (root.hasHistory)
+                    selectedIndex = Math.min(root.selectedIndex, root.firstHistIdx() + Services.Notifs.history.length - 1);
+                root.clampSelection();
+                if (!root.hasHistory)
+                    root.focusLastTile();
+            }
+        } else if (root.anchorKind === "calendar") {
+            selectedIndex += shift;
+            root.clampSelection();
+        } else if (root.anchorKind === "clear" && !root.hasHistory) {
+            root.focusLastTile();
+        }
+        root.captureAnchor();
+    }
     Connections {
         target: Services.Notifs
         function onHistoryChanged() {
-            root.clampSelection();
-            root.revealSelection();
+            const count = Services.Notifs.history.length;
+            const span = count > 0 ? count + 1 : 0;
+            const shift = span - root.historySpan;
+            root.historySpan = span;
+            if (!root.visible)
+                return;
+            root.pendingCalendarShift += shift;
+            Qt.callLater(root.syncHistorySelection);
         }
     }
     onMprisPlayerChanged: {
@@ -179,9 +240,19 @@ BasePopup {
         if (kind === "calendar")
             return;
         if (kind === "history")
-            bar.revealHistory(root.selectedHistItem());
+            root.revealAt(root.selectedHistItem());
         else if (kind === "clear")
-            bar.revealHistory(0);
+            root.revealAt(0);
+    }
+    function revealAt(i: int): void {
+        const item = historyList.itemAtIndex(i);
+        if (item === null) {
+            historyList.positionViewAtIndex(i, ListView.Contain);
+            return;
+        }
+        const top = historyList.contentY;
+        if (item.y < top || item.y + item.height > top + historyList.height)
+            historyList.positionViewAtIndex(i, ListView.Contain);
     }
     function stepSelection(dir: int): void {
         actionIndex = -1;
@@ -456,30 +527,223 @@ BasePopup {
     PwObjectTracker {
         objects: [root.micSource]
     }
+    Timer {
+        id: historyPolish
+        interval: Services.Theme.focusDelay
+        repeat: false
+        onTriggered: {
+            if (root.visible && root.selectedIndex === 0)
+                historyList.positionViewAtIndex(0, ListView.Beginning);
+        }
+    }
     PopupCard {
         id: card
-        StatusRow {
-            id: statusRow
+        Column {
+            id: fixedRows
+            width: parent.width
+            spacing: Services.Theme.popupSpacing
+            StatusRow {
+                id: statusRow
+            }
+            BrightnessRow {
+                id: brightnessRow
+                popup: root
+            }
+            VolumeRow {
+                id: volumeRow
+                popup: root
+            }
+            MprisRow {
+                id: mprisRow
+                popup: root
+            }
+            TileGrid {
+                id: tileGrid
+                popup: root
+            }
+            TrayRow {
+                id: trayRow
+                popup: root
+            }
         }
-        BrightnessRow {
-            id: brightnessRow
-            popup: root
+        Rectangle {
+            width: parent.width
+            height: Services.Theme.rowHeight
+            visible: root.hasHistory
+            color: Services.Theme.bg
+            Row {
+                anchors {
+                    fill: parent
+                    leftMargin: 10
+                    rightMargin: 10
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 60
+                    text: "Notifications (" + Services.Notifs.history.length + ")"
+                    color: Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
+                    elide: Text.ElideRight
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 60
+                    horizontalAlignment: Text.AlignRight
+                    text: "Clear"
+                    readonly property bool selected: root.selectedKind() === "clear"
+                    color: selected ? Services.Theme.accent : clearArea.containsMouse ? Services.Theme.fg : Services.Theme.dim
+                    font.family: Services.Theme.font
+                    font.pixelSize: Services.Theme.px12
+                    font.underline: selected
+                    MouseArea {
+                        id: clearArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.actionIndex = -1;
+                            Services.Notifs.clearHistory();
+                            root.clampSelection();
+                        }
+                    }
+                }
+            }
         }
-        VolumeRow {
-            id: volumeRow
-            popup: root
-        }
-        MprisRow {
-            id: mprisRow
-            popup: root
-        }
-        TileGrid {
-            id: tileGrid
-            popup: root
-        }
-        TrayRow {
-            id: trayRow
-            popup: root
+        Item {
+            width: parent.width
+            height: root.listHeight
+            visible: root.hasHistory
+            ListView {
+                id: historyList
+                anchors.fill: parent
+                clip: true
+                cacheBuffer: 400
+                model: Services.Notifs.history
+                spacing: Services.Theme.popupSpacing
+                delegate: Rectangle {
+                    id: historyCard
+                    required property var modelData
+                    required property int index
+                    readonly property bool selected: root.selectedIndex === root.firstHistIdx() + index
+                    readonly property string rawIcon: modelData.icon ?? ""
+                    readonly property bool isHovered: cardArea.containsMouse
+                    width: historyList.width
+                    height: content.height + 16
+                    color: selected ? Services.Theme.activeBg : historyCard.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+                    border.width: selected ? 1 : 0
+                    border.color: historyCard.isHovered ? Services.Theme.fg : historyCard.modelData.critical ? Services.Theme.danger : Services.Theme.accent
+
+                    Rectangle {
+                        anchors {
+                            left: parent.left
+                            top: parent.top
+                            bottom: parent.bottom
+                        }
+                        width: 1
+                        visible: modelData.critical
+                        color: Services.Theme.danger
+                    }
+                    MouseArea {
+                        id: cardArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: mouse => {
+                            mouse.accepted = true;
+                            const panel = root;
+                            const idx = historyCard.index;
+                            const live = historyCard.modelData.live;
+                            panel.actionIndex = -1;
+                            if (live == null) {
+                                Services.Notifs.dismissHistoryAt(idx);
+                                return;
+                            }
+                            try {
+                                Services.Notifs.activateDefault(live);
+                            } catch (_) {}
+                            Services.Notifs.dismissHistoryAfterAction(idx, live);
+                            panel.bar.closePopups();
+                        }
+                    }
+                    Column {
+                        id: content
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            top: parent.top
+                            margins: 8
+                        }
+                        spacing: 6
+                        Row {
+                            width: parent.width
+                            spacing: 8
+                            NotificationIcon {
+                                id: historyIcon
+                                rawIcon: historyCard.rawIcon
+                                tint: historyCard.modelData.critical ? Services.Theme.danger : "transparent"
+                            }
+                            Column {
+                                width: parent.width - (historyIcon.showIcon ? historyIcon.width + 8 : 0)
+                                spacing: 2
+                                Row {
+                                    width: parent.width
+                                    spacing: 8
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: parent.width - 52
+                                        text: modelData.summary || modelData.app || ""
+                                        color: Services.Theme.fg
+                                        font.family: Services.Theme.font
+                                        font.pixelSize: Services.Theme.px12
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 44
+                                        horizontalAlignment: Text.AlignRight
+                                        text: {
+                                            Services.Notifs.timeTick;
+                                            return Services.Notifs.timeAgo(modelData.time);
+                                        }
+                                        color: Services.Theme.dim
+                                        font.family: Services.Theme.font
+                                        font.pixelSize: Services.Theme.px10
+                                    }
+                                }
+                                Text {
+                                    width: parent.width
+                                    visible: (modelData.body ?? "") !== ""
+                                    text: Services.Notifs.richBody(modelData.body)
+                                    color: Services.Theme.dim
+                                    font.family: Services.Theme.font
+                                    font.pixelSize: Services.Theme.px12
+                                    textFormat: Text.StyledText
+                                    wrapMode: Text.WordWrap
+                                    maximumLineCount: Services.Theme.historyBodyMaxLines
+                                    elide: Text.ElideRight
+                                }
+                                ActionPills {
+                                    width: parent.width
+                                    actions: Services.Notifs.secondaryActionsOf(modelData.live?.actions ?? [])
+                                    focusedIndex: historyCard.selected ? root.actionIndex : -1
+                                    onPicked: action => {
+                                        const panel = root;
+                                        const idx = historyCard.index;
+                                        const live = modelData.live;
+                                        try {
+                                            Services.Notifs.activateAction(live, action);
+                                        } catch (_) {}
+                                        panel.actionIndex = -1;
+                                        Services.Notifs.dismissHistoryAfterAction(idx, live);
+                                        panel.bar.closePopups();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

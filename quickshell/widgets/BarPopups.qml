@@ -25,12 +25,18 @@ Item {
         if (!root.pickerActive)
             root.restoreAfterCover();
     }
+    function closePopup(p): void {
+        if (typeof p.close === "function")
+            p.close();
+        else
+            p.visible = false;
+    }
     function parkForCover(): void {
         const vis = [];
         for (const p of root.exclusivePopups) {
             if (p && p.visible) {
                 vis.push(p);
-                p.visible = false;
+                root.closePopup(p);
             }
         }
         root.coveredPopups = vis;
@@ -144,8 +150,9 @@ Item {
     }
     function closePopups(): void {
         for (const p of root.exclusivePopups) {
-            if (p)
-                p.visible = false;
+            if (!p)
+                continue;
+            root.closePopup(p);
         }
         if (root.pickerCovered)
             root.coveredPopups = (root.coveredPopups ?? []).filter(p => p && p.visible);
@@ -206,31 +213,23 @@ Item {
             target.regrab();
     }
     function followPopupAnchor(anchor): void {
-        const pickerOpen = root.pickerActive;
+        if (!anchor)
+            return;
         for (const p of root.allPopups) {
             if (!p || !p.anchor || p.anchor.window === anchor)
                 continue;
-            if (p === bodyPanel) {
+            // Hidden popups normally don't need re-anchoring, but the control
+            // body must follow even while its panel is mid-reanchor.
+            const panelReanchoring = p.controlPanel
+                && (p.controlPanel.visible || p.controlPanel.pendingAnchor != null);
+            if (!p.visible && !panelReanchoring)
+                continue;
+            if (typeof p.reanchor === "function") {
                 p.reanchor(anchor);
-                continue;
-            }
-            if (!p.visible) {
+            } else {
                 p.anchor.window = anchor;
-                continue;
             }
-            if (pickerOpen) {
-                p.anchor.window = anchor;
-                continue;
-            }
-            p.visible = false;
-            p.anchor.window = anchor;
-            p.visible = true;
-            if (typeof p.regrab === "function")
-                p.regrab();
         }
-    }
-    function revealHistory(i: int): void {
-        bodyPanel.revealAt(i);
     }
 
     ControlPanelPopup {

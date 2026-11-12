@@ -32,13 +32,15 @@ DeviceListBase {
     }
     onVisibleChanged: {
         if (visible) {
-            root.listError = "";
-            root.resetNav();
-            if (!Services.Nmcli.connected && Services.Nmcli.networks.length === 0)
-                Services.Nmcli.rescan();
-            else
-                Services.Nmcli.refresh();
-        } else {
+            if (!wasVisible) {
+                root.listError = "";
+                root.resetNav();
+                if (!Services.Nmcli.connected && Services.Nmcli.networks.length === 0)
+                    Services.Nmcli.rescan();
+                else
+                    Services.Nmcli.refresh();
+            }
+        } else if (!wasVisible) {
             root.cancelAuth();
         }
     }

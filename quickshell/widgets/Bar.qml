@@ -63,7 +63,6 @@ PanelWindow {
     function togglePopup(name: string): void { popups.togglePopup(name); }
     function openFromPanel(name: string): void { popups.openFromPanel(name); }
     function openExclusive(target, returnTo = null): void { popups.openExclusive(target, returnTo); }
-    function revealHistory(i: int): void { popups.revealHistory(i); }
     function followPopupAnchor(): void { popups.followPopupAnchor(bar.currentPopupAnchor()); }
 
     function lockScreen(): void {
@@ -158,7 +157,7 @@ PanelWindow {
         glyphColor: root.dnd ? Services.Theme.danger : root.hasUnread ? Services.Theme.accent : Services.Theme.dim
         tipText: root.dnd ? "Do not disturb" : "Notifications"
         tipAnchor: bar
-        onClicked: bar.togglePopup("control")
+        onClicked: Services.Modes.toggleDnd()
         implicitWidth: Math.max(bellRef.implicitWidth, slashRef.implicitWidth) + root.hPadding * 2
         Text {
             id: bellRef

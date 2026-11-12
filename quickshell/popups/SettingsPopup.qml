@@ -142,10 +142,12 @@ BasePopup {
     }
 
     onVisibleChanged: {
-        if (visible) {
+        if (visible && !wasVisible) {
             root.selectedIndex = 0;
             root.closeDrop();
             root.cancelWallFocus();
+        }
+        if (visible) {
             root.syncWallCursor();
             root.syncLastAsusRows();
             displaysTab.syncPreviewOrder();
@@ -154,7 +156,7 @@ BasePopup {
                 Services.Monitors.refreshMonitors(false);
             if (root.tab === 1)
                 Services.Power.refreshAsus();
-        } else {
+        } else if (!wasVisible) {
             root.calmBusy();
             root.cancelWallFocus();
             root.cancelPreviewGrab(false);

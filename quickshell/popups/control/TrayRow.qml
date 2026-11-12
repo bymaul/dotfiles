@@ -40,7 +40,7 @@ Rectangle {
     Connections {
         target: root.popup
         function onVisibleChanged() {
-            if (!root.popup.visible)
+            if (!root.popup.visible && !root.popup.wasVisible)
                 root.reset()
         }
     }

@@ -11,6 +11,43 @@ PopupWindow {
     property bool preventClose: false
     readonly property bool pickerActive: (bar?.screenshotTool?.pickerActive) === true
     property int busyMs: 1500
+    function reanchor(newWindow): void {
+        if (!newWindow || base.anchor.window === newWindow)
+            return;
+        if (!base.visible) {
+            base.anchor.window = newWindow;
+            return;
+        }
+        base.pendingAnchor = newWindow;
+        base.wasVisible = true;
+        base.visible = false;
+        deferredReanchorTimer.restart();
+    }
+    property var pendingAnchor: null
+    property bool wasVisible: false
+    Timer {
+        id: deferredReanchorTimer
+        interval: 50
+        repeat: false
+        onTriggered: {
+            if (base.pendingAnchor)
+                base.anchor.window = base.pendingAnchor;
+            base.pendingAnchor = null;
+            if (base.wasVisible) {
+                base.preventClose = true;
+                preventCloseTimer.restart();
+                base.visible = true;
+                base.wasVisible = false;
+                base.kickGrab();
+            }
+        }
+    }
+    Timer {
+        id: preventCloseTimer
+        interval: 400
+        repeat: false
+        onTriggered: base.preventClose = false
+    }
     function kickBusy(): void {
         base.preventClose = true;
         base.regrab();
@@ -49,6 +86,15 @@ PopupWindow {
         const hadGrab = grab.active;
         const back = base.returnTo;
         base.returnTo = null;
+        base.wasVisible = false;
+        base.pendingAnchor = null;
+        deferredReanchorTimer.stop();
+        preventCloseTimer.stop();
+        busyKeep.stop();
+        busySettle.stop();
+        grabTimer.stop();
+        focusRetry.stop();
+        base.preventClose = false;
         base.visible = false;
         if (back) {
             back.visible = true;

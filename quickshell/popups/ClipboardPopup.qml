@@ -56,9 +56,9 @@ BasePopup {
         return PasteUtils.validAddress(addr);
     }
     onVisibleChanged: {
-        if (visible) {
+        if (visible && !wasVisible) {
             root.reset();
-        } else {
+        } else if (!visible && !wasVisible) {
             root.cancelPendingCopy();
             root.entries = [];
             root.thumbs = {};
