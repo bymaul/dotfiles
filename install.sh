@@ -28,7 +28,6 @@ MANIFEST=(
     "extras dir   fastfetch   fastfetch         .config/fastfetch"
     "extras dir   lazygit     lazygit           .config/lazygit"
     "extras dir   nvim        nvim              .config/nvim"
-    "extras dir   mise        mise              .config/mise"
     "extras dir   yazi        yazi              .config/yazi"
     "extras tree  agents      agents            .agents"
     "extras file  agents      agents/AGENTS.md  .config/opencode/AGENTS.md"
@@ -56,7 +55,7 @@ usage() {
     printf '  -n, --dry-run    print actions without changing anything\n'
     printf '  --verify         check links only, exit non-zero on mismatch\n'
     printf '  --backup         move unmanaged files aside instead of skipping\n'
-    printf '  --no-plugins     skip mise install and theme reload hooks\n'
+    printf '  --no-plugins     skip theme reload hooks\n'
     printf '  -y, --yes        never prompt\n'
     printf '  -C, --category CAT  only this category (repeatable)\n'
     printf 'categories:\n'
@@ -273,10 +272,7 @@ if selected core git && [ "$ASSUME_YES" -eq 0 ] && [ -t 0 ] && [ -f "$REPO/.gitc
 fi
 
 if [ "$NO_PLUGINS" -eq 0 ]; then
-    if selected extras mise && command -v mise >/dev/null 2>&1; then
-        mise trust "$REPO/mise/config.toml" >/dev/null 2>&1 && log "trusted mise config" || warn "mise trust failed"
-        mise install || warn "mise install failed"
-    fi
+
 fi
 
 if [ -x "$REPO/bin/theme" ]; then
@@ -289,7 +285,7 @@ fi
 
 missing=0
 for bin in hyprctl quickshell foot nvim tmux zsh starship lazygit \
-           yazi eza bat fd btop wl-copy wl-paste cliphist jq mise \
+           yazi eza bat fd btop wl-copy wl-paste cliphist jq \
            brightnessctl hyprsunset notify-send pipewire fastfetch upower loginctl; do
     command -v "$bin" >/dev/null 2>&1 || { printf '  \033[1;31m%s\033[0m missing\n' "$bin"; missing=1; }
 done
