@@ -14,7 +14,7 @@ Grid {
     width: parent.width
 
     function activateTile(i: int): void {
-        const actions = [() => popup.bar.openFromPanel("wifi"), () => popup.bar.openFromPanel("bluetooth"), () => popup.toggleMicMute(), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Modes.toggleBluelight(), () => popup.cycleProfileTile(), () => popup.bar.openFromPanel("settings"), () => popup.bar.openFromPanel("power")];
+        const actions = [() => popup.bar.openFromPanel("wifi"), () => popup.bar.openFromPanel("bluetooth"), () => popup.openAudio(true), () => Services.Modes.toggleCaffeine(), () => Services.Modes.toggleDnd(), () => Services.Modes.toggleBluelight(), () => popup.cycleProfileTile(), () => popup.bar.openFromPanel("settings"), () => popup.bar.openFromPanel("power")];
         if (i >= 0 && i < actions.length)
             actions[i]();
     }

@@ -8,8 +8,47 @@ Singleton {
     id: media
     property var sink: Pipewire.defaultAudioSink
     property var source: Pipewire.defaultAudioSource
+    property var sinks: []
+    property var sources: []
     PwObjectTracker {
-        objects: [media.sink, media.source]
+        objects: [media.sink, media.source].concat(media.sinks, media.sources).filter(n => n != null)
+    }
+    function deviceLabel(node): string {
+        if (!node)
+            return "No device";
+        return node.description || node.nickname || node.name || "Unknown device";
+    }
+    function refreshDevices(): void {
+        const list = Pipewire.nodes?.values ?? [];
+        const nextSinks = [];
+        const nextSources = [];
+        for (const node of list) {
+            if (!node || node.isStream || node.audio == null)
+                continue;
+            if (node.isSink)
+                nextSinks.push(node);
+            else
+                nextSources.push(node);
+        }
+        const byLabel = (a, b) => media.deviceLabel(a).localeCompare(media.deviceLabel(b));
+        nextSinks.sort(byLabel);
+        nextSources.sort(byLabel);
+        media.sinks = nextSinks;
+        media.sources = nextSources;
+    }
+    function setSink(node): void {
+        if (node)
+            Pipewire.preferredDefaultAudioSink = node;
+    }
+    function setSource(node): void {
+        if (node)
+            Pipewire.preferredDefaultAudioSource = node;
+    }
+    Connections {
+        target: Pipewire.nodes
+        function onValuesChanged(): void {
+            media.refreshDevices();
+        }
     }
     property real brightness: 0
     property bool brightnessAvailable: true
@@ -40,7 +79,8 @@ Singleton {
             return;
         }
         const muted = audio.muted ?? false;
-        media.osd({app: "volume", summary: muted ? "Mic Muted" : "Mic", body: "Mic", icon: muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic", syncId: "mic"});
+        const pct = Math.round((audio.volume ?? 0) * 100);
+        media.osd({app: "volume", summary: muted ? "Mic Muted" : pct + "%", body: "Mic", icon: muted ? "microphone-sensitivity-muted-symbolic" : "microphone-sensitivity-high-symbolic", syncId: "mic"});
     }
     function brightnessToast(): void {
         if (!media.brightnessAvailable) {
@@ -57,23 +97,32 @@ Singleton {
         if (!quiet)
             media.volumeToast();
     }
+    function adjustMicVolume(delta: real, quiet: bool): void {
+        const audio = media.source?.audio;
+        if (audio)
+            audio.volume = Theme.clamp((audio.volume ?? 0) + delta, 0, Theme.volumeMax);
+        if (!quiet)
+            media.micToast();
+    }
     function volumeUp(): void {
         media.adjustVolume(Theme.volumeStep);
     }
     function volumeDown(): void {
         media.adjustVolume(-Theme.volumeStep);
     }
-    function toggleVolumeMute(): void {
+    function toggleVolumeMute(quiet: bool): void {
         const audio = media.sink?.audio;
         if (audio)
             audio.muted = !audio.muted;
-        media.volumeToast();
+        if (!quiet)
+            media.volumeToast();
     }
-    function toggleMicMute(): void {
+    function toggleMicMute(quiet: bool): void {
         const audio = media.source?.audio;
         if (audio)
             audio.muted = !audio.muted;
-        media.micToast();
+        if (!quiet)
+            media.micToast();
     }
     property string preferredPlayer: ""
     function rawPlayers(): var {
@@ -237,6 +286,7 @@ Singleton {
         }
     }
     Component.onCompleted: {
+        media.refreshDevices();
         if (!brightnessProbe.running)
             brightnessProbe.running = true;
     }

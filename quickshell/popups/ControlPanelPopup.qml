@@ -60,6 +60,7 @@ BasePopup {
         if (Services.Media.brightnessAvailable)
             s.push({ kind: "brightness", count: 1 });
         s.push({ kind: "volume", count: 1 });
+        s.push({ kind: "audio", count: 1 });
         if (root.mprisPlayer !== null)
             s.push({ kind: "mpris", count: 1 });
         s.push({ kind: "tile", count: 9 });
@@ -268,7 +269,7 @@ BasePopup {
         const stops = [];
         let inMedia = false;
         for (const s of root.sections) {
-            const media = s.kind === "brightness" || s.kind === "volume";
+            const media = s.kind === "brightness" || s.kind === "volume" || s.kind === "audio";
             if (!media || !inMedia)
                 stops.push(s.start);
             inMedia = media;
@@ -359,6 +360,9 @@ BasePopup {
         if (audio)
             audio.muted = !audio.muted;
     }
+    function openAudio(input: bool): void {
+        root.bar.openAudio(input === true);
+    }
     function cycleProfileTile(): void {
         if (Services.Power.asusAvailable)
             Services.Power.cycleAsusProfile(1);
@@ -371,6 +375,8 @@ BasePopup {
             Services.Media.setBrightness(Services.Media.brightness + dir * Services.Theme.brightnessStep, true);
         else if (kind === "volume")
             root.adjustVolume(dir * Services.Theme.volumeStep);
+        else if (kind === "audio")
+            return;
         else if (kind === "mpris")
             mprisCol = Services.Theme.clamp(mprisCol + dir, 0, root.mprisMaxCol());
         else if (kind === "tray") {
@@ -494,6 +500,10 @@ BasePopup {
             root.toggleVolumeMute();
             return;
         }
+        if (kind === "audio") {
+            root.openAudio(false);
+            return;
+        }
         if (kind === "brightness")
             return;
         if (kind === "mpris") {
@@ -549,9 +559,19 @@ BasePopup {
                 id: brightnessRow
                 popup: root
             }
-            VolumeRow {
-                id: volumeRow
-                popup: root
+            Row {
+                width: parent.width
+                spacing: Services.Theme.popupSpacing
+                VolumeRow {
+                    id: volumeRow
+                    width: parent.width - audioTile.width - Services.Theme.popupSpacing
+                    popup: root
+                }
+                AudioTile {
+                    id: audioTile
+                    selected: root.selectedKind() === "audio"
+                    onClicked: root.openAudio(false)
+                }
             }
             MprisRow {
                 id: mprisRow

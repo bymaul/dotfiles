@@ -61,6 +61,7 @@ Item {
         {name: "control", item: controlPanelPopup, right: true},
         {name: "wifi", item: wifiPopup, right: true},
         {name: "bluetooth", item: bluetoothPopup, right: true},
+        {name: "audio", item: audioPopup, right: true},
         {name: "power", item: powerPopup, right: true},
         {name: "settings", loader: settingsLoader, right: true},
         {name: "launcher", loader: launcherLoader, right: false},
@@ -192,6 +193,12 @@ Item {
             root.pendingReturnTo = controlPanelPopup;
         }
     }
+    function openAudio(input: bool): void {
+        const target = root.ensurePopup("audio");
+        if (target)
+            target.focusInput = input === true;
+        root.openFromPanel("audio");
+    }
     function openExclusive(target, returnTo = null): void {
         if (!target)
             return;
@@ -249,6 +256,10 @@ Item {
     }
     BluetoothPopup {
         id: bluetoothPopup
+        bar: root.bar
+    }
+    AudioPopup {
+        id: audioPopup
         bar: root.bar
     }
     PowerPopup {

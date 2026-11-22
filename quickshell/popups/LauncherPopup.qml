@@ -318,7 +318,8 @@ BasePopup {
     }
     readonly property var systemActions: [
         {name: "Wi-Fi", popup: "wifi", keywords: ["wifi", "wireless", "network", "wlan"]},
-        {name: "Bluetooth", popup: "bluetooth", keywords: ["bluetooth", "bt", "wireless"]}
+        {name: "Bluetooth", popup: "bluetooth", keywords: ["bluetooth", "bt", "wireless"]},
+        {name: "Audio", popup: "audio", keywords: ["audio", "sound", "volume"]}
     ]
     function matchSystemActions(q: string, out: var): void {
         const empty = q === "";

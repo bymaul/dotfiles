@@ -4,8 +4,9 @@ import "../../services" as Services
 
 Rectangle {
     id: root
-    required property var popup
+    property var popup: null
     property int rowIndex: 0
+    property bool selected: false
     property string glyph: ""
     property real sliderValue: 0
     property real sliderMaximum: 1
@@ -14,11 +15,12 @@ Rectangle {
     signal sliderMoved(real newValue)
     signal glyphClicked()
 
+    readonly property bool rowSelected: root.selected || (root.popup !== null && root.popup.selectedIndex === root.rowIndex)
     width: parent.width
     height: Services.Theme.rowHeight
     readonly property bool isHovered: rowHover.containsMouse
-    color: popup.selectedIndex === root.rowIndex ? Services.Theme.activeBg : root.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
-    border.width: popup.selectedIndex === root.rowIndex ? 1 : 0
+    color: root.rowSelected ? Services.Theme.activeBg : root.isHovered ? Services.Theme.hoverBg : Services.Theme.surface
+    border.width: root.rowSelected ? 1 : 0
     border.color: root.isHovered ? Services.Theme.fg : Services.Theme.accent
     MouseArea {
         id: rowHover
@@ -32,13 +34,17 @@ Rectangle {
             rightMargin: 10
         }
         spacing: 10
-        Text {
+        Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 24
-            text: root.glyph
-            color: Services.Theme.fg
-            font.family: Services.Theme.font
-            font.pixelSize: Services.Theme.px14
+            height: 24
+            Text {
+                anchors.centerIn: parent
+                text: root.glyph
+                color: Services.Theme.fg
+                font.family: Services.Theme.font
+                font.pixelSize: Services.Theme.px14
+            }
             MouseArea {
                 anchors.fill: parent
                 onClicked: root.glyphClicked()

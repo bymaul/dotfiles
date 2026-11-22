@@ -62,6 +62,7 @@ PanelWindow {
     function closePopups(): void { popups.closePopups(); }
     function togglePopup(name: string): void { popups.togglePopup(name); }
     function openFromPanel(name: string): void { popups.openFromPanel(name); }
+    function openAudio(input: bool): void { popups.openAudio(input); }
     function openExclusive(target, returnTo = null): void { popups.openExclusive(target, returnTo); }
     function followPopupAnchor(): void { popups.followPopupAnchor(bar.currentPopupAnchor()); }
 
