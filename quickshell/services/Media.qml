@@ -20,6 +20,7 @@ Singleton {
     }
     function refreshDevices(): void {
         const list = Pipewire.nodes?.values ?? [];
+        const previousSinks = media.sinks ?? [];
         const nextSinks = [];
         const nextSources = [];
         for (const node of list) {
@@ -35,6 +36,20 @@ Singleton {
         nextSources.sort(byLabel);
         media.sinks = nextSinks;
         media.sources = nextSources;
+        for (const node of nextSinks) {
+            if (!previousSinks.some(n => n.id === node.id) && media.isBluetoothSink(node))
+                media.promoteBluetoothSink(node);
+        }
+    }
+    function isBluetoothSink(node): bool {
+        if (!node || !node.isSink)
+            return false;
+        return (node.name ?? "").startsWith("bluez_output.");
+    }
+    function promoteBluetoothSink(node): void {
+        if (!node || media.sink?.id === node.id)
+            return;
+        media.setSink(node);
     }
     function setSink(node): void {
         if (node)
